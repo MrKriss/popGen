@@ -23,23 +23,23 @@ def gz2bgzf(inArg, SQLindex = True):
         print "Producing BGZF output from {0}...".format(fileName)
         f2read = gzip.open(fileName)
         # Drop .gz and append .bgzf
-        outFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'
+        bgzfFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'
         
-        w = BgzfWriter(outFileName, 'wb')
+        w = BgzfWriter(bgzfFileName, 'wb')
         while True:
             data = f2read.read(65536)
             w.write(data)
             if not data:
                   break
         w.close()
-        print '{0} written successfully'.format(outFileName)
+        print '{0} written successfully'.format(bgzfFileName)
 
         conv_t = time.time() - toc 
         print 'Finished converting {0}\n after {1}\n'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(conv_t)))
         
         
         if SQLindex == True:
-          makeSQLindex(fileName)
+          makeSQLindex(bgzfFileName)
       
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(files), time.strftime('%H:%M:%S', time.gmtime(total_t)))
