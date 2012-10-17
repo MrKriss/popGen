@@ -1,2 +1,3 @@
-./testData/*
+/testData/*
+/utils/*.pyc
 *.pyc
