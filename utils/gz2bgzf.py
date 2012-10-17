@@ -42,7 +42,7 @@ def gz2bgzf(inArg, SQLindex = True):
           makeSQLindex(bgzfFileName)
       
     total_t = time.time() - start_time
-    print 'Finished all processing {0} files in {1}'.format(len(files), time.strftime('%H:%M:%S', time.gmtime(total_t)))
+    print 'Finished all processing {0} files in {1}'.format(len(inArg), time.strftime('%H:%M:%S', time.gmtime(total_t)))
   
 def makeSQLindex(inArg):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bfzf file 
