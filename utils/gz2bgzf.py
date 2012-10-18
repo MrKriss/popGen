@@ -13,6 +13,8 @@ import time
 def gz2bgzf(inArg, SQLindex = True):
     ''' Convert the list of files from .gz to .bgzf, And also produce an SQL index if needed. '''
   
+    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
+    
     if type(inArg) == str:
         inArg = [inArg]
   
@@ -20,6 +22,12 @@ def gz2bgzf(inArg, SQLindex = True):
     
     for fileName in inArg: 
         toc = time.time()
+        
+        if fileName.split('_')[0] == 'lane8':
+            os.chdir(dataPath + 'lane8/')
+        elif fileName.split('_')[0] == 'lane6':
+            os.chdir(dataPath + 'lane6/')
+            
         print "Producing BGZF output from {0}...".format(fileName)
         f2read = gzip.open(fileName)
         # Drop .gz and append .bgzf
@@ -30,16 +38,15 @@ def gz2bgzf(inArg, SQLindex = True):
             data = f2read.read(65536)
             w.write(data)
             if not data:
-                  break
+                break
         w.close()
         print '{0} written successfully'.format(bgzfFileName)
 
         conv_t = time.time() - toc 
         print 'Finished converting {0}\n after {1}\n'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(conv_t)))
         
-        
         if SQLindex == True:
-          makeSQLindex(bgzfFileName)
+            makeSQLindex(bgzfFileName)
       
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(inArg), time.strftime('%H:%M:%S', time.gmtime(total_t)))
@@ -64,16 +71,18 @@ def makeSQLindex(inArg):
     
 if __name__ == '__main__':
     
-    dataPath = '/Volumes/Datasets/gazellesAndZebras/'
+    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
     
     os.chdir(dataPath)
     
     # Convert all gz files to bgzf files
-    filesLane8_1 = ["lane8/lane8_NoIndex_L008_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
-    filesLane8_2 = ["lane8/lane8_NoIndex_L008_R1_0%i.fastq.gz" % (i+10) for i in range(1)]
-    filesLane6_1 = ["lane6/lane6_NoIndex_L008_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
-    filesLane6_2 = ["lane6/lane6_NoIndex_L008_R1_0%i.fastq.gz" % (i+10) for i in range(2)]
+    filesLane8_1 = ["lane8_NoIndex_L008_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
+    filesLane8_2 = ["lane8_NoIndex_L008_R1_0%i.fastq.gz" % (i+10) for i in range(1)]
+    filesLane6_1 = ["lane6_NoIndex_L006_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
+    filesLane6_2 = ["lane6_NoIndex_L006_R1_0%i.fastq.gz" % (i+10) for i in range(2)]
+    
     files = filesLane8_1 + filesLane8_2 + filesLane6_1 + filesLane6_2 
+#    files = filesLane6_1 + filesLane6_2 
     
 #    files = ['lane8_NoIndex_L008_R1_001.fastq.gz']
     
