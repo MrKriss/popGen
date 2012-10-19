@@ -10,28 +10,40 @@ from Bio import SeqIO
 import time
 
 
-def gz2bgzf(inArg, SQLindex = True):
-    ''' Convert the list of files from .gz to .bgzf, And also produce an SQL index if needed. '''
-  
-    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
+def gz2bgzf(inFiles, fileType = '', dataPath = '' SQLindex = True):
+    ''' Convert the list of files from .gz to .bgzf, A
+    And also produce an SQL index if needed. 
     
-    if type(inArg) == str:
-        inArg = [inArg]
+    TODO: 
+    
+    inFiles can either be a string of the file name, a list of file names
+    or a regular expression of the files to 
+    
+    '''
+    
+  
+    if dataPath:
+        os.chdir(dataPath)
+    
+    if type(inFiles) == str:
+        inFiles = [inFiles]
   
     start_time = time.time() 
     
-    for fileName in inArg: 
+    for fileName in inFiles: 
         toc = time.time()
         
-        if fileName.split('_')[0] == 'lane8':
-            os.chdir(dataPath + 'lane8/')
-        elif fileName.split('_')[0] == 'lane6':
-            os.chdir(dataPath + 'lane6/')
+        # Checks for type of input
+        if fileName.split('.')[-1] == '.gz':
+            f2read = gzip.open(fileName)
+            bgzfFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'
             
+        if fileName.split('.')[-1] == '.fastq':
+            f2read = open(fileName)
+            bgzfFileName = fileName + '.bgzf'
+
         print "Producing BGZF output from {0}...".format(fileName)
-        f2read = gzip.open(fileName)
         # Drop .gz and append .bgzf
-        bgzfFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'
         
         w = BgzfWriter(bgzfFileName, 'wb')
         while True:
@@ -49,18 +61,18 @@ def gz2bgzf(inArg, SQLindex = True):
             makeSQLindex(bgzfFileName)
       
     total_t = time.time() - start_time
-    print 'Finished all processing {0} files in {1}'.format(len(inArg), time.strftime('%H:%M:%S', time.gmtime(total_t)))
+    print 'Finished all processing {0} files in {1}'.format(len(inFiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
   
-def makeSQLindex(inArg):
+def makeSQLindex(inFiles):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bfzf file 
     
-    if inArg is list, goes through all file names in list
+    if inFiles is list, goes through all file names in list
     
     '''
-    if type(inArg) == str:
-        inArg = [inArg]
+    if type(inFiles) == str:
+        inFiles = [inFiles]
 
-    for fileName in inArg: 
+    for fileName in inFiles: 
         tak = time.time()
         print 'Writing SQL index file for {0} ...'.format(fileName)
         idxFileName = '.'.join(fileName.split('.')[:-2]) + '.idx'
@@ -72,21 +84,25 @@ def makeSQLindex(inArg):
 if __name__ == '__main__':
     
     dataPath = '/space/musselle/datasets/gazellesAndZebras/'
-    
     os.chdir(dataPath)
     
     # Convert all gz files to bgzf files
-    filesLane8_1 = ["lane8_NoIndex_L008_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
-    filesLane8_2 = ["lane8_NoIndex_L008_R1_0%i.fastq.gz" % (i+10) for i in range(1)]
-    filesLane6_1 = ["lane6_NoIndex_L006_R1_00%i.fastq.gz" % (i+1) for i in range(9)]
-    filesLane6_2 = ["lane6_NoIndex_L006_R1_0%i.fastq.gz" % (i+10) for i in range(2)]
+    filesLane8_1 = ["lane8_NoIndex_L008_R1_00%i.fastq.bgzf" % (i+1) for i in range(9)]
+    filesLane8_2 = ["lane8_NoIndex_L008_R1_0%i.fastq.bgzf" % (i+10) for i in range(1)]
+    filesLane6_1 = ["lane6_NoIndex_L006_R1_00%i.fastq.bgzf" % (i+1) for i in range(9)]
+    filesLane6_2 = ["lane6_NoIndex_L006_R1_0%i.fastq.bgzf" % (i+10) for i in range(2)]
     
-    files = filesLane8_1 + filesLane8_2 + filesLane6_1 + filesLane6_2 
-#    files = filesLane6_1 + filesLane6_2 
+#    files = filesLane8_1 + filesLane8_2 + filesLane6_1 + filesLane6_2 
+#    files = filesLane8_1 + filesLane8_2 
+    files = filesLane6_1 + filesLane6_2 
     
 #    files = ['lane8_NoIndex_L008_R1_001.fastq.gz']
     
-    gz2bgzf(files)
+#    gz2bgzf(files)
+    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
+    os.chdir(dataPath +'lane6/')
+    makeSQLindex(files)
+    
     
     
     
