@@ -10,22 +10,25 @@ from Bio import SeqIO
 import time
 
 
-def gz2bgzf(inFiles, fileType = '', dataPath = '' SQLindex = True):
-    ''' Convert the list of files from .gz to .bgzf, A
+def gz2bgzf(inFiles = None, fileType = '', dataPath = '', SQLindex = True):
+    ''' Convert the list of files from .gz to .bgzf,
     And also produce an SQL index if needed. 
     
-    TODO: 
-    
-    inFiles can either be a string of the file name, a list of file names
-    or a regular expression of the files to 
-    
-    '''
-    
+    inFiles accepts str of file name of list of str for filenames. 
+    If not specified will look at file type and glob the result to inFiles. 
   
+    '''
     if dataPath:
         os.chdir(dataPath)
-    
-    if type(inFiles) == str:
+  
+    # Handle multiple types of input
+    if not inFiles:
+        # Fetch files by file types
+        assert fileType, 'No files listed and No file type specified.'
+        import glob
+        inFiles = glob.glob(fileType)
+    elif type(inFiles) == str:
+        # Convert to list
         inFiles = [inFiles]
   
     start_time = time.time() 
@@ -35,16 +38,15 @@ def gz2bgzf(inFiles, fileType = '', dataPath = '' SQLindex = True):
         
         # Checks for type of input
         if fileName.split('.')[-1] == '.gz':
+            # Drop .gz and append .bgzf
             f2read = gzip.open(fileName)
-            bgzfFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'
-            
-        if fileName.split('.')[-1] == '.fastq':
+            bgzfFileName = '.'.join(fileName.split('.')[:-1]) + '.bgzf'  
+        elif fileName.split('.')[-1] == '.fastq':
             f2read = open(fileName)
+            # Append .bgzf
             bgzfFileName = fileName + '.bgzf'
 
         print "Producing BGZF output from {0}...".format(fileName)
-        # Drop .gz and append .bgzf
-        
         w = BgzfWriter(bgzfFileName, 'wb')
         while True:
             data = f2read.read(65536)
@@ -63,13 +65,23 @@ def gz2bgzf(inFiles, fileType = '', dataPath = '' SQLindex = True):
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(inFiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
   
-def makeSQLindex(inFiles):
+def makeSQLindex(inFiles = None, fileType = '', dataPath = ''):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bfzf file 
     
     if inFiles is list, goes through all file names in list
     
     '''
-    if type(inFiles) == str:
+    if dataPath:
+        os.chdir(dataPath)
+  
+    # Handle multiple types of input
+    if not inFiles:
+        # Fetch files by file types
+        assert fileType, 'No files listed and No file type specified.'
+        import glob
+        inFiles = glob.glob(fileType)
+    elif type(inFiles) == str:
+        # Convert to list
         inFiles = [inFiles]
 
     for fileName in inFiles: 
@@ -84,24 +96,10 @@ def makeSQLindex(inFiles):
 if __name__ == '__main__':
     
     dataPath = '/space/musselle/datasets/gazellesAndZebras/'
-    os.chdir(dataPath)
     
-    # Convert all gz files to bgzf files
-    filesLane8_1 = ["lane8_NoIndex_L008_R1_00%i.fastq.bgzf" % (i+1) for i in range(9)]
-    filesLane8_2 = ["lane8_NoIndex_L008_R1_0%i.fastq.bgzf" % (i+10) for i in range(1)]
-    filesLane6_1 = ["lane6_NoIndex_L006_R1_00%i.fastq.bgzf" % (i+1) for i in range(9)]
-    filesLane6_2 = ["lane6_NoIndex_L006_R1_0%i.fastq.bgzf" % (i+10) for i in range(2)]
+    gz2bgzf(None, '*.gz', dataPath = dataPath + 'lane6/')
+    gz2bgzf(None, '*.gz', dataPath = dataPath + 'lane8/')
     
-#    files = filesLane8_1 + filesLane8_2 + filesLane6_1 + filesLane6_2 
-#    files = filesLane8_1 + filesLane8_2 
-    files = filesLane6_1 + filesLane6_2 
-    
-#    files = ['lane8_NoIndex_L008_R1_001.fastq.gz']
-    
-#    gz2bgzf(files)
-    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
-    os.chdir(dataPath +'lane6/')
-    makeSQLindex(files)
     
     
     
