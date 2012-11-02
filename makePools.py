@@ -35,6 +35,7 @@ def loadIDs(inFiles = None, fileType = '', dataPath = ''):
                 
     return tags
 
+
                  
 def distance():
     ''' Distance function to compare a sequence read to the list of barcode records'''
