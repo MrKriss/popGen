@@ -11,6 +11,23 @@ import os
 import sys
 import matplotlib.pyplot as plt
 import pickle as pkl
+import subprocess
+
+
+def findNumRec(filename):
+    ''' Find number of records in a fastq file. 
+    
+    Makes assumption that all records come from same machine and are in fastq format
+    
+    TODO - use subprocess properly to call grep in parallel for a list of files.
+    
+    Possible optimisation
+    
+    '''
+    subprocess.call()
+    
+    filename
+    
 
 def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
     ''' Return the proportion of Ns and the mean Phred scores of the files given'''
