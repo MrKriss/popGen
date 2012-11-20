@@ -14,6 +14,99 @@ import pickle as pkl
 import subprocess
 
 
+class Cycler(object):
+    ''' Object to hold generators that yield Sequence record objects or 
+    individual sequences from the given file list. 
+    
+    Takes care of file input checks. Each next call returns the next file
+    containing the next set of Sequence record objects. 
+    
+    INPUTS
+    inFiles - Single file as string or list of files to process as strings with full extensions. 
+    fileType - if no inFiles specified, runs glob on this string pattern in the path specified by 
+                dataPath e.g. glob.glob('*.fastq') for all files ending in .fastq
+    dataPath - directory data files are stored in, will change to this at start of script.
+    
+    
+    METHODS
+    nextSeq - returns the next sequence object
+    gen_files - stores a generator that yields the record generator for each file. 
+     
+    ATTRIBUTES
+    .fileGen - the generator constructed by gen_files.
+    .fileGen.next() - returns a tuple of (SeqenceRecordObject, fileName, fileNo )
+    
+    returns tuple(object of all sequence records, fileName , fileNo).
+    '''     
+
+    def __init__(self, inFiles = None, fileType = '', dataPath = ''):
+        ''' Constructor '''
+        
+        if dataPath:
+            os.chdir(dataPath)
+      
+        # Handle multiple types of input for inFiles
+        if not inFiles:
+            # Fetch files by file types
+            assert fileType, 'No files listed and No file type specified.'
+            import glob
+            inFiles = glob.glob(fileType)
+        elif type(inFiles) == str:
+            # Convert to list
+            inFiles = [inFiles]
+    
+        print 'Processing the following files...'
+        for f in inFiles:
+            print f
+            
+        self.numfiles = len(inFiles)
+        
+        self.fileGen = self.init_files_gen(inFiles)
+        self.seqGen = self.init_seq_gen()
+        
+    def init_files_gen(self, inFiles):
+        ''' Constructs the next file generator object '''
+        # Generic file handling code
+        for fileNo, fileName in enumerate(inFiles):   
+            
+            self.fileNo = fileNo     
+            self.fileName = fileName
+                 
+            # Check file extensions
+            extension = fileName.split('.')[-1] 
+            if extension == 'idx':
+                # Raise warning if first call to generator
+                print 'Warning: Processing .idx files takes ~3 times longer than using .bgzf or .fastq files.'
+                print 'Processing .idx files currently unsuported.'
+                print 'Accepted formats for cycling through all records = .gz .bgzf and .fastq'
+                sys.exit()
+               
+            elif extension == 'gz' or extension == 'bgzf': 
+                import gzip
+                try:
+                    handle = gzip.open(fileName, "r")
+                    yield SeqIO.parse(handle, format = 'fastq')
+                except IOError as e:
+                    print e
+                    print 'Invalid file name, or {0} may not exist.'.format(fileName)
+    
+            elif extension == 'fastq':
+                try:
+                    yield SeqIO.parse(fileName, format = 'fastq')
+                except IOError as e:
+                    print e
+                    print 'Invalid file name, or {0} may not exist.'.format(fileName)
+            else:
+                print 'File extension {0} currently unsupported.'.format(extension) 
+                print 'Accepted formats for cycling through all records = .gz .bgzf and .fastq'
+    
+    def init_seq_gen(self):
+        ''' Return next Sequence Record '''
+        for rec_file in self.fileGen:
+            for record in rec_file:
+                yield record
+        
+    
 def findNumRec(filename):
     ''' Find number of records in a fastq file. 
     
@@ -106,7 +199,7 @@ def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
 
     return totalStats
 
-
+            
 def getGen4SeqRecFiles(inFiles = None, fileType = '', dataPath = ''):
     ''' Return Generator for all Sequence Records stored in a .bgzf file.
     
@@ -217,8 +310,61 @@ def getReadLengths2(inFiles = None, fileType = '', dataPath = ''):
     print 'Processed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
     return totalStats
-              
-def getReadLengths(inFiles = None, fileType = '', dataPath = ''):
+
+def getReadLengths3(inFiles = None, fileType = '', dataPath = ''):
+    ''' Return histogram of read lengths. Uses RecordCyler object'''        
+    
+    #Generator for Sequence Record files
+    SeqRecCycler = RecordCycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
+
+    print 'Calculating length per read ...'
+    
+    # Define vars and outputs
+    outList = [0] * SeqRecCycler.numFiles
+    recordCounts = [0] * SeqRecCycler.numFiles
+
+    toc = time.time()
+    cum_t = 0
+    for seqRecs in SeqRecCycler.fileGen:
+        fileName = SeqRecCycler.fileGen.fileName
+        fileNo = SeqRecCycler.fileGen.fileNo
+        # count number of Records, may need to alter this if no idx file
+        idxFileName = '.'.join(fileName.split('.')[:-2]) + '.idx'
+        S = SeqIO.index_db(idxFileName, format='fastq')
+        recordCounts[fileNo] = len(S)
+        del S
+        
+        outList[fileNo] = {'length'  :  np.zeros(recordCounts[fileNo]) }
+        
+        for num, seqR in enumerate(seqRecs):
+            outList[fileNo]['length'][num] = len(seqR.seq)
+        
+        loop_t = time.time() - toc - cum_t
+        cum_t += loop_t
+        print 'Finished {0} after {1}'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(loop_t)))
+
+    totalRecords = np.sum(recordCounts)
+    totalStats = {'length':  np.zeros(totalRecords)}
+    start_idx = 0
+    end_idx = 0
+    for file_idx, statObj in enumerate(outList):
+        end_idx += recordCounts[file_idx]
+        totalStats['length'][start_idx:end_idx] = statObj['length']
+        start_idx += recordCounts[file_idx]
+
+    # Saving data
+    print 'Saving Data......'
+    parent_dir  = os.getcwd().split('/')[-1]
+    np.save(parent_dir + '_length', totalStats['length'])
+    print 'DONE! Data saved to {0}'.format(os.getcwd())
+
+    total_t = time.time() - toc
+    print 'Processed {0} files in {1}'.format(SeqRecCycler.numFiles, 
+                                              time.strftime('%H:%M:%S', time.gmtime(total_t)))
+
+    return totalStats
+         
+def getReadLengths1(inFiles = None, fileType = '', dataPath = ''):
     ''' old read Length Function'''
 
     if dataPath:
@@ -424,7 +570,6 @@ def percentileFT(hashCount, percents):
     else:                        
         return outValues
                
-
 def plotFTstats(stats):
     ''' Plot the min, max, Q1, Q2, Median and Average from a stats record structure '''
     
@@ -483,24 +628,27 @@ if __name__ == '__main__':
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
 #    lane6_PhredAves = getMeanPhredPerBase(fileType = '*.idx', dataPath = dataLoacation)
     
-    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-    lane6_PhredStats, lane6_PhredCounts = boxPlotPhredPerBase(fileType = '*.bgzf', dataPath = dataLoacation)    
-
-    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane8'
-    lane8_PhredStats, lane8_PhredCounts = boxPlotPhredPerBase(fileType = '*.bgzf', dataPath = dataLoacation)    
-
-    with open('L6_phredCounts.pkl', 'wb') as f:
-        pkl.dump(lane6_PhredCounts, f )
-    with open('L8_phredCounts.pkl', 'wb') as f:
-        pkl.dump(lane8_PhredCounts, f )
-
-    np.save('L6_phredStats', lane6_PhredStats)
-    np.save('L8_phredStats', lane8_PhredStats)
-
-
-
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-#    files = ['lane6_NoIndex_L006_R1_005.fastq.bgzf','lane6_NoIndex_L006_R1_006.fastq.bgzf']
+#    lane6_PhredStats, lane6_PhredCounts = boxPlotPhredPerBase(fileType = '*.bgzf', dataPath = dataLoacation)    
+#
+#    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane8'
+#    lane8_PhredStats, lane8_PhredCounts = boxPlotPhredPerBase(fileType = '*.bgzf', dataPath = dataLoacation)    
+#
+#    with open('L6_phredCounts.pkl', 'wb') as f:
+#        pkl.dump(lane6_PhredCounts, f )
+#    with open('L8_phredCounts.pkl', 'wb') as f:
+#        pkl.dump(lane8_PhredCounts, f )
+#
+#    np.save('L6_phredStats', lane6_PhredStats)
+#    np.save('L8_phredStats', lane8_PhredStats)
+
+
+    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
+    files = ['lane6_NoIndex_L006_R1_005.fastq.bgzf']
+    readL1 = getReadLengths1(inFiles = files, dataPath=dataLoacation)
+    readL2 = getReadLengths2(inFiles = files, dataPath=dataLoacation)
+    readL3 = getReadLengths3(inFiles = files, dataPath=dataLoacation)
+
 #    lane6_PhredStats = boxPlotPhredPerBase( files , dataPath = dataLoacation)  
     
       
