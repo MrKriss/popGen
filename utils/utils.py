@@ -141,10 +141,7 @@ def findNumRec(fileName):
     
     Makes assumption that all records come from same machine and are in fastq format
     
-    TODO - use subprocess properly to call grep in parallel for a list of files.
-    
-    Possible optimisation
-    
+    Uses subprocess properly to call grep in parallel for a list of files.
     '''
     
     if fileName.endswith('.idx') or fileName.endswith('.gz') \
@@ -157,7 +154,7 @@ def findNumRec(fileName):
         try:
             with open(fastqFileName, 'rb') as f:
                 # Load in machine name
-                pass
+                sequencerID = f.readline().strip().split(':')[0]
         except IOError as e:
                 print e
                 print 'Invalid file name, or {0} may not exist.'.format(fastqFileName)
@@ -166,15 +163,14 @@ def findNumRec(fileName):
         print 'File extension not recognised.'
         sys.exit()
     
-    cmd = 'cat {0} | parallel --pipe --block 2M grep -c "{1}"'.format(fileName ,  )
+#    cmd = 'cat {0} | parallel --pipe --block 2M grep -c "{1}"'.format(fileName, sequencerID)
+    cmd = 'grep -c "{1}" {0}'.format(fileName, sequencerID)
     
-    
-    
-    process = Popen(cmd, stdout=PIPE, 
-                     stderr=None, preexec_fn=None, close_fds=False, shell=False, 
-                     cwd=None, env=None, universal_newlines=False, startupinfo=None,
-                     creationflags=0)
+    process = Popen(cmd, stdout=PIPE, shell=True)
 
+    return int(process.communicate()[0].strip())
 
 if __name__ == '__main__':
-    pass
+    
+    os.chdir('/space/musselle/datasets/gazellesAndZebras/lane6')
+    out = findNumRec('lane6_NoIndex_L006_R1_001.fastq')
