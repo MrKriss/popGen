@@ -87,7 +87,7 @@ def makeSQLindex(inFiles = None, fileType = '', dataPath = ''):
     for fileName in inFiles: 
         tak = time.time()
         print 'Writing SQL index file for {0} ...'.format(fileName)
-        idxFileName = '.'.join(fileName.split('.')[:-2]) + '.idx'
+        idxFileName = fileName.split('.')[0] + '.idx'
         SeqIO.index_db(idxFileName, fileName , 'fastq')
         print '{0} written successfully'.format(idxFileName)
         idx_t = time.time() - tak

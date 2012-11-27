@@ -10,8 +10,7 @@ import time
 import os
 import sys
 import matplotlib.pyplot as plt
-import pickle as pkl
-import subprocess
+from utils.utils import pklSave
 
 from utils.utils import Cycler
 
@@ -20,48 +19,40 @@ def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
     
     Returns a Histogram'''
 
-    if dataPath:
-        os.chdir(dataPath)
-  
-    # Handle multiple types of input
-    if not inFiles:
-        # Fetch files by file types
-        assert fileType, 'No files listed and No file type specified.'
-        import glob
-        inFiles = glob.glob(fileType)
-    elif type(inFiles) == str:
-        # Convert to list
-        inFiles = [inFiles]
-
-    print 'Calculating Proportion of Ns and Mean Phred Score per read for the following files...'
-    for f in inFiles:
-        print f
-
+    RecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
+    
+    print '\nCalculating Proportion of Ns and Mean Phred Score per read.\n'
+    
     # Define vars and outputs
-    numFiles = len(inFiles)
+    numFiles = RecCycler.numFiles
     outList = [0] * numFiles
     recordCounts = [0] * numFiles
 
     # Find the number of records in each file.
     toc = time.time()
     cum_t = 0
-    for fileNum, fileName in enumerate(inFiles):
-        # Check its a .idx file extention or that one exists with it.
-        if fileName.split('.')[-1] == 'idx':
+    for seqRecGen in RecCycler.seqFileGen:
+    
+        fileName = RecCycler.curFileName
+        fileNum = RecCycler.curFileNum
+        
+        # Check fileName is a .idx file extention or that one exists for it.
+        if fileName.endswith('idx'):
             idxFileName = fileName
         else:
-            assert os.path.isfile('.'.join(fileName.split('.')[:-2]) + '.idx'),  'Index file not found for {0}'.format(fileName)
-            idxFileName = '.'.join(fileName.split('.')[:-2]) + '.idx'
-    
-        # Load file 
+            assert os.path.isfile(fileName.split('.')[0] + '.idx'),  'Index file not found for {0}'.format(fileName)
+            idxFileName = fileName.split('.')[0] + '.idx'
+        
+        # count number of Records 
         S = SeqIO.index_db(idxFileName, format='fastq')
         recordCounts[fileNum] = len(S)
+        del S
         
         outList[fileNum] = {'propN'  :  np.zeros(recordCounts[fileNum]),
                         'meanPhred' : np.zeros(recordCounts[fileNum])  }
-        
+
         # Cycle through all records 
-        for num, seqRec in enumerate(S.itervalues()):
+        for num, seqRec in enumerate(seqRecGen):
             # Proportion of Ns
             outList[fileNum]['propN'][num] = float(seqRec.seq.count('N')) / len(seqRec)
             # Mean Phred Score
@@ -90,205 +81,11 @@ def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
     print 'DONE! Data saved to {0}'.format(os.getcwd())
 
     total_t = time.time() - toc
-    print 'Processed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
+    print '\nProcessed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
     return totalStats
-
-            
-def getPropN_meanPhred2(inFiles = None, fileType = '', dataPath = ''):
-    ''' Calculate the proportion of Ns and the mean Phred scores of the files given 
-    
-    Returns a Histogram'''
-
-    RecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
-    
-    print '/nCalculating Proportion of Ns and Mean Phred Score per read./n'
-    
-    # Define vars and outputs
-    numFiles = RecCycler.numFiles
-    outList = [0] * numFiles
-    recordCounts = [0] * numFiles
-
-    # Find the number of records in each file.
-    toc = time.time()
-    cum_t = 0
-    for seqFileGen in RecCycler.seqFileGen:
-    
-        fileName = RecCycler.curFileName
-        fileNum = RecCycler.curFileNum
         
-        # Check fileName is a .idx file extention or that one exists for it.
-        if fileName.endswith('idx'):
-            idxFileName = fileName
-        else:
-            assert os.path.isfile(fileName.split('.')[0] + '.idx'),  'Index file not found for {0}'.format(fileName)
-            idxFileName = fileName.split('.')[0] + '.idx'
-        
-        # count number of Records 
-        S = SeqIO.index_db(idxFileName, format='fastq')
-        recordCounts[fileNum] = len(S)
-        del S
-        
-        outList[fileNum] = {'propN'  :  np.zeros(recordCounts[fileNum]),
-                        'meanPhred' : np.zeros(recordCounts[fileNum])  }
-
-        # Cycle through all records 
-        for num, seqRec in enumerate(seqFileGen):
-            # Proportion of Ns
-            outList[fileNum]['propN'][num] = float(seqRec.seq.count('N')) / len(seqRec)
-            # Mean Phred Score
-            outList[fileNum]['meanPhred'][num] = np.array(seqRec.letter_annotations['phred_quality']).mean()
-        
-        loop_t = time.time() - toc - cum_t
-        cum_t += loop_t
-        print 'Finished {0} after {1}'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(loop_t)))
-
-    totalRecords = np.sum(recordCounts)
-    totalStats = {'propN':  np.zeros(totalRecords)  ,
-                  'meanPhred': np.zeros(totalRecords) }
-    start_idx = 0
-    end_idx = 0
-    for file_idx, statObj in enumerate(outList):
-        end_idx += recordCounts[file_idx]
-        totalStats['propN'][start_idx:end_idx] = statObj['propN']
-        totalStats['meanPhred'][start_idx:end_idx] = statObj['meanPhred']
-        start_idx += recordCounts[file_idx]
-
-    # Saving data
-    print 'Saving Data......'
-    parent_dir  = os.getcwd().split('/')[-1]
-    np.save(parent_dir + '_propN', totalStats['propN'])
-    np.save(parent_dir + '_meanPhred', totalStats['meanPhred'])
-    print 'DONE! Data saved to {0}'.format(os.getcwd())
-
-    total_t = time.time() - toc
-    print '/nProcessed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
-
-    return totalStats
-
-            
-def getGen4SeqRecFiles(inFiles = None, fileType = '', dataPath = ''):
-    ''' Return Generator for all Sequence Records stored in a .bgzf file.
-    
-    Takes care of file input checks. Each next call returns the next file
-    containing the next set of Sequence record objects. 
-    
-    First next() call returns number of files to process as int(). 
-    
-    Rest returns tuple(object of all sequence records, fileName , fileNum).
-     '''
-    if dataPath:
-        os.chdir(dataPath)
-  
-    # Handle multiple types of input
-    if not inFiles:
-        # Fetch files by file types
-        assert fileType, 'No files listed and No file type specified.'
-        import glob
-        inFiles = glob.glob(fileType)
-    elif type(inFiles) == str:
-        # Convert to list
-        inFiles = [inFiles]
-
-    print 'Processing the following files...'
-    for f in inFiles:
-        print f
-        
-    yield len(inFiles)
-    
-    # Generic file handling code
-    for fileNum, fileName in enumerate(inFiles):
-        
-        # Check file extensions
-        extension = fileName.split('.')[-1] 
-        if extension == 'idx':
-            # Raise warning if first call to generator
-            print 'Warning: Processing .idx files takes ~3 times longer than using .bgzf or .fastq files.'
-            print 'Processing .idx files currently unsuported. Accepted formats = .gz .bgzf and .fastq'
-            sys.exit()
-           
-        elif extension == 'gz' or extension == 'bgzf': 
-            import gzip
-            try:
-                handle = gzip.open(fileName, "r")
-                yield SeqIO.parse(handle, format = 'fastq'), fileName, fileNum
-            except IOError as e:
-                print e
-                print 'Invalid file name, or {0} may not exist.'.format(fileName)
-
-        elif extension == 'fastq':
-            try:
-                yield SeqIO.parse(fileName, format = 'fastq'), fileName, fileNum
-            except IOError as e:
-                print e
-                print 'Invalid file name, or {0} may not exist.'.format(fileName)
-        else:
-            print 'File extension {0} currently unsupported.'.format(extension) 
-            print 'Accepted formats = .gz .bgzf and .fastq'
-            
-            
-def getReadLengths2(inFiles = None, fileType = '', dataPath = ''):
-    ''' Return histogram of read lengths '''        
-    
-    RecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
-    
-    print '/nCalculating Proportion of Ns and Mean Phred Score per read./n'
-    
-    # Define vars and outputs
-    numFiles = RecCycler.numFiles
-    outList = [0] * numFiles
-    recordCounts = [0] * numFiles
-
-    # Find the number of records in each file.
-    toc = time.time()
-    cum_t = 0
-    for seqFileGen in RecCycler.seqFileGen:
-    
-        fileName = RecCycler.curFileName
-        fileNum = RecCycler.curFileNum
-        
-        # Check fileName is a .idx file extention or that one exists for it.
-        if fileName.endswith('idx'):
-            idxFileName = fileName
-        else:
-            assert os.path.isfile(fileName.split('.')[0] + '.idx'),  'Index file not found for {0}'.format(fileName)
-            idxFileName = fileName.split('.')[0] + '.idx'
-        
-        # count number of Records 
-        S = SeqIO.index_db(idxFileName, format='fastq')
-        recordCounts[fileNum] = len(S)
-        del S
-        
-        outList[fileNum] = {'length'  :  np.zeros(recordCounts[fileNum]) }
-        
-        for num, seqR in enumerate(seqFileGen):
-            outList[fileNum]['length'][num] = len(seqR.seq)
-        
-        loop_t = time.time() - toc - cum_t
-        cum_t += loop_t
-        print 'Finished {0} after {1}'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(loop_t)))
-
-    totalRecords = np.sum(recordCounts)
-    totalStats = {'length':  np.zeros(totalRecords)}
-    start_idx = 0
-    end_idx = 0
-    for file_idx, statObj in enumerate(outList):
-        end_idx += recordCounts[file_idx]
-        totalStats['length'][start_idx:end_idx] = statObj['length']
-        start_idx += recordCounts[file_idx]
-
-    # Saving data
-    print 'Saving Data......'
-    parent_dir  = os.getcwd().split('/')[-1]
-    np.save(parent_dir + '_length', totalStats['length'])
-    print 'DONE! Data saved to {0}'.format(os.getcwd())
-
-    total_t = time.time() - toc
-    print 'Processed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
-
-    return totalStats
-
-def getReadLengths3(inFiles = None, fileType = '', dataPath = ''):
+def getReadLengths(inFiles = None, fileType = '', dataPath = ''):
     ''' Return histogram of read lengths. Uses RecordCyler object'''        
     
     #Generator for Sequence Record files
@@ -340,91 +137,21 @@ def getReadLengths3(inFiles = None, fileType = '', dataPath = ''):
                                               time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
     return totalStats
-         
-def getReadLengths1(inFiles = None, fileType = '', dataPath = ''):
-    ''' old read Length Function'''
 
-    if dataPath:
-        os.chdir(dataPath)
-  
-    # Handle multiple types of input
-    if not inFiles:
-        # Fetch files by file types
-        assert fileType, 'No files listed and No file type specified.'
-        import glob
-        inFiles = glob.glob(fileType)
-    elif type(inFiles) == str:
-        # Convert to list
-        inFiles = [inFiles]
-
-    print 'Calculating length per read for the following files...'
-    for f in inFiles:
-        print f
-
-    # Define vars and outputs
-    numFiles = len(inFiles)
-    outList = [0] * numFiles
-    recordCounts = [0] * numFiles
-
-    # Find the number of records in each file.
-    toc = time.time()
-    cum_t = 0
-    for fileNum, fileName in enumerate(inFiles):
-        # Check its a .idx file extention or that one exists with it.
-        if fileName.split('.')[-1] == 'idx':
-            idxFileName = fileName
-        else:
-            assert os.path.isfile('.'.join(fileName.split('.')[:-2]) + '.idx'),  'Index file not found for {0}'.format(fileName)
-            idxFileName = '.'.join(fileName.split('.')[:-2]) + '.idx'
-    
-        # Load file 
-        S = SeqIO.index_db(idxFileName, format='fastq')
-        recordCounts[fileNum] = len(S)
-        
-        outList[fileNum] = {'length'  :  np.zeros(recordCounts[fileNum]) }
-        
-        # Cycle through all records 
-        for num, seqRec in enumerate(S.itervalues()):
-            # Find Length
-            outList[fileNum]['length'][num] = len(seqRec)
-        
-        loop_t = time.time() - toc - cum_t
-        cum_t += loop_t
-        print 'Finished {0} after {1}'.format(fileName, time.strftime('%H:%M:%S', time.gmtime(loop_t)))
-
-    totalRecords = np.sum(recordCounts)
-    totalStats = {'length':  np.zeros(totalRecords)}
-    start_idx = 0
-    end_idx = 0
-    for file_idx, statObj in enumerate(outList):
-        end_idx += recordCounts[file_idx]
-        totalStats['length'][start_idx:end_idx] = statObj['length']
-        start_idx += recordCounts[file_idx]
-
-    # Saving data
-    print 'Saving Data......'
-    parent_dir  = os.getcwd().split('/')[-1]
-    np.save(parent_dir + '_length', totalStats['length'])
-    print 'DONE! Data saved to {0}'.format(os.getcwd())
-
-    total_t = time.time() - toc
-    print 'Processed {0} files in {1}'.format(numFiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
-
-    return totalStats
-
-
-def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = ''):
+def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = '', saveprefix = ''):
     ''' Find the median, upper and lower quartile for the Phred score per base 
     
     Returns the stats and the counter dictionary. 
     
     Counter dictionary may become standard way to store mass Phred/seq bases data.  '''
-    
     from collections import Counter
+
+    RecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
     
-    #Generator for Sequence Records
-    SeqRecFileGenerator = getGen4SeqRecFiles(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
-    numFiles = SeqRecFileGenerator.next()
+    print '\nCalculating Box plot stats of phred scores per base position.\n'
+    
+    # Define vars and outputs
+    numFiles = RecCycler.numFiles
 
     toc = time.time()
     cum_t = 0
@@ -433,23 +160,31 @@ def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = ''):
     for i in range(len(counterList)):
         counterList[i] = Counter()
     
-    for seqRecs, fileName, fileNum in SeqRecFileGenerator:
-        for rec in seqRecs:
+    for seqRecGen in RecCycler.seqFileGen:
+        
+        fileName = RecCycler.curFileName
+        fileNum = RecCycler.curFileNum
+        
+        for rec in seqRecGen:
             for baseNo, phred in enumerate(rec.letter_annotations['phred_quality']):
                 counterList[baseNo][phred] += 1
                 
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
-        print 'Finished file {0} of {1} after {2}'.format(fileNum, numFiles, time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+        print 'Finished {0} \nfile {1} of {2} after {3}'.format(fileName, fileNum, numFiles, time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
 
     # Calculate min, max Q1, Q2, Median and Average
     stats = getStatsFT(counterList)
 
     total_t = time.time() - toc
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', time.gmtime(total_t)))
+    
+    pklfilename = dataPath.split('/')[-1]
             
-    return stats, counterList     
-
+    pklSave(counterList, '_'.join([pklfilename, saveprefix , 'phredCount']))
+    np.save( '_'.join([pklfilename, saveprefix , 'phredStats.npy']) , stats)
+    
+    return stats, counterList
 
 def getStatsFT(counterList):
     ''' Calculate min, max, Q1, Q2, Median and Average for a list of frequency table of data 
@@ -564,13 +299,13 @@ def plotFTstats(stats):
     ax.set_title('Statistics for Phred Scores per Base Position')
     plt.draw()
      
-
 def getMeanPhredPerBase(inFiles = None, fileType = '', dataPath = ''):
     ''' Find the mean Phred score per base '''
-    
+        
     #Generator for Sequence Records
-    SeqRecGenerator = getGen4SeqRecFiles(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
-    numfiles = SeqRecGenerator.next() 
+    RecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
+    
+    print '\nCalculating mean phred score per base position.\n'
 
     # Make Data Structure
     running_aves = np.zeros(101)
@@ -578,25 +313,22 @@ def getMeanPhredPerBase(inFiles = None, fileType = '', dataPath = ''):
     toc = time.time()
     cum_t = 0
     count = 1
-    for fileNum, seqRecIdx in enumerate(SeqRecGenerator):
-        for rec in seqRecIdx.itervalues():
+    for num, seqRecs in enumerate(RecCycler):
+        for rec in seqRecs.itervalues():
             xi = np.array(rec.letter_annotations['phred_quality'])
-            running_aves = running_aves + ((xi - running_aves)/ (count)) 
+            running_aves = running_aves + ((xi - running_aves) / (count)) 
             count += 1
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
-        print 'Finished file {0} after {1}'.format(fileNum, time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+        print 'Finished file {0} after {1}'.format(num, time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
     
     total_t = time.time() - toc
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', time.gmtime(total_t)))
     
     return running_aves
-          
+
 
 if __name__ == '__main__':
-
-#    dataLoacation = '/Users/chris/Datasets/gazellesZebras/'
-#    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
 
 #    getPropN_meanPhred(fileType = '*.idx', dataPath = dataLoacation)
 #    getReadLengths(fileType = '*.idx', dataPath = dataLoacation)
@@ -620,11 +352,8 @@ if __name__ == '__main__':
 #    np.save('L8_phredStats', lane8_PhredStats)
 
 
-    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
+    dataLoc = '/space/musselle/datasets/gazellesAndZebras'
     files = ['lane6_NoIndex_L006_R1_005.fastq.bgzf']
-    readL1 = getReadLengths1(inFiles = files, dataPath=dataLoacation)
-    readL2 = getReadLengths2(inFiles = files, dataPath=dataLoacation)
-    readL3 = getReadLengths3(inFiles = files, dataPath=dataLoacation)
 
 #    lane6_PhredStats = boxPlotPhredPerBase( files , dataPath = dataLoacation)  
     

@@ -10,6 +10,8 @@ import numpy as np
 import glob
 import cPickle as pkl
 import gzip
+from subprocess import PIPE, Popen
+
 
 from Bio import SeqIO
 
@@ -56,11 +58,11 @@ class Cycler(object):
             # Convert to list
             inFiles = [inFiles]
     
-        print 'Processing the following files...'
+        print '\nProcessing the following files...'
         for f in inFiles:
             print f
             
-        self.numfiles = len(inFiles)
+        self.numFiles = len(inFiles)
         self.maxNumSeq = maxNumSeq
         
         '''May need to process files individually or all at once, so two types of
@@ -134,23 +136,44 @@ def smartopen(filename,*args,**kwargs):
     else:
         return open(filename,*args,**kwargs)
 
-
-
-
-#def findNumRec(filename):
-#    ''' Find number of records in a fastq file. 
-#    
-#    Makes assumption that all records come from same machine and are in fastq format
-#    
-#    TODO - use subprocess properly to call grep in parallel for a list of files.
-#    
-#    Possible optimisation
-#    
-#    '''
-#    subprocess.call()
-#    
-#    filename
+def findNumRec(fileName):
+    ''' Find number of records in a fastq file. 
     
+    Makes assumption that all records come from same machine and are in fastq format
+    
+    TODO - use subprocess properly to call grep in parallel for a list of files.
+    
+    Possible optimisation
+    
+    '''
+    
+    if fileName.endswith('.idx') or fileName.endswith('.gz') \
+                            or fileName.endswith('.bgzf') or fileName.endswith('.fastq'):
+        # Check fastq file exists.
+        if fileName.endswith('.fastq'):
+            fastqFileName = fileName
+        else:
+            fastqFileName = fileName.split('.')[0] + '.fastq' 
+        try:
+            with open(fastqFileName, 'rb') as f:
+                # Load in machine name
+                pass
+        except IOError as e:
+                print e
+                print 'Invalid file name, or {0} may not exist.'.format(fastqFileName)
+        fileName = fastqFileName
+    else:
+        print 'File extension not recognised.'
+        sys.exit()
+    
+    cmd = 'cat {0} | parallel --pipe --block 2M grep -c "{1}"'.format(fileName ,  )
+    
+    
+    
+    process = Popen(cmd, stdout=PIPE, 
+                     stderr=None, preexec_fn=None, close_fds=False, shell=False, 
+                     cwd=None, env=None, universal_newlines=False, startupinfo=None,
+                     creationflags=0)
 
 
 if __name__ == '__main__':

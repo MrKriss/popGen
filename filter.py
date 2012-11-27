@@ -45,6 +45,7 @@ def filterReads(inFiles = None, fileType = '', dataPath = ''):
         passFileName = '.'.join(passFileName)
         failFileName = [name[0] + '-fail']  + name[1:]
         failFileName = '.'.join(failFileName)
+        name = '.'.join(name)
         
         # Setup Generators              
         passGen = (rec for rec in recordGen1 if rec.description.split()[1].split(':')[1] == 'N')
@@ -82,7 +83,7 @@ def filterReads(inFiles = None, fileType = '', dataPath = ''):
 
 if __name__ == '__main__':
     
-    dataLoc = '/space/musselle/datasets/gazellesAndZebras/lane8'
+    dataLoc = '/space/musselle/datasets/gazellesAndZebras/lane6'
     filterReads(None, fileType='*[0-9].fastq.bgzf', dataPath = dataLoc)
     
     
