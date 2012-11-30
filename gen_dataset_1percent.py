@@ -30,6 +30,7 @@ output_filename = 'testdata_1percent.bgzf'
 print '\nGenerating a dataset of the first {0} reads from each file.'.format(maxnumseq)
 
 # If file already exists, overwrite it.
+os.chdir('/space/musselle/datasets/gazellesAndZebras')
 if os.path.isfile(output_filename):
     f = open(output_filename, 'w')
     f.close()

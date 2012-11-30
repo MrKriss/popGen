@@ -13,6 +13,11 @@ from filter import
 
 
 
+datapath = '/space/musselle/datasets/gazellesAndZebras/lane6'
+
+
+
+
 
 
 
