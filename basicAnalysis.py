@@ -10,7 +10,7 @@ import time
 import os
 import sys
 import matplotlib.pyplot as plt
-from utils.utils import pklSave
+from utils.utils import pklsave
 
 from utils.utils import Cycler
 
@@ -24,17 +24,17 @@ def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
     print '\nCalculating Proportion of Ns and Mean Phred Score per read.\n'
     
     # Define vars and outputs
-    numFiles = RecCycler.numFiles
+    numFiles = RecCycler.numfiles
     outList = [0] * numFiles
     recordCounts = [0] * numFiles
 
     # Find the number of records in each file.
     toc = time.time()
     cum_t = 0
-    for seqRecGen in RecCycler.seqFileGen:
+    for seqRecGen in RecCycler.seqfilegen:
     
-        fileName = RecCycler.curFileName
-        fileNum = RecCycler.curFileNum
+        fileName = RecCycler.curfilename
+        fileNum = RecCycler.curfilenum
         
         # Check fileName is a .idx file extention or that one exists for it.
         if fileName.endswith('idx'):
@@ -85,17 +85,17 @@ def getPropN_meanPhred(inFiles = None, fileType = '', dataPath = ''):
 
     return totalStats
         
-def getReadLengths(inFiles = None, fileType = '', dataPath = ''):
+def getReadLengths(infiles = None, filetype = '', datapath = ''):
     ''' Return histogram of read lengths. Uses RecordCyler object'''        
     
     #Generator for Sequence Record files
-    SeqRecCycler = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
+    SeqRecCycler = Cycler(infiles = infiles, filetype = filetype, datapath = datapath)
 
     print 'Calculating length per read ...'
     
     # Define vars and outputs
-    outList = [0] * SeqRecCycler.numFiles
-    recordCounts = [0] * SeqRecCycler.numFiles
+    outList = [0] * SeqRecCycler.numfiles
+    recordCounts = [0] * SeqRecCycler.numfiles
 
     toc = time.time()
     cum_t = 0
@@ -133,7 +133,7 @@ def getReadLengths(inFiles = None, fileType = '', dataPath = ''):
     print 'DONE! Data saved to {0}'.format(os.getcwd())
 
     total_t = time.time() - toc
-    print 'Processed {0} files in {1}'.format(SeqRecCycler.numFiles, 
+    print 'Processed {0} files in {1}'.format(SeqRecCycler.numfiles, 
                                               time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
     return totalStats
@@ -151,7 +151,7 @@ def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = '', saveprefix
     print '\nCalculating Box plot stats of phred scores per base position.\n'
     
     # Define vars and outputs
-    numFiles = RecCycler.numFiles
+    numFiles = RecCycler.numfiles
 
     toc = time.time()
     cum_t = 0
@@ -160,10 +160,10 @@ def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = '', saveprefix
     for i in range(len(counterList)):
         counterList[i] = Counter()
     
-    for seqRecGen in RecCycler.seqFileGen:
+    for seqRecGen in RecCycler.seqfilegen:
         
-        fileName = RecCycler.curFileName
-        fileNum = RecCycler.curFileNum
+        fileName = RecCycler.curfilename
+        fileNum = RecCycler.curfilenum
         
         for rec in seqRecGen:
             for baseNo, phred in enumerate(rec.letter_annotations['phred_quality']):
@@ -181,7 +181,7 @@ def boxPlotPhredPerBase(inFiles = None, fileType = '', dataPath = '', saveprefix
     
     pklfilename = dataPath.split('/')[-1]
             
-    pklSave(counterList, '_'.join([pklfilename, saveprefix , 'phredCount']))
+    pklsave(counterList, '_'.join([pklfilename, saveprefix , 'phredCount']))
     np.save( '_'.join([pklfilename, saveprefix , 'phredStats.npy']) , stats)
     
     return stats, counterList
@@ -332,8 +332,7 @@ if __name__ == '__main__':
 
 #    getPropN_meanPhred(fileType = '*.idx', dataPath = dataLoacation)
 #    getReadLengths(fileType = '*.idx', dataPath = dataLoacation)
-    
-    
+       
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
 #    lane6_PhredAves = getMeanPhredPerBase(fileType = '*.idx', dataPath = dataLoacation)
     
@@ -350,7 +349,6 @@ if __name__ == '__main__':
 #
 #    np.save('L6_phredStats', lane6_PhredStats)
 #    np.save('L8_phredStats', lane8_PhredStats)
-
 
     dataLoc = '/space/musselle/datasets/gazellesAndZebras'
     files = ['lane6_NoIndex_L006_R1_005.fastq.bgzf']

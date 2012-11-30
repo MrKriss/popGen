@@ -3,10 +3,10 @@ Created on 19 Nov 2012
 
 @author: musselle
 '''
-import os 
-import sys 
+import os
+import sys
 
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from basicAnalysis import Cycler
@@ -14,77 +14,133 @@ from Bio import SeqIO, bgzf
 import gzip
 import time
 
-def filterReads(inFiles = None, fileType = '', dataPath = ''):
+
+def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir='filtered_reads'):
     ''' Filter reads based on criteria 
     
-    Default is to use Machine Specific read filter 
+    Default is to use Machine Specific read filter, specific to Casava 
+    1.8 Illumina output format at current
     
-    Only specific to Casava 1.8 Illumina output format at current
+    filterfunc must take in a sequence record object, and return a boolean
     
     '''   
+    starting_dir = os.getcwd()
+
+    # Define filter function if not given 
+    if filterfunc is None:
+        def fitlerfunc(rec):
+            ''' Use machine specific filter         
+            N = was not pickup up by machine filter i.e. passed
+            Y = was flagged by machine filter i.e. fail 
+            '''
+            return rec.description.split()[1].split(':')[1] == 'N'
+     
+    if datapath:
+        os.chdir(datapath)
     
-    # Have to create two separate generators as copying a generator is not possible
-    RecCycler1 = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
-    RecCycler2 = Cycler(inFiles = inFiles, fileType = fileType, dataPath = dataPath)
+    # Have to create two separate generators to return passes and fails 
+    # as copying a generator object is not possible.
+    RecCycler1 = Cycler(infiles=infiles, filetype=filetype)
+    RecCycler2 = Cycler(infiles=infiles, filetype=filetype)
+
+    os.mkdir(outdir)
+    os.chdir(outdir)
     
+    # timings
     toc = time.time()
     cum_t = 0
-    
-    for recordGen1 in RecCycler1.seqFileGen:
-        # Both gens are identical at this point so iterating over one is the same length as the other
+    for recordgen1 in RecCycler1.seqfilegen:
+        # Both gens are identical at this point so iterating over one is the 
+        # same length as the other
         
         # Load second record generator
-        recordGen2 = RecCycler2.seqFileGen.next()
+        recordgen2 = RecCycler2.seqfilegen.next()
 
-        print 'Processing {0}'.format(RecCycler1.curFileName) 
+        print 'Processing {0}'.format(RecCycler1.curfilename) 
         
         # Construct file names
-        name = RecCycler1.curFileName.split('.')  
-        
-        passFileName = [name[0] + '-pass'] + name[1:] 
-        passFileName = '.'.join(passFileName)
-        failFileName = [name[0] + '-fail']  + name[1:]
-        failFileName = '.'.join(failFileName)
+        name = RecCycler1.curfilename.split('.')  
+        pass_filename = [name[0] + '-pass'] + name[1:] 
+        pass_filename = '.'.join(pass_filename)
+        fail_filename = [name[0] + '-fail']  + name[1:]
+        fail_filename = '.'.join(fail_filename)
         name = '.'.join(name)
         
         # Setup Generators              
-        passGen = (rec for rec in recordGen1 if rec.description.split()[1].split(':')[1] == 'N')
-        failGen = (rec for rec in recordGen2 if rec.description.split()[1].split(':')[1] == 'Y')
+        passgen = (rec for rec in recordgen1 if filterfunc(rec))
+        failgen = (rec for rec in recordgen2 if not filterfunc(rec))
         
         if name.endswith('.bgzf'):
-            passFileHdl = bgzf.BgzfWriter(passFileName)
-            failFileHdl = bgzf.BgzfWriter(failFileName)
+            pass_filehdl = bgzf.BgzfWriter(pass_filename)
+            fail_filehdl = bgzf.BgzfWriter(fail_filename)
         elif name.endswith('.fastq'):
-            passFileHdl = open(passFileName, 'wb')
-            failFileHdl = open(failFileName, 'wb')
+            pass_filehdl = open(pass_filename, 'wb')
+            fail_filehdl = open(fail_filename, 'wb')
         elif name.endswith('.gz'):
-            passFileHdl = gzip.open(passFileName, 'wb')
-            failFileHdl = gzip.open(failFileName, 'wb')
+            pass_filehdl = gzip.open(pass_filename, 'wb')
+            fail_filehdl = gzip.open(fail_filename, 'wb')
         else:
             print 'Input file format not supported'
             sys.exit()
         
-        print 'Writing passes to file {0} ....'.format(passFileName)
-        numWritten = SeqIO.write( passGen , passFileHdl , 'fastq')
-        passFileHdl.close()
-        print '{0} records written'.format(numWritten)
+        print 'Writing passes to file {0} ....'.format(pass_filename)
+        numwritten = SeqIO.write( passgen , pass_filehdl , 'fastq')
+        pass_filehdl.close()
+        print '{0} records written'.format(numwritten)
         
-        print 'Writing fails to file  {0} ....'.format(failFileName)
-        numWritten = SeqIO.write( failGen , failFileHdl , 'fastq')
-        failFileHdl.close()
-        print '{0} records written'.format(numWritten)
+        print 'Writing fails to file  {0} ....'.format(fail_filename)
+        numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
+        fail_filehdl.close()
+        print '{0} records written'.format(numwritten)
         
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
-        print 'Finished file {0} after {1}'.format(RecCycler1.curFileNum, time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+        print 'Finished file {0} after {1}'.format(RecCycler1.curfilenum, 
+                                time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
         
     total_t = time.time() - toc    
-    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', time.gmtime(total_t)))
+    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+                                                        time.gmtime(total_t)))
+    os.chdir(starting_dir)
+
+
+def setup_filter(target_dict):
+    ''' Function to return a filter function defined using the given dictionary
+    
+    Keys are the variables to filter, and the values are the minimum thresholds 
+    
+    '''
+
+    if len(target_dict) == 1:
+        if 'phred' in target_dict:
+            # Define filterfunc
+            def f(rec):
+                ''' filter function '''
+                return np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
+    
+        elif 'propN' in target_dict:
+            # Define filterfunc
+            def f(rec):
+                ''' filter function '''
+                return float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
+            
+    elif len(target_dict) == 2:
+        if 'phred' in target_dict and 'propN' in target_dict:
+            # Define filterfunc
+            def f(rec):
+                ''' filter function '''
+                A = np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
+                B = float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
+                return A and B
+        else:
+            raise Exception('Target variables not set as ''phred'' and ''propN''')
+    else:
+        raise Exception('Number of target values > 2')
 
 if __name__ == '__main__':
     
     dataLoc = '/space/musselle/datasets/gazellesAndZebras/lane6'
-    filterReads(None, fileType='*[0-9].fastq.bgzf', dataPath = dataLoc)
+    filter_reads(None, filetype='*[0-9].fastq.bgzf', dataPath = dataLoc)
     
     
     

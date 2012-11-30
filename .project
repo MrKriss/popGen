@@ -16,7 +16,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1350507582073</id>
+			<id>1351096377291</id>
 			<name></name>
 			<type>21</type>
 			<matcher>
@@ -32,4 +32,10 @@
 			</matcher>
 		</filter>
 	</filteredResources>
+	<variableList>
+		<variable>
+			<name>utils</name>
+			<value>file:/home/pgrad/musselle/ubuntu/workspace/popGen/utils</value>
+		</variable>
+	</variableList>
 </projectDescription>
