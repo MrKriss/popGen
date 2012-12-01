@@ -34,17 +34,13 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
             Y = was flagged by machine filter i.e. fail 
             '''
             return rec.description.split()[1].split(':')[1] == 'N'
-     
-    if datapath:
-        os.chdir(datapath)
-    
+         
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.
-    RecCycler1 = Cycler(infiles=infiles, filetype=filetype)
-    RecCycler2 = Cycler(infiles=infiles, filetype=filetype)
+    RecCycler1 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
+    RecCycler2 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
 
     os.mkdir(outdir)
-    os.chdir(outdir)
     
     # timings
     toc = time.time()
@@ -70,6 +66,8 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
         passgen = (rec for rec in recordgen1 if filterfunc(rec))
         failgen = (rec for rec in recordgen2 if not filterfunc(rec))
         
+        os.chdir(outdir)
+        
         if name.endswith('.bgzf'):
             pass_filehdl = bgzf.BgzfWriter(pass_filename)
             fail_filehdl = bgzf.BgzfWriter(fail_filename)
@@ -93,6 +91,8 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
         fail_filehdl.close()
         print '{0} records written'.format(numwritten)
         
+        os.chdir('..')
+        
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
         print 'Finished file {0} after {1}'.format(RecCycler1.curfilenum, 
@@ -102,7 +102,6 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
     os.chdir(starting_dir)
-
 
 def setup_filter(target_dict):
     ''' Function to return a filter function defined using the given dictionary
