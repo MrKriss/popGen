@@ -123,7 +123,7 @@ def setup_filter(target_dict):
             # Define filterfunc
             def f(rec):
                 ''' filter function '''
-                return float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
+                return float(rec.seq.count('N')) / len(rec.seq) < target_dict['propN']
             return f
         
     elif len(target_dict) == 2:
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     filter_reads(infiles=files, datapath=dataloc, outdir=outdir)
     
     outdir = 'propNfiltertest'
-    f = setup_filter({'propN' : 0.9})
+    f = setup_filter({'propN' : 0.1})
     filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredfiltertest'
@@ -156,7 +156,7 @@ if __name__ == '__main__':
     filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredpropN_filtertest'
-    f = setup_filter({'phred' : 15, 'propN' : 0.95})
+    f = setup_filter({'phred' : 15, 'propN' : 0.05})
     filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     
