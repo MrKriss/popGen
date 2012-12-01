@@ -145,19 +145,19 @@ if __name__ == '__main__':
     dataloc = '/space/musselle/datasets/gazellesAndZebras'
     files = 'testdata_1percent.bgzf'
     outdir = 'machinefiltertest'
-    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir)
+    filter_reads(infiles=files, datapath=dataloc, outdir=outdir)
     
     outdir = 'propNfiltertest'
     f = setup_filter({'propN' : 0.9})
-    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredfiltertest'
     f = setup_filter({'phred' : 15})
-    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredpropN_filtertest'
     f = setup_filter({'phred' : 15, 'propN' : 0.95})
-    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
     
     
     
