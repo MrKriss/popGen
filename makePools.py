@@ -7,28 +7,28 @@ Created on 24 Oct 2012
 import os
 from Bio import SeqRecord
 
-def loadIDs(inFiles = None, fileType = '', dataPath = ''):
+def loadIDs(infiles = None, filetype = '', datapath = ''):
     ''' Function to load in MIDs from a list of files into a dictionary '''
     
-    if dataPath:
-        os.chdir(dataPath)
+    if datapath:
+        os.chdir(datapath)
   
     # Handle multiple types of input
-    if not inFiles:
+    if not infiles:
         # Fetch files by file types
-        assert fileType, 'No files listed and No file type specified.'
+        assert filetype, 'No files listed and No file type specified.'
         import glob
-        inFiles = glob.glob(fileType)
-    elif type(inFiles) == str:
+        infiles = glob.glob(filetype)
+    elif type(infiles) == str:
         # Convert to list
-        inFiles = [inFiles]
+        infiles = [infiles]
 
     # Run through files and store barcodes in a Dictionary object.
     # keys are starting tags (MID (6 BP) + cutsite (6BP))
     tags = {}
     
-    for fileName in inFiles:
-        with open(fileName, 'rb') as f:
+    for filename in infiles:
+        with open(filename, 'rb') as f:
             for line in f:
                 elem = line.split()
                 tags[elem[0]] = elem[1] 
@@ -45,7 +45,7 @@ def distance():
 if __name__ == '__main__':
     
     
-    dataPath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    tags = loadIDs(fileType = '*.txt', dataPath = dataPath)
+    datapath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+    tags = loadIDs(filetype = '*.txt', datapath = datapath)
     
     

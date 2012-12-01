@@ -7,7 +7,6 @@ import os
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from basicAnalysis import Cycler
 from Bio import SeqIO, bgzf
@@ -28,14 +27,12 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
 
     # Define filter function if not given 
     if filterfunc is None:
-        def fitlerfunc(rec):
+        def filterfunc(rec):
             ''' Use machine specific filter         
             N = was not pickup up by machine filter i.e. passed
             Y = was flagged by machine filter i.e. fail 
             '''
             return rec.description.split()[1].split(':')[1] == 'N'
-    
-    print filterfunc
          
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.

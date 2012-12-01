@@ -22,12 +22,12 @@ class Cycler(object):
     containing the next set of Sequence record objects.
 
     INPUTS
-    inFiles - Single file as string or list of files to process as strings with
+    infiles - Single file as string or list of files to process as strings with
                 full extensions.
-    fileType - if no inFiles specified, runs glob on this string pattern in the
-                path specified by dataPath e.g. glob.glob('*.fastq') for all
+    filetype - if no infiles specified, runs glob on this string pattern in the
+                path specified by datapath e.g. glob.glob('*.fastq') for all
                 files ending in .fastq
-    dataPath - directory data files are stored in, will change to this at start
+    datapath - directory data files are stored in, will change to this at start
                of script.
 
     METHODS
@@ -39,9 +39,9 @@ class Cycler(object):
                 its sequence records.
     .recgen - a generator that iterates over all records serially for all files
                 in list.
-    .curfilename - Current file name in list of given files (inFiles) being
+    .curfilename - Current file name in list of given files (infiles) being
                 iterated over.
-    .curfilenum - Current file number in list of given files (inFiles).
+    .curfilenum - Current file number in list of given files (infiles).
     .maxNoSeq - Number of sequence records to return from each file. Default is
                 all. Useful for testing.
 
@@ -107,10 +107,11 @@ class Cycler(object):
                     yield SeqIO.parse(smartopen(filename), format='fastq')
                 except IOError as e:
                     print e
-                    print 'Invalid file name, or {0} may not exist.'.format(filename)
+                    raise Exception('Invalid file name, or {0} may not exist.'.format(filename))
             else:
                 print 'File extension for {0} currently unsupported.'.format(filename) 
                 print 'Accepted formats for cycling through all records = .gz .bgzf and .fastq'
+                raise Exception
 
     def __init_rec_gen(self):
         ''' Return next Sequence Record '''
@@ -130,9 +131,9 @@ class Cycler(object):
                     yield record
         
 
-def pklsave(obj, fileName):
+def pklsave(obj, filename):
     ''' Pickle the given object '''
-    with open(fileName + '.pkl', 'wb') as f:
+    with open(filename + '.pkl', 'wb') as f:
         pkl.dump(obj, f)
         
 def smartopen(filename,*args,**kwargs):

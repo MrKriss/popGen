@@ -9,7 +9,7 @@ Created on 30 Oct 2012
                     if ans == 'n':
                         sys.exit('Quit by user.')
                     elif ans == 'y':
-                        idxFileName = fileName
+                        idxFileName = filename
                         input_checked_flag = 0
                         break
                     else:
@@ -21,5 +21,5 @@ Created on 30 Oct 2012
                 yield SeqIO.index_db(idxFileName, format='fastq')
             except IOError as e:
                 print e
-                print 'Invalid file name, or {0} may not exist'.format(fileName)
+                print 'Invalid file name, or {0} may not exist'.format(filename)
         

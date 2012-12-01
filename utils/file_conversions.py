@@ -95,10 +95,10 @@ def makeSQLindex(infiles = None, filetype = '', datapath = ''):
     
 if __name__ == '__main__':
     
-    dataPath = '/space/musselle/datasets/gazellesAndZebras/'
+    datapath = '/space/musselle/datasets/gazellesAndZebras/'
     
-    gz2bgzf(None, '*.gz', datapath = dataPath + 'lane6/')
-    gz2bgzf(None, '*.gz', datapath = dataPath + 'lane8/')
+    gz2bgzf(None, '*.gz', datapath = datapath + 'lane6/')
+    gz2bgzf(None, '*.gz', datapath = datapath + 'lane8/')
     
     
     
