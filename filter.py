@@ -117,13 +117,15 @@ def setup_filter(target_dict):
             def f(rec):
                 ''' filter function '''
                 return np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
+            return f
     
         elif 'propN' in target_dict:
             # Define filterfunc
             def f(rec):
                 ''' filter function '''
                 return float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
-            
+            return f
+        
     elif len(target_dict) == 2:
         if 'phred' in target_dict and 'propN' in target_dict:
             # Define filterfunc
@@ -132,6 +134,7 @@ def setup_filter(target_dict):
                 A = np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
                 B = float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
                 return A and B
+            return f
         else:
             raise Exception('Target variables not set as ''phred'' and ''propN''')
     else:
@@ -139,9 +142,22 @@ def setup_filter(target_dict):
 
 if __name__ == '__main__':
     
-    dataLoc = '/space/musselle/datasets/gazellesAndZebras/lane6'
-    filter_reads(None, filetype='*[0-9].fastq.bgzf', dataPath = dataLoc)
+    dataloc = '/space/musselle/datasets/gazellesAndZebras'
+    files = 'testdata_1percent.bgzf'
+    outdir = 'machinefiltertest'
+    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir)
     
+    outdir = 'propNfiltertest'
+    f = setup_filter({'propN' : 0.9})
+    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
+    
+    outdir = 'phredfiltertest'
+    f = setup_filter({'phred' : 15})
+    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
+    
+    outdir = 'phredpropN_filtertest'
+    f = setup_filter({'phred' : 15, 'propN' : 0.95})
+    filter_reads(infiles=files, dataPath=dataloc, outdir=outdir, filterfunc=f)
     
     
     

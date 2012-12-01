@@ -3,13 +3,20 @@ Created on 21 Nov 2012
 
 @author: musselle
 '''
+import os
+import sys
+
 import unittest
+
 from utils.utils import Cycler
 
 class Test(unittest.TestCase):
 
 
     def setUp(self):
+        os.chdir('/space/musselle/datasets/gazellesAndZebras')
+        
+        
         RecCycler = Cycler()
 
 
