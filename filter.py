@@ -40,7 +40,8 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
     RecCycler1 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
     RecCycler2 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
 
-    os.mkdir(outdir)
+    if not os.path.isdir('./' + outdir):
+        os.mkdir(outdir)
     
     # timings
     toc = time.time()
