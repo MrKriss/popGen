@@ -34,6 +34,8 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
             Y = was flagged by machine filter i.e. fail 
             '''
             return rec.description.split()[1].split(':')[1] == 'N'
+    
+    print filterfunc
          
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.
