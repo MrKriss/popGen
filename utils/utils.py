@@ -20,6 +20,10 @@ class Cycler(object):
 
     Takes care of file input checks. Each next call returns the next file
     containing the next set of Sequence record objects.
+    
+    NOTE: list of filenames is returned in random order. could sort, but at 
+    current no real need, as it only needs to cycle through all files.  
+    
 
     INPUTS
     infiles - Single file as string or list of files to process as strings with

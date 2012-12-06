@@ -8,6 +8,7 @@ from Bio.bgzf import BgzfWriter
 import gzip
 from Bio import SeqIO
 import time
+from utils.utils import smartopen, Cycler
 
 
 def gz2bgzf(infiles = None, filetype = '', datapath = '', SQLindex = True):
@@ -92,20 +93,35 @@ def makeSQLindex(infiles = None, filetype = '', datapath = ''):
         print '{0} written successfully'.format(idx_filename)
         idx_t = time.time() - tak
         print 'Finished Indexing to {0}\n after {1}\n'.format(idx_filename, time.strftime('%H:%M:%S', time.gmtime(idx_t)))
+
+def file2fasta(filename):
     
+    handle = smartopen(filename)
+    out_filename = filename.split('.')[0] + '.fasta'
+    
+    count = SeqIO.convert(handle, 'fastq', out_filename, 'fasta')
+    
+    print 'Converted {0} records to file\n{1}'.format(count, out_filename)
+
+def reads2fasta(infiles = None, filetype = '', datapath = ''):
+    '''Writes the reads (without the MID tag) to a fasta file for clustering'''
+    
+    RecCycler = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
+
+    
+
+
+    
+    handle = smartopen(filename)
+    out_filename = filename.split('.')[0] + '.fasta'
+    
+    count = SeqIO.convert(handle, 'fastq', out_filename, 'fasta')
+    
+    print 'Converted {0} records to file\n{1}'.format(count, out_filename)
+
 if __name__ == '__main__':
     
     datapath = '/space/musselle/datasets/gazellesAndZebras/'
     
     gz2bgzf(None, '*.gz', datapath = datapath + 'lane6/')
     gz2bgzf(None, '*.gz', datapath = datapath + 'lane8/')
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
