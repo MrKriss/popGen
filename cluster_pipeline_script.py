@@ -16,12 +16,19 @@ from filter import setup_filter, filter_reads
 datapath = '/space/musselle/datasets/gazellesAndZebras'
 files = 'testdata_5percent.bgzf'
 
+# Process and Correct MID tag 
+
+
 
 # Set filter
 f = setup_filter({'phred': 15, 'propN': 0.05})
-outdir = 'phredprop_'
+outdir = 'phredprop_testdata005'
 filter_reads(infiles=files, datapath=datapath, outdir=outdir, filterfunc=f)
 
+
+
+
+filtered_file = 'testdata_5percent-pass.bgzf'
 
 
 

@@ -14,7 +14,7 @@ import gzip
 import time
 
 
-def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir='filtered_reads'):
+def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, outdir='filtered_reads'):
     ''' Filter reads based on criteria 
     
     Default is to use Machine Specific read filter, specific to Casava 
@@ -36,8 +36,8 @@ def filter_reads(infiles=None, filetype='', datapath='', filterfunc=None, outdir
          
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.
-    RecCycler1 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
-    RecCycler2 = Cycler(infiles=infiles, filetype=filetype, datapath=datapath)
+    RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, datapath=datapath)
+    RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, datapath=datapath)
 
     if not os.path.isdir('./' + outdir):
         os.mkdir(outdir)

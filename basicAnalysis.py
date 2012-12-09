@@ -14,7 +14,7 @@ from utils.utils import pklsave
 
 from utils.utils import Cycler
 
-def calc_propN_meanphred(infiles = None, filetype = '', datapath = '', 
+def calc_propN_meanphred(infiles = None, filepattern = '', datapath = '', 
                          out_filename='stats', plothist=False, png_filename=''):
     ''' Calculate the proportion of Ns and the mean Phred scores per read for
     the files given. 
@@ -28,7 +28,7 @@ def calc_propN_meanphred(infiles = None, filetype = '', datapath = '',
     
     '''
 
-    RecCycler = Cycler(infiles = infiles, filetype = filetype, datapath = datapath)
+    RecCycler = Cycler(infiles = infiles, filepattern = filepattern, datapath = datapath)
     
     print '\nCalculating Proportion of Ns and Mean Phred Score per read.\n'
     
@@ -127,7 +127,7 @@ def calc_propN_meanphred(infiles = None, filetype = '', datapath = '',
     total_t = time.time() - toc
     print '\nProcessed {0} files in {1}'.format(numfiles, time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
-def calc_readlengths(infiles = None, filetype = '', datapath = '', 
+def calc_readlengths(infiles = None, filepattern = '', datapath = '', 
                      out_filename='stats', plothist=False, png_filename=''):
     ''' Calculate the readlengths per read for
     the files given. 
@@ -141,7 +141,7 @@ def calc_readlengths(infiles = None, filetype = '', datapath = '',
     '''     
     
     #Generator for Sequence Record files
-    RecCycler = Cycler(infiles = infiles, filetype = filetype, datapath = datapath)
+    RecCycler = Cycler(infiles = infiles, filepattern = filepattern, datapath = datapath)
     
     print '\nCalculating length per read ...\n'
     
@@ -221,7 +221,7 @@ def calc_readlengths(infiles = None, filetype = '', datapath = '',
     print 'Processed {0} files in {1}'.format(RecCycler.numfiles, 
                                               time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
-def calc_phredperbase_boxplot(infiles = None, filetype = '', datapath = '', 
+def calc_phredperbase_boxplot(infiles = None, filepattern = '', datapath = '', 
                               saveprefix = '', png_filename=''):
     ''' Find the median, upper and lower quartile for the Phred score per base 
     
@@ -230,7 +230,7 @@ def calc_phredperbase_boxplot(infiles = None, filetype = '', datapath = '',
     Counter dictionary may become standard way to store mass Phred/seq bases data.  '''
     from collections import Counter
 
-    RecCycler = Cycler(infiles = infiles, filetype = filetype, datapath = datapath)
+    RecCycler = Cycler(infiles = infiles, filepattern = filepattern, datapath = datapath)
     
     print '\nCalculating Box plot stats of phred scores per base position.\n'
     
@@ -388,11 +388,11 @@ def plotFTstats(stats, png_filename=''):
     else:
         fig.show()
      
-def getMeanPhredPerBase(infiles = None, filetype = '', datapath = ''):
+def getMeanPhredPerBase(infiles = None, filepattern = '', datapath = ''):
     ''' Find the mean Phred score per base '''
         
     #Generator for Sequence Records
-    RecCycler = Cycler(infiles = infiles, filetype = filetype, datapath = datapath)
+    RecCycler = Cycler(infiles = infiles, filepattern = filepattern, datapath = datapath)
     
     print '\nCalculating mean phred score per base position.\n'
 
@@ -419,17 +419,17 @@ def getMeanPhredPerBase(infiles = None, filetype = '', datapath = ''):
 
 if __name__ == '__main__':
 
-#    calc_propN_meanphred(filetype = '*.idx', datapath = dataLoacation)
-#    calc_readlengths(filetype = '*.idx', datapath = dataLoacation)
+#    calc_propN_meanphred(filepattern = '*.idx', datapath = dataLoacation)
+#    calc_readlengths(filepattern = '*.idx', datapath = dataLoacation)
        
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-#    lane6_PhredAves = getMeanPhredPerBase(filetype = '*.idx', datapath = dataLoacation)
+#    lane6_PhredAves = getMeanPhredPerBase(filepattern = '*.idx', datapath = dataLoacation)
     
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-#    lane6_PhredStats, lane6_PhredCounts = calc_phredperbase_boxplot(filetype = '*.bgzf', datapath = dataLoacation)    
+#    lane6_PhredStats, lane6_PhredCounts = calc_phredperbase_boxplot(filepattern = '*.bgzf', datapath = dataLoacation)    
 #
 #    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane8'
-#    lane8_PhredStats, lane8_PhredCounts = calc_phredperbase_boxplot(filetype = '*.bgzf', datapath = dataLoacation)    
+#    lane8_PhredStats, lane8_PhredCounts = calc_phredperbase_boxplot(filepattern = '*.bgzf', datapath = dataLoacation)    
 #
 #    with open('L6_phredCounts.pkl', 'wb') as f:
 #        pkl.dump(lane6_PhredCounts, f )

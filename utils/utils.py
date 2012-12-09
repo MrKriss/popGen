@@ -28,7 +28,7 @@ class Cycler(object):
     INPUTS
     infiles - Single file as string or list of files to process as strings with
                 full extensions.
-    filetype - if no infiles specified, runs glob on this string pattern in the
+    filepattern - if no infiles specified, runs glob on this string pattern in the
                 path specified by datapath e.g. glob.glob('*.fastq') for all
                 files ending in .fastq
     datapath - directory data files are stored in, will change to this at start
@@ -51,7 +51,7 @@ class Cycler(object):
 
     '''
 
-    def __init__(self, infiles=None, filetype='', datapath='', maxnumseq=None):
+    def __init__(self, infiles=None, filepattern='', datapath='', maxnumseq=None):
         ''' Constructor '''
 
         if datapath:
@@ -61,8 +61,8 @@ class Cycler(object):
         # Handle multiple types of input for infiles
         if not infiles:
             # Fetch files by file types
-            assert filetype, 'No files listed and No file type specified.'
-            infiles = glob.glob(filetype)
+            assert filepattern, 'No files listed and No file type specified.'
+            infiles = glob.glob(filepattern)
         elif type(infiles) == str:
             # Convert to list
             infiles = [infiles]
@@ -186,6 +186,33 @@ def find_numrec(filename):
     process = Popen(cmd, stdout=PIPE, shell=True)
 
     return int(process.communicate()[0].strip())
+
+def make_MIDdict(infiles=None, filepattern=False, datapath=''):
+    ''' Function to load in MIDs from a list of files into a dictionary '''
+    
+    if datapath:
+        os.chdir(datapath)
+  
+    # Handle multiple types of input for infiles
+    assert infiles is not None, 'No files listed or file pattern specified.'         
+    if filepattern:
+        # Fetch files by file types using glob
+        import glob 
+        infiles = glob.glob(infiles)
+    elif type(infiles) == str:
+        # Convert to list
+        infiles = [infiles]
+
+    # Run through files and store barcodes in a Dictionary object.
+    # keys are starting tags (MID (6 BP) + cutsite (6BP))
+    tags = {}
+    
+    for filename in infiles:
+        with open(filename, 'rb') as f:
+            for line in f:
+                elem = line.split()
+                tags[elem[0]] = elem[1] 
+    return tags
 
 if __name__ == '__main__':
     

@@ -7,7 +7,7 @@ Created on 24 Oct 2012
 import os
 from Bio import SeqRecord
 
-def loadIDs(infiles = None, filetype = '', datapath = ''):
+def make_MIDdict(infiles = None, filepattern = '', datapath = ''):
     ''' Function to load in MIDs from a list of files into a dictionary '''
     
     if datapath:
@@ -16,9 +16,9 @@ def loadIDs(infiles = None, filetype = '', datapath = ''):
     # Handle multiple types of input
     if not infiles:
         # Fetch files by file types
-        assert filetype, 'No files listed and No file type specified.'
+        assert filepattern, 'No files listed and No file type specified.'
         import glob
-        infiles = glob.glob(filetype)
+        infiles = glob.glob(filepattern)
     elif type(infiles) == str:
         # Convert to list
         infiles = [infiles]
@@ -32,7 +32,6 @@ def loadIDs(infiles = None, filetype = '', datapath = ''):
             for line in f:
                 elem = line.split()
                 tags[elem[0]] = elem[1] 
-                
     return tags
 
 
@@ -46,6 +45,6 @@ if __name__ == '__main__':
     
     
     datapath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    tags = loadIDs(filetype = '*.txt', datapath = datapath)
+    tags = loadIDs(filepattern = '*.txt', datapath = datapath)
     
     
