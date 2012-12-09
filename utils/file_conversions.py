@@ -144,41 +144,46 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     if not os.path.isdir(outpath):
         os.mkdir(outpath)
  
-    def ok_reads_gen(recgen, keys):
-        ''' Generator to yield reads that pass a quality check or are corrected 
-        sucessfuly.
-        '''
-        ok_reads_gen.skipped_count = 0
-        ok_reads_gen.corrected_count = 0
-        
-        for rec in recgen:
-            recMID = str(rec.seq[:6])
-            if recMID not in MIDdict:
-                # Sequencing error in the tag. Work out nearest candidate.
-                distvec = np.array([ed.distance(recMID, key[:6]) for key in keys]) 
-                min_dist_candidates = [ keys[idx][:6] for idx in np.where(distvec == distvec.min())[0]]
-                if len(min_dist_candidates) > 1:
-                    # Muliple candidates. True MID is Ambiguous 
-#                    print ('Multiple minimum distances. ' 
-#                    'MID could not be resolved between\n{0}' 
-#                    '  and \n{1}').format(recMID, min_dist_candidates)
-#                    print 'Skipping read.'
-                    ok_reads_gen.skipped_count += 1
-                    continue
-                elif len(min_dist_candidates) == 1:
-                    # Correct the erroneous tag with the candidate.
-                    # Letter annotations must be removed before editing seq.
-                    temp_var = rec.letter_annotations
-                    rec.letter_annotations = {}
-                    # Change seq to mutableseq
-                    rec.seq = rec.seq.tomutable()
-                    rec.seq[:6] = min_dist_candidates[0]
-                    rec.seq = rec.seq.toseq()
-                    rec.letter_annotations.update(temp_var)
-                    ok_reads_gen.corrected_count += 1
-                    
-            yield rec
-        
+    class Read_Corrector_Class():
+    
+        def __init__(self):
+            ''' Class for a Generator to yield reads that pass a quality check or are corrected 
+            
+            Keeps track of number of skipped and corrected reads as class attributes.
+            '''
+            self.skipped_count = 0
+            self.corrected_count = 0
+    
+        def ok_reads_gen(self, recgen, keys):
+            
+            for rec in recgen:
+                recMID = str(rec.seq[:6])
+                if recMID not in MIDdict:
+                    # Sequencing error in the tag. Work out nearest candidate.
+                    distvec = np.array([ed.distance(recMID, key[:6]) for key in keys]) 
+                    min_dist_candidates = [ keys[idx][:6] for idx in np.where(distvec == distvec.min())[0]]
+                    if len(min_dist_candidates) > 1:
+                        # Muliple candidates. True MID is Ambiguous 
+    #                    print ('Multiple minimum distances. ' 
+    #                    'MID could not be resolved between\n{0}' 
+    #                    '  and \n{1}').format(recMID, min_dist_candidates)
+    #                    print 'Skipping read.'
+                        self.skipped_count += 1
+                        continue
+                    elif len(min_dist_candidates) == 1:
+                        # Correct the erroneous tag with the candidate.
+                        # Letter annotations must be removed before editing seq.
+                        temp_var = rec.letter_annotations
+                        rec.letter_annotations = {}
+                        # Change seq to mutableseq
+                        rec.seq = rec.seq.tomutable()
+                        rec.seq[:6] = min_dist_candidates[0]
+                        rec.seq = rec.seq.toseq()
+                        rec.letter_annotations.update(temp_var)
+                        self.corrected_count += 1
+                        
+                yield rec
+            
     # main loop
     total_numwritten = 0
     total_numskipped = 0
@@ -187,8 +192,8 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     cum_t = 0
     for seqfile in RecCycler.seqfilegen:
             
-        # Make reads generator
-        ok_reads = ok_reads_gen(seqfile, keys)
+        # Make reads class for generator
+        ReadCorrector = Read_Corrector_Class()
         
         # Set output filename and handle
         filename = RecCycler.curfilename
@@ -201,13 +206,13 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         if os.getcwd() != outpath:
             os.chdir(outpath)
         
-        numwritten = SeqIO.write(ok_reads, output_filehdl, 'fastq')
+        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), output_filehdl, 'fastq')
         print '{0} records written, of which \
-        {1} were corrected'.format(numwritten, ok_reads.corrected_count)
+        {1} were corrected'.format(numwritten, ReadCorrector.corrected_count)
         total_numwritten += numwritten
-        total_numcorrected += ok_reads.corrected_count
-        print '{0} records skipped'.format(ok_reads.skipped_count)
-        total_numskipped += ok_reads.skipped_count
+        total_numcorrected += ReadCorrector.corrected_count
+        print '{0} records skipped'.format(ReadCorrector.skipped_count)
+        total_numskipped += ReadCorrector.skipped_count
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
         print 'Finished {0} after {1}'.format(filename, 
@@ -215,8 +220,8 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
 
     print 'Total records written: {0}'.format(numwritten)
     total_numwritten += numwritten
-    print 'Total records skipped: {0}'.format(ok_reads.skipped_count)
-    total_numskipped += ok_reads.skipped_count
+    print 'Total records skipped: {0}'.format(ReadCorrector.skipped_count)
+    total_numskipped += ReadCorrector.skipped_count
     print 'Total of {0} tags corrected.'.format(total_numcorrected)
             
     total_t = time.time() - toc    
