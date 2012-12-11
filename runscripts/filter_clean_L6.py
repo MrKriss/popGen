@@ -17,27 +17,30 @@ from utils.file_conversions import process_MIDtag
 ''' RUNS SCRIPT FOR ALLL READS IN LANE 6 '''
 #===============================================================================
 
-starting_dir = os.getcwd()
+#starting_dir = os.getcwd()
+#
+## Set paths and file patterns 
+#datapath = '/space/musselle/datasets/gazellesAndZebras/lane6'
+#barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+#os.chdir(datapath)
+#raw_files = glob.glob('*[0-9].fastq.bgzf')
+#raw_files.sort()
+#
+##===============================================================================
+## Setup and run filter
+##===============================================================================
+#f = setup_filter({'phred': 20, 'propN': 0.10})
+#outdir = 'L6_phredprop_filtered'
+#filter_reads(infiles=raw_files, filepattern=True, 
+#             datapath=datapath, outdir=outdir, filterfunc=f)
 
-# Set paths and file patterns 
-datapath = '/space/musselle/datasets/gazellesAndZebras/lane6'
-barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-os.chdir(datapath)
-raw_files = glob.glob('*[0-9].fastq.bgzf')
-raw_files.sort()
-
-#===============================================================================
-# Setup and run filter
-#===============================================================================
-f = setup_filter({'phred': 20, 'propN': 0.10})
-outdir = 'L6_phredprop_filtered'
-filter_reads(infiles=raw_files, filepattern=True, 
-             datapath=datapath, outdir=outdir, filterfunc=f)
 # Update names and path
 filtered_files = []
 for name in raw_files:
     temp = name.split('.')
-    filtered_files.append(temp[0] + '-pass' + temp[1:])
+    temp[0] = temp[0] + '-pass'
+    temp = '.'.join(temp) 
+    filtered_files.append(temp)
 filtered_datapath = datapath + '/' + outdir
 
 #===============================================================================
@@ -52,7 +55,9 @@ process_MIDtag(infiles=raw_files, barcodes='*[6].txt', barcode_pattern=True,
 cleaned_files = []
 for name in raw_files:
     temp = name.split('.')
-    cleaned_files.append(temp[0] + cleaned_file_postfix + temp[1:]) 
+    temp[0] = temp[0] + cleaned_file_postfix
+    temp = '.'.join(temp) 
+    cleaned_files.append(temp) 
 cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
 
 #===============================================================================
