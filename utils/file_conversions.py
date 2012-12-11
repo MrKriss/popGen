@@ -137,7 +137,8 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, datapath=datapath)
     
-    keys = sorted(MIDdict.keys())
+    keys = [key[:6] for key in MIDdict.iterkeys()]
+    keys.sort()
     
     # Make ouput directory if required
     outpath = datapath + '/' + outdir
@@ -158,10 +159,10 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
             
             for rec in recgen:
                 recMID = str(rec.seq[:6])
-                if recMID not in MIDdict:
+                if recMID not in keys:
                     # Sequencing error in the tag. Work out nearest candidate.
-                    distvec = np.array([ed.distance(recMID, key[:6]) for key in keys]) 
-                    min_dist_candidates = [ keys[idx][:6] for idx in np.where(distvec == distvec.min())[0]]
+                    distvec = np.array([ed.distance(recMID, key) for key in keys]) 
+                    min_dist_candidates = [keys[idx] for idx in np.where(distvec == distvec.min())[0]]
                     if len(min_dist_candidates) > 1:
                         # Muliple candidates. True MID is Ambiguous 
     #                    print ('Multiple minimum distances. ' 
@@ -206,9 +207,10 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         if os.getcwd() != outpath:
             os.chdir(outpath)
         
-        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), output_filehdl, 'fastq')
-        print '{0} records written, of which \
-        {1} were corrected'.format(numwritten, ReadCorrector.corrected_count)
+        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
+                                 output_filehdl, 'fastq')
+        print ('{0} records written, of which ' 
+        '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
         total_numwritten += numwritten
         total_numcorrected += ReadCorrector.corrected_count
         print '{0} records skipped'.format(ReadCorrector.skipped_count)
