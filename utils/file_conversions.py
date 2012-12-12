@@ -220,10 +220,8 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         print 'Finished {0} after {1}'.format(filename, 
                         time.strftime('%H:%M:%S', time.gmtime(loop_t)))
 
-    print 'Total records written: {0}'.format(numwritten)
-    total_numwritten += numwritten
-    print 'Total records skipped: {0}'.format(ReadCorrector.skipped_count)
-    total_numskipped += ReadCorrector.skipped_count
+    print 'Total records written: {0}'.format(total_numwritten)
+    print 'Total records skipped: {0}'.format(total_numskipped)
     print 'Total of {0} tags corrected.'.format(total_numcorrected)
             
     total_t = time.time() - toc    

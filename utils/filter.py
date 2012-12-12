@@ -131,7 +131,7 @@ def setup_filter(target_dict):
             def f(rec):
                 ''' filter function fro phred and propN'''
                 A = np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
-                B = float(rec.seq.count('N')) / len(rec.seq) > target_dict['propN']
+                B = float(rec.seq.count('N')) / len(rec.seq) < target_dict['propN']
                 return A and B
             return f
         else:
