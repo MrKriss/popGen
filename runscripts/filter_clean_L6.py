@@ -11,16 +11,19 @@ import matplotlib.pyplot as plt
 import glob
 
 from utils.filter import setup_filter, filter_reads
-from utils.file_conversions import process_MIDtag
+from utils.file_conversions import process_MIDtag, reads2fasta
+from utils.cluster import cluster_cdhit, summary
 
 #==============================================================================
 ''' RUNS SCRIPT FOR ALLL READS IN LANE 6 '''
 #===============================================================================
 
+LANE = '6'
+
 starting_dir = os.getcwd()
 
 # Set paths and file patterns 
-datapath = '/space/musselle/datasets/gazellesAndZebras/lane6'
+datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
 barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
 os.chdir(datapath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
@@ -47,10 +50,12 @@ filtered_datapath = datapath + '/' + outdir
 # Process and Correct MID tag 
 #===============================================================================
 cleaned_file_postfix = '-clean' 
-cleaned_outdir = '-cleaned_data'
-process_MIDtag(infiles=filtered_files, barcodes='*[6].txt', barcode_pattern=True,
-               datapath=filtered_datapath, barcode_path=barpath, 
-               outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir)
+cleaned_outdir = 'cleaned_data'
+barcode_pattern = '*[' + LANE + '].txt'
+process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
+               barcode_pattern=True, datapath=filtered_datapath, 
+               barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
+               outdir=cleaned_outdir)
 # Update names and path
 cleaned_files = []
 for name in filtered_files:
@@ -63,12 +68,19 @@ cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
 #===============================================================================
 # Cluster Data 
 #===============================================================================
+allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
+reads2fasta(infiles=cleaned_files, datapath=cleaned_datapath, outfile=allreads_file)
 
+# Variables 
+c_thresh = 0.9
+n_filter = 8
 
+clustered_file = 'lane' + LANE + 'clustered_reads'
+cluster_cdhit(infile=allreads_file, outfile=clustered_file,
+              c_thresh=c_thresh, n_filter=n_filter)
 
-
-
-
+# Display Summary
+summary(clustered_file)
 
 
 

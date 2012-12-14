@@ -10,6 +10,7 @@ from Bio import SeqIO, bgzf
 import time
 from utils import smartopen, Cycler, make_MIDdict
 
+from subprocess import Popen
 import numpy as np
 
 
@@ -105,21 +106,35 @@ def file2fasta(filename):
     
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
-def reads2fasta(infiles=None, filepattern=False, datapath=''):
-    '''Writes the reads (without the MID tag) to a fasta file for clustering'''
+def reads2fasta(infiles=None, filepattern=False, datapath='', 
+                outfile='outfile.fasta'):
+    '''Writes the reads (without the MID tag) to one large fasta file 
+    for clustering'''
     
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, datapath=datapath)
+    count = 0
+    outfile_part_list = []
 
 
+    print ('Removing MID tags and converting {0} files to'
+           ' fasta format').format(RecCycler.numfiles)
 
+    # Generator to trip off tag.
+    for seqfilegen in RecCycler.seqfilegen:
+        
+        read_gen = (rec[12:] for rec in seqfilegen)
+        # File name 
+        outfile_part = 'output_part' + str(count) + '.fasta'
+        outfile_part_list.append(outfile_part)
+        count += 1
+        with open(outfile_part, 'wb') as f:
+            write_count = SeqIO.write(read_gen, f, 'fasta')
+            print 'Wrote {0} records to file\n{1}'.format(count, outfile_part)
     
-    handle = smartopen(filename)
-    out_filename = filename.split('.')[0] + '.fasta'
-    
-    count = SeqIO.convert(handle, 'fastq', out_filename, 'fasta')
-    
-    print 'Converted {0} records to file\n{1}'.format(count, out_filename)
+    # Combine output parts into one big file
+    cmd = ['cat'] + outfile_part_list + ['>', outfile]
+    Popen(cmd, shell=True)      
 
 
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
@@ -133,6 +148,10 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     # Construct Tag dictionary
     MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
                            datapath=barcode_path)
+    
+    if datapath and os.getcwd() != datapath:
+            os.chdir(datapath)
+            
     # Setup Record Cycler
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, datapath=datapath)
@@ -200,15 +219,18 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         filename = RecCycler.curfilename
         filename = filename.split('.')
         filename[0] = filename[0] + outfile_postfix
-        filename = ''.join(filename)
+        filename = '.'.join(filename)
         output_filename = filename
-        output_filehdl = bgzf.BgzfWriter(output_filename, mode='w')
+        output_filehdl = bgzf.BgzfWriter(output_filename, mode='wb')
                    
         if os.getcwd() != outpath:
             os.chdir(outpath)
         
+        print 'In {0}'.format(os.getcwd())
         numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
                                  output_filehdl, 'fastq')
+        print 'Now In {0}'.format(os.getcwd())
+
         print ('{0} records written, of which ' 
         '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
         total_numwritten += numwritten
