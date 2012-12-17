@@ -13,7 +13,6 @@ import gzip
 import numpy as np
 from Bio import SeqIO
 
-
 class Cycler(object):
     ''' Object to hold generators that yield Sequence record objects or
     generators for all sequences records from the given file list
@@ -55,7 +54,9 @@ class Cycler(object):
         ''' Constructor '''
 
         if datapath:
-            os.chdir(datapath)
+            if datapath not in sys.path:
+                sys.path.insert(0, datapath)
+
         self.datapath = datapath
          
         # Handle multiple types of input for infiles
@@ -88,9 +89,6 @@ class Cycler(object):
         ''' Constructs the next file generator object '''
         # Generic file handling code
         for filenum, filename in enumerate(infiles):
-
-            if self.datapath and os.getcwd() != self.datapath:
-                os.chdir(self.datapath)
 
             self.curfilenum = filenum
             self.curfilename = filename
@@ -133,7 +131,6 @@ class Cycler(object):
             for rec_file in self.seqfilegen:
                 for record in rec_file:
                     yield record
-        
 
 def pklsave(obj, filename):
     ''' Pickle the given object '''

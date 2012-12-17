@@ -250,24 +250,206 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
             
+
+def process_MIDtag2(infiles=None, barcodes=None, filepattern=False, 
+                   barcode_pattern=False, datapath='', barcode_path='',
+                   outfile_postfix='-clean', outdir='cleaned_data'):
+    ''' Goes through fastq files and corrects any errors in MIDtag 
+    
+    This version writes to fasta files, not compressed with bgzf. 
+    
+    '''
+    import editdist as ed
+
+    # Construct Tag dictionary
+    MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
+                           datapath=barcode_path)
+            
+    # Setup Record Cycler
+    RecCycler = Cycler(infiles=infiles, 
+                       filepattern=filepattern, datapath=datapath)
+    
+    keys = [key[:6] for key in MIDdict.iterkeys()]
+    keys.sort()
+    
+    # Make ouput directory if required
+    outpath = datapath + '/' + outdir
+    if not os.path.isdir(outpath):
+        os.mkdir(outpath)
+ 
+    class Read_Corrector_Class():
+    
+        def __init__(self):
+            ''' Class for a Generator to yield reads that pass a quality check or are corrected 
+            
+            Keeps track of number of skipped and corrected reads as class attributes.
+            '''
+            self.skipped_count = 0
+            self.corrected_count = 0
+    
+        def ok_reads_gen(self, recgen, keys):
+            
+            for rec in recgen:
+                recMID = str(rec.seq[:6])
+                if recMID not in keys:
+                    # Sequencing error in the tag. Work out nearest candidate.
+                    distvec = np.array([ed.distance(recMID, key) for key in keys]) 
+                    min_dist_candidates = [keys[idx] for idx in np.where(distvec == distvec.min())[0]]
+                    if len(min_dist_candidates) > 1:
+                        # Muliple candidates. True MID is Ambiguous 
+    #                    print ('Multiple minimum distances. ' 
+    #                    'MID could not be resolved between\n{0}' 
+    #                    '  and \n{1}').format(recMID, min_dist_candidates)
+    #                    print 'Skipping read.'
+                        self.skipped_count += 1
+                        continue
+                    elif len(min_dist_candidates) == 1:
+                        # Correct the erroneous tag with the candidate.
+                        # Letter annotations must be removed before editing seq.
+                        temp_var = rec.letter_annotations
+                        rec.letter_annotations = {}
+                        # Change seq to mutableseq
+                        rec.seq = rec.seq.tomutable()
+                        rec.seq[:6] = min_dist_candidates[0]
+                        rec.seq = rec.seq.toseq()
+                        rec.letter_annotations.update(temp_var)
+                        self.corrected_count += 1
+                        
+                yield rec
+            
+    # main loop
+    total_numwritten = 0
+    total_numskipped = 0
+    total_numcorrected = 0
+    toc = time.time()
+    cum_t = 0
+    for seqfile in RecCycler.seqfilegen:
+            
+        # Make reads class for generator
+        ReadCorrector = Read_Corrector_Class()
+        
+        # Set output filename and handle
+        filename = RecCycler.curfilename
+        filename = filename.split('.')
+        filename[0] = filename[0] + outfile_postfix
+        
+        if filename.endswith('bgzf'):
+            output_filename = '.'.join(filename[:-1] + ['fastq'])
+        
+        if os.getcwd() != outpath:
+            os.chdir(outpath)
+        
+#        output_filehdl = bgzf.BgzfWriter(output_filename, mode='wb')
+        output_filehdl = open(output_filename, mode='wb')
+        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
+                                 output_filehdl, 'fastq')
+        output_filehdl.close()
+
+        print ('{0} records written, of which ' 
+        '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
+        total_numwritten += numwritten
+        total_numcorrected += ReadCorrector.corrected_count
+        print '{0} records skipped'.format(ReadCorrector.skipped_count)
+        total_numskipped += ReadCorrector.skipped_count
+        loop_t = time.time() - toc - cum_t
+        cum_t += loop_t
+        print 'Finished {0} after {1}'.format(filename, 
+                        time.strftime('%H:%M:%S', time.gmtime(loop_t)))
+
+    print 'Total records written: {0}'.format(total_numwritten)
+    print 'Total records skipped: {0}'.format(total_numskipped)
+    print 'Total of {0} tags corrected.'.format(total_numcorrected)
+            
+    total_t = time.time() - toc    
+    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+                                                        time.gmtime(total_t)))
+            
                 
 if __name__ == '__main__':
     
-    datapath = '/space/musselle/datasets/gazellesAndZebras/testdata'
-    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    
-    files_test = 'testdata_1percent.bgzf'
+#===========================================================================
+# Test for functions
+#===========================================================================
+#    datapath = '/space/musselle/datasets/gazellesAndZebras/testdata'
+#    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+#    
+#    files_test = 'testdata_1percent.bgzf'
     
 #    files_L6 = 'lane6_NoIndex_L006_R1_001.fastq.bgzf'
 #    files_L8 = 'lane8_NoIndex_L006_R1_001.fastq.bgzf'
 #    
-    process_MIDtag(infiles=files_test, barcodes='*.txt', 
-                   barcode_pattern=True, datapath=datapath, 
-                   barcode_path=barpath)
-    
-    
 #    gz2bgzf(None, '*.gz', datapath = datapath + 'lane6/')
 #    gz2bgzf(None, '*.gz', datapath = datapath + 'lane8/')
+    
+#    process_MIDtag2(infiles=files_test, barcodes='*.txt', 
+#                   barcode_pattern=True, datapath=datapath, 
+#                   barcode_path=barpath)
+    
+#===============================================================================
+# Run Process MID Tags on all data 
+#===============================================================================
+    
+    import glob
+    from utils.cluster import cluster_cdhit, summary
+    
+    LANE = '6'
+    starting_dir = os.getcwd()
+
+    # Set paths and file patterns 
+    datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+    os.chdir(datapath)
+#    raw_files = glob.glob('*[0-9].fastq.bgzf')
+#    raw_files.sort()
+    
+    raw_files = 'lane6_NoIndex_L006_R1_001-pass.fastq.bgzf'
+    
+    outdir = 'L6_phredprop_filtered'
+
+    # Update names and path
+    filtered_files = []
+    for name in raw_files:
+        temp = name.split('.')
+        temp[0] = temp[0] + '-pass'
+        temp = '.'.join(temp) 
+        filtered_files.append(temp)
+    filtered_datapath = datapath + '/' + outdir
+    
+    cleaned_file_postfix = '-clean' 
+    cleaned_outdir = 'cleaned_data'
+    barcode_pattern = '*[' + LANE + '].txt'
+    
+    process_MIDtag2(infiles=filtered_files, barcodes=barcode_pattern,
+               barcode_pattern=True, datapath=filtered_datapath, 
+               barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
+               outdir=cleaned_outdir)
+    
+    # Update names and path
+    cleaned_files = []
+    for name in filtered_files:
+        temp = name.split('.')
+        temp[0] = temp[0] + cleaned_file_postfix
+        temp = '.'.join(temp) 
+        cleaned_files.append(temp) 
+    cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
+    
+    #===============================================================================
+    # Cluster Data 
+    #===============================================================================
+    allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
+    reads2fasta(infiles=cleaned_files, datapath=cleaned_datapath, outfile=allreads_file)
+    
+    # Variables 
+    c_thresh = 0.9
+    n_filter = 8
+    
+    clustered_file = 'lane' + LANE + 'clustered_reads'
+    cluster_cdhit(infile=allreads_file, outfile=clustered_file,
+                  c_thresh=c_thresh, n_filter=n_filter)
+    
+    # Display Summary
+    summary(clustered_file)
+    
 
 
 
