@@ -343,6 +343,7 @@ def process_MIDtag2(infiles=None, barcodes=None, filepattern=False,
         output_filehdl = open(output_filename, mode='wb')
         numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
                                  output_filehdl, 'fastq')
+        output_filehdl.flush()
         output_filehdl.close()
 
         print ('{0} records written, of which ' 
