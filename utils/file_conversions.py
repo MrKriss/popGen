@@ -333,7 +333,7 @@ def process_MIDtag2(infiles=None, barcodes=None, filepattern=False,
         filename = filename.split('.')
         filename[0] = filename[0] + outfile_postfix
         
-        if filename.endswith('bgzf'):
+        if filename[-1] == 'bgzf':
             output_filename = '.'.join(filename[:-1] + ['fastq'])
         
         if os.getcwd() != outpath:
