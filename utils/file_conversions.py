@@ -402,7 +402,7 @@ if __name__ == '__main__':
 #    raw_files = glob.glob('*[0-9].fastq.bgzf')
 #    raw_files.sort()
     
-    raw_files = 'lane6_NoIndex_L006_R1_001-pass.fastq.bgzf'
+    raw_files = ['lane6_NoIndex_L006_R1_001.fastq.bgzf']
     
     outdir = 'L6_phredprop_filtered'
 
