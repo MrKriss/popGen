@@ -134,6 +134,7 @@ def reads2fasta(infiles=None, filepattern=False, datapath='',
     
     # Combine output parts into one big file
     cmd = ['cat'] + outfile_part_list + ['>', outfile]
+    print 'Running {0}'.format(cmd)
     Popen(cmd, shell=True)      
 
 
@@ -226,10 +227,10 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         if os.getcwd() != outpath:
             os.chdir(outpath)
         
-        print 'In {0}'.format(os.getcwd())
         numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
                                  output_filehdl, 'fastq')
-        print 'Now In {0}'.format(os.getcwd())
+        output_filehdl.flush()        
+        output_filehdl.close()        
 
         print ('{0} records written, of which ' 
         '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
@@ -333,9 +334,13 @@ def process_MIDtag2(infiles=None, barcodes=None, filepattern=False,
         filename = filename.split('.')
         filename[0] = filename[0] + outfile_postfix
         
+        # Replace postfix
         if filename[-1] == 'bgzf':
-            output_filename = '.'.join(filename[:-1] + ['fastq'])
-        
+            if filename[-2] == 'fastq':
+                output_filename = '.'.join(filename[:-1])
+            else:    
+                output_filename = '.'.join(filename[:-1] + ['fastq'])
+                
         if os.getcwd() != outpath:
             os.chdir(outpath)
         
@@ -420,7 +425,7 @@ if __name__ == '__main__':
     cleaned_outdir = 'cleaned_data'
     barcode_pattern = '*[' + LANE + '].txt'
     
-    process_MIDtag2(infiles=filtered_files, barcodes=barcode_pattern,
+    process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
                barcode_pattern=True, datapath=filtered_datapath, 
                barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
                outdir=cleaned_outdir)
