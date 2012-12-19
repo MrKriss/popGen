@@ -396,7 +396,7 @@ if __name__ == '__main__':
 #===============================================================================
     
     import glob
-    from utils.cluster import cluster_cdhit, summary
+    from cluster import cluster_cdhit, summary
     
     LANE = '6'
     starting_dir = os.getcwd()
