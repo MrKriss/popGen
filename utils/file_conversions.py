@@ -266,6 +266,9 @@ def process_MIDtag2(infiles=None, barcodes=None, filepattern=False,
     MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
                            datapath=barcode_path)
             
+    if datapath and os.getcwd() != datapath:
+        os.chdir(datapath)
+            
     # Setup Record Cycler
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, datapath=datapath)
