@@ -106,16 +106,15 @@ def file2fasta(filename):
     
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
-def reads2fasta(infiles=None, filepattern=False, datapath='', 
-                outfile='outfile.fasta'):
+def reads2fasta(infiles=None, filepattern=False, inpath='', 
+                outfile='outfile.fasta', outpath = ''):
     '''Writes the reads (without the MID tag) to one large fasta file 
     for clustering'''
     
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, datapath=datapath)
+                       filepattern=filepattern, datapath=inpath)
     count = 0
     outfile_part_list = []
-
 
     print ('Removing MID tags and converting {0} files to'
            ' fasta format').format(RecCycler.numfiles)
@@ -128,15 +127,16 @@ def reads2fasta(infiles=None, filepattern=False, datapath='',
         outfile_part = 'output_part' + str(count) + '.fasta'
         outfile_part_list.append(outfile_part)
         count += 1
-        with open(outfile_part, 'wb') as f:
+        with open(os.path.join(outpath, outfile_part), 'wb') as f:
             write_count = SeqIO.write(read_gen, f, 'fasta')
             print 'Wrote {0} records to file\n{1}'.format(count, outfile_part)
     
     # Combine output parts into one big file
-    cmd = ['cat'] + outfile_part_list + ['>', outfile]
-    print 'Running {0}'.format(cmd)
-    Popen(cmd, shell=True)      
-
+    cmd = ['cat'] + outfile_part_list 
+    with open(os.path.join(outpath, outfile), 'wb') as f:
+        print 'Running {0}'.format(cmd)
+        Popen(cmd, shell=True, stdout=f) 
+        print 'Done'         
 
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
                    barcode_pattern=False, datapath='', barcode_path='',
@@ -527,4 +527,3 @@ if __name__ == '__main__':
     
     # Display Summary
     summary(clustered_file)
-    

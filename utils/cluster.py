@@ -9,6 +9,7 @@ import sys
 import numpy as np 
 import matplotlib.pyplot as plt
 from subprocess import Popen, PIPE
+import shlex
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, maskN=True):
     ''' Run CD-HIT in parallel on one large fasta file'''
@@ -22,7 +23,7 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, maskN=True):
            ' --L 1 --S 64 --P "cd-hit-est"').format(infile, outfile, 
                                                   c_thresh, n_filter)
 
-    Popen(cmd, shell=True)
+    Popen(shlex.split(cmd), shell=True)
 
 def summary(infile, cluster_sizes=None, seq_lengths=None):
     ''' Display summary of cluster sizes '''
@@ -36,7 +37,7 @@ def summary(infile, cluster_sizes=None, seq_lengths=None):
     
     cmd = 'plot_len.pl {0} {1} {2}'.format(infile, cluster_sizes, seq_lengths)
     
-    process = Popen(cmd, stdout=PIPE, shell=True)
+    process = Popen(shlex.split(cmd), stdout=PIPE, shell=True)
     
     output = process.communicate()[0]
     print output 
