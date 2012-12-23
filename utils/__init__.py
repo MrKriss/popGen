@@ -210,10 +210,7 @@ def find_numrec(filename):
 
 def make_MIDdict(infiles=None, filepattern=False, datapath=''):
     ''' Function to load in MIDs from a list of files into a dictionary '''
-    
-    if datapath:
-        os.chdir(datapath)
-  
+
     # Handle multiple types of input for infiles
     assert infiles is not None, 'No files listed or file pattern specified.'         
     if filepattern:
@@ -229,7 +226,7 @@ def make_MIDdict(infiles=None, filepattern=False, datapath=''):
     tags = {}
     
     for filename in infiles:
-        with open(filename, 'rb') as f:
+        with open(os.path.join(datapath,filename), 'rb') as f:
             for line in f:
                 elem = line.split()
                 tags[elem[0]] = elem[1] 
