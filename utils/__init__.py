@@ -216,7 +216,10 @@ def make_MIDdict(infiles=None, filepattern=False, datapath=''):
     if filepattern:
         # Fetch files by file types using glob
         import glob 
+        st_dir = os.getcwd()
+        os.chdir(datapath)
         infiles = glob.glob(infiles)
+        os.chdir(st_dir)
     elif type(infiles) == str:
         # Convert to list
         infiles = [infiles]
