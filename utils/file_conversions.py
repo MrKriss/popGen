@@ -528,8 +528,3 @@ if __name__ == '__main__':
     # Display Summary
     summary(clustered_file)
     
-    
-
-
-
-
