@@ -13,7 +13,6 @@ import gzip
 import numpy as np
 from Bio import SeqIO
 
-
 class Cycler(object):
     ''' Object to hold generators that yield Sequence record objects or
     generators for all sequences records from the given file list
@@ -51,19 +50,21 @@ class Cycler(object):
 
     '''
 
-    def __init__(self, infiles=None, filepattern=False, datapath='', maxnumseq=None):
+    def __init__(self, infiles=None, filepattern='', datapath='', maxnumseq=None):
         ''' Constructor '''
 
-        if datapath:
-            os.chdir(datapath)
+#        if datapath:
+#            if datapath not in sys.path:
+#                sys.path.insert(0, datapath)
+        
+        # Remember datapath 
         self.datapath = datapath
          
         # Handle multiple types of input for infiles
-        assert infiles is not None, 'No files listed or file pattern specified.' 
-        
-        if filepattern:
-            # Fetch files by file types using glob 
-            infiles = glob.glob(infiles)
+        if not infiles:
+            # Fetch files by file types
+            assert filepattern, 'No files listed and No file type specified.'
+            infiles = glob.glob(filepattern)
         elif type(infiles) == str:
             # Convert to list
             infiles = [infiles]
@@ -73,10 +74,12 @@ class Cycler(object):
             print f
 
         self.numfiles = len(infiles)
+        
+        # Max number of record to run the generator for (default = all)
         self.maxnumseq = maxnumseq
 
-        '''May need to process files individually or all at once, so two types
-        of generators needed'''
+        ''' May need to process files individually or all at once, so two types
+        of generators needed '''
         # Generator that yields a sequence record iterator (generator)
         # for the next file in the list
         self.seqfilegen = self.__init_files_gen(infiles)
@@ -90,11 +93,10 @@ class Cycler(object):
         # Generic file handling code
         for filenum, filename in enumerate(infiles):
 
-            if self.datapath and os.getcwd() != self.datapath:
-                os.chdir(self.datapath)
-
             self.curfilenum = filenum
             self.curfilename = filename
+
+            next_data_file_loc = os.path.join(self.datapath, filename)
 
             # Check file extensions
             if filename.endswith('.idx'):
@@ -109,10 +111,11 @@ class Cycler(object):
             elif (filename.endswith('.gz') or filename.endswith('.bgzf') or
                                             filename.endswith('.fastq')):
                 try:
-                    yield SeqIO.parse(smartopen(filename), format='fastq')
+                    yield SeqIO.parse(smartopen(next_data_file_loc), format='fastq')
                 except IOError as e:
                     print e
-                    raise Exception('Invalid file name, or {0} may not exist.'.format(filename))
+                    raise Exception(('Invalid file name {0},'
+                     ' or path {1} may not exist.').format(filename, next_data_file_loc))
             else:
                 print 'File extension for {0} currently unsupported.'.format(filename) 
                 print 'Accepted formats for cycling through all records = .gz .bgzf and .fastq'
@@ -134,7 +137,24 @@ class Cycler(object):
             for rec_file in self.seqfilegen:
                 for record in rec_file:
                     yield record
-        
+
+import string
+def search_file(filename, search_path, pathsep=os.pathsep):
+    """ Given a search path, find file with requested name """
+    for path in string.split(search_path, pathsep):
+        candidate = os.path.join(path, filename)
+        if os.path.exists(candidate): return os.path.abspath(candidate)
+    return None
+
+#if _ _name_ _ == '_ _ _main_ _':
+#    search_path = '/bin' + os.pathsep + '/usr/bin'  # ; on Windows, : on Unix
+#    find_file = search_file('ls',search_path)
+#    if find_file:
+#        print "File found at %s" % find_file
+#    else:
+#        print "File not found"
+
+
 
 def pklsave(obj, filename):
     ''' Pickle the given object '''
@@ -195,10 +215,10 @@ def make_MIDdict(infiles=None, filepattern=False, datapath=''):
         os.chdir(datapath)
   
     # Handle multiple types of input for infiles
-    assert infiles is not None, 'No files listed or file pattern specified.' 
-    
+    assert infiles is not None, 'No files listed or file pattern specified.'         
     if filepattern:
-        # Fetch files by file types using glob 
+        # Fetch files by file types using glob
+        import glob 
         infiles = glob.glob(infiles)
     elif type(infiles) == str:
         # Convert to list
