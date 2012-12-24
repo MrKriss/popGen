@@ -522,8 +522,7 @@ if __name__ == '__main__':
     n_filter = 8
     
     clustered_file = 'lane' + LANE + 'clustered_reads'
-    cluster_cdhit(infile=allreads_file, outfile=clustered_file,
-                  c_thresh=c_thresh, n_filter=n_filter)
+    cluster_cdhit(infile=allreads_file, outfile=clustered_file, c_thresh=c_thresh, n_filter=n_filter)
     
     # Display Summary
     summary(clustered_file)

@@ -15,10 +15,10 @@ from file_conversions import process_MIDtag, reads2fasta
 from cluster import cluster_cdhit, summary
 
 #==============================================================================
-''' RUNS SCRIPT FOR ALLL READS IN LANE 6 '''
+''' RUNS SCRIPT FOR ALLL READS IN LANE 8 '''
 #===============================================================================
 
-LANE = '6'
+LANE = '8'
 
 starting_dir = os.getcwd()
 
