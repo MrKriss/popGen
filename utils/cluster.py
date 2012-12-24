@@ -8,7 +8,7 @@ import sys
 
 import numpy as np 
 import matplotlib.pyplot as plt
-from subprocess import sub
+import subprocess as sub
 import shlex
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, maskN=True):
