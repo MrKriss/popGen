@@ -10,7 +10,7 @@ from Bio import SeqIO, bgzf
 import time
 from utils import smartopen, Cycler, make_MIDdict
 
-from subprocess import Popen
+from subprocess import call
 import numpy as np
 
 
@@ -134,8 +134,8 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
     # Combine output parts into one big file
     cmd = ['cat'] + outfile_part_list 
     with open(os.path.join(outpath, outfile), 'wb') as f:
-        print 'Running {0}'.format(cmd)
-        Popen(cmd, shell=True, stdout=f) 
+        print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
+        call(cmd, stdout=f) 
         print 'Done'         
 
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
