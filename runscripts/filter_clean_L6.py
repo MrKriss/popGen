@@ -69,7 +69,7 @@ cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
 # Cluster Data 
 #===============================================================================
 allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-reads2fasta(infiles=cleaned_files, datapath=cleaned_datapath, outfile=allreads_file)
+reads2fasta(infiles=cleaned_files, inpath=cleaned_datapath, outfile=allreads_file)
 
 # Variables 
 c_thresh = 0.9
