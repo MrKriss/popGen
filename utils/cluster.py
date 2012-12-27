@@ -17,6 +17,20 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, maskN=True):
     cd_hit_path = '/home/pgrad/musselle/ubuntu/bin/cd-hit-v4.6.1/'
     
     if maskN:
+        cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3}'
+              ' -mask N').format(infile, outfile, c_thresh, n_filter)
+    else: 
+        cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3}'
+                '').format(infile, outfile, c_thresh, n_filter)
+
+    sub.call(shlex.split(cd_hit_path + cmd))
+
+def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
+    ''' Run CD-HIT in parallel on one large fasta file'''
+    
+    cd_hit_path = '/home/pgrad/musselle/ubuntu/bin/cd-hit-v4.6.1/'
+    
+    if maskN:
         cmd = ('cd-hit-para.pl -i {0} -o {1} -c {2} -n {3}'
               ' --L 1 --S 64 --P "cd-hit-est -mask N"').format(infile, outfile, 
                                                   c_thresh, n_filter)
