@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import glob
 from utils import Cycler
 from utils import pklsave
+import time
 
 def tags_counter(infiles=None, slice=(6,12), filepattern=False, datapath='', 
                 outfile='outfile.fasta'):
@@ -25,10 +26,24 @@ def tags_counter(infiles=None, slice=(6,12), filepattern=False, datapath='',
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, datapath=datapath)
     
+    c = 0
+    
+    toc = time.time()
+    cum_t = 0
     for rec in RecCycler.recgen:
     
         primer_tag = rec.seq[slice[0]: slice[1]].tostring()
         TagCounter[primer_tag] += 1
+        c+=1
+        if not c % 10000000:
+            loop_t = time.time() - toc - cum_t
+            cum_t += loop_t
+            print 'Processed 10 million reads after {1}'.format(
+                time.strftime('%H:%M:%S', time.gmtime(loop_t)))
+          
+    total_t = time.time() - toc
+    print '\nProcessed {0} files in {1}'.format(
+            time.strftime('%H:%M:%S', time.gmtime(total_t))) 
         
     return TagCounter
 
