@@ -10,6 +10,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
+
+from
+
 from filter import setup_filter, filter_reads
 from file_conversions import process_MIDtag, reads2fasta
 from cluster import cluster_cdhit, summary
@@ -81,6 +84,3 @@ clustered_file = 'lane' + LANE + 'clustered_reads'
 #
 ## Display Summary
 #summary(clustered_file)
-
-
-

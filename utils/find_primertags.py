@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 import glob
 from utils import Cycler
+from 
 
 
 def primertags_counter(infiles=None, filepattern=False, datapath='', 
@@ -39,7 +40,7 @@ if __name__ == '__main__':
     ''' RUNS SCRIPT FOR ALLL READS IN LANE 6 '''
     #===========================================================================
     
-    LANE = '6'
+    LANE = '8'
     
     # Set paths and file patterns 
     datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
