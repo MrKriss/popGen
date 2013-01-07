@@ -33,7 +33,7 @@ raw_files.sort()
 # Setup and run filter
 #===============================================================================
 f = setup_filter({'phred': 20, 'propN': 0.10})
-outdir = 'L6_phredprop_filtered'
+outdir = 'L' + LANE + '_phredprop_filtered'
 filter_reads(infiles=raw_files, filepattern=True, 
              datapath=datapath, outdir=outdir, filterfunc=f)
 
