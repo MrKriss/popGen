@@ -12,7 +12,7 @@ from Bio import SeqIO
 import glob
 
 
-from utils.utils import Cycler
+from utils import Cycler
 
 if __name__ == '__main__':
     

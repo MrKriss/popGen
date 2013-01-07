@@ -158,7 +158,9 @@ def search_file(filename, search_path, pathsep=os.pathsep):
 
 def pklsave(obj, filename):
     ''' Pickle the given object '''
-    with open(filename + '.pkl', 'wb') as f:
+    if not filename.endswith('pkl'):
+        filename = filename + '.pkl'
+    with open(filename, 'wb') as f:
         pkl.dump(obj, f)
         
 def smartopen(filename,*args,**kwargs):

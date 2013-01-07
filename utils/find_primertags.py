@@ -11,10 +11,9 @@ import matplotlib.pyplot as plt
 
 import glob
 from utils import Cycler
-from 
+from utils import pklsave
 
-
-def primertags_counter(infiles=None, filepattern=False, datapath='', 
+def tags_counter(infiles=None, slice=(6,12), filepattern=False, datapath='', 
                 outfile='outfile.fasta'):
     '''Writes the reads (without the MID tag) to one large fasta file 
     for clustering'''
@@ -28,7 +27,7 @@ def primertags_counter(infiles=None, filepattern=False, datapath='',
     
     for rec in RecCycler.recgen:
     
-        primer_tag = rec.seq[6:12].tostring()
+        primer_tag = rec.seq[slice[0]: slice[1]].tostring()
         TagCounter[primer_tag] += 1
         
     return TagCounter
@@ -49,7 +48,8 @@ if __name__ == '__main__':
     raw_files = glob.glob('*[0-9].fastq.bgzf')
     raw_files.sort()
     
-    TagsCounter = primertags_counter(infiles = raw_files)
+    TagsCounter = tags_counter(infiles = raw_files, slice=(6,12))
+    pklsave(TagsCounter, 'L{0}_TagsCount'.format(LANE))
 
 
 

@@ -8,7 +8,7 @@ import sys
 
 import unittest
 
-from utils.utils import Cycler
+from utils import Cycler
 
 class Test(unittest.TestCase):
 

@@ -10,9 +10,9 @@ import time
 import os
 import sys
 import matplotlib.pyplot as plt
-from utils.utils import pklsave
+from utils import pklsave
 
-from utils.utils import Cycler
+from utils import Cycler
 
 def calc_propN_meanphred(infiles = None, filepattern = '', datapath = '', 
                          out_filename='stats', plothist=False, png_filename=''):

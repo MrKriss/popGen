@@ -12,7 +12,7 @@ import time
 
 
 from Bio import SeqIO, bgzf
-from utils.utils import Cycler
+from utils import Cycler
 
 
 start_dir = os.getcwd()
