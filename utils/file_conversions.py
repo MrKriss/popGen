@@ -247,125 +247,125 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
             
-
-def process_MIDtag2(infiles=None, barcodes=None, filepattern=False, 
-                   barcode_pattern=False, datapath='', barcode_path='',
-                   outfile_postfix='-clean', outdir='cleaned_data'):
-    ''' Goes through fastq files and corrects any errors in MIDtag 
-    
-    This version writes to fasta files, not compressed with bgzf. 
-    
-    '''
-    import editdist as ed
-
-    # Construct Tag dictionary
-    MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
-                           datapath=barcode_path)
-            
-    # Setup Record Cycler
-    RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, datapath=datapath)
-    
-    keys = [key[:6] for key in MIDdict.iterkeys()]
-    keys.sort()
-    
-    # Make ouput directory if required
-    outpath = os.path.join(datapath, outdir)
-    if not os.path.isdir(outpath):
-        os.mkdir(outpath)
- 
-    class Read_Corrector_Class():
-    
-        def __init__(self):
-            ''' Class for a Generator to yield reads that pass a quality check or are corrected 
-            
-            Keeps track of number of skipped and corrected reads as class attributes.
-            '''
-            self.skipped_count = 0
-            self.corrected_count = 0
-    
-        def ok_reads_gen(self, recgen, keys):
-            
-            for rec in recgen:
-                recMID = str(rec.seq[:6])
-                if recMID not in keys:
-                    # Sequencing error in the tag. Work out nearest candidate.
-                    distvec = np.array([ed.distance(recMID, key) for key in keys]) 
-                    min_dist_candidates = [keys[idx] for idx in np.where(distvec == distvec.min())[0]]
-                    if len(min_dist_candidates) > 1:
-                        # Muliple candidates. True MID is Ambiguous 
-    #                    print ('Multiple minimum distances. ' 
-    #                    'MID could not be resolved between\n{0}' 
-    #                    '  and \n{1}').format(recMID, min_dist_candidates)
-    #                    print 'Skipping read.'
-                        self.skipped_count += 1
-                        continue
-                    elif len(min_dist_candidates) == 1:
-                        # Correct the erroneous tag with the candidate.
-                        # Letter annotations must be removed before editing seq.
-                        temp_var = rec.letter_annotations
-                        rec.letter_annotations = {}
-                        # Change seq to mutableseq
-                        rec.seq = rec.seq.tomutable()
-                        rec.seq[:6] = min_dist_candidates[0]
-                        rec.seq = rec.seq.toseq()
-                        rec.letter_annotations.update(temp_var)
-                        self.corrected_count += 1
-                        
-                yield rec
-            
-    # main loop
-    total_numwritten = 0
-    total_numskipped = 0
-    total_numcorrected = 0
-    toc = time.time()
-    cum_t = 0
-    for seqfile in RecCycler.seqfilegen:
-            
-        # Make reads class for generator
-        ReadCorrector = Read_Corrector_Class()
-        
-        # Set output filename and handle
-        filename = RecCycler.curfilename
-        filename = filename.split('.')
-        filename[0] = filename[0] + outfile_postfix
-        
-        # Replace postfix
-        if filename[-1] == 'bgzf':
-            if filename[-2] == 'fastq':
-                output_filename = '.'.join(filename[:-1])
-            else:    
-                output_filename = '.'.join(filename[:-1] + ['fastq'])
-                
-        outfile_path = os.path.join(outpath, output_filename)
-        
-#        output_filehdl = bgzf.BgzfWriter(output_filename, mode='wb')
-        output_filehdl = open(outfile_path, mode='wb')
-        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
-                                 output_filehdl, 'fastq')
-        output_filehdl.flush()
-        output_filehdl.close()
-
-        print ('{0} records written, of which ' 
-        '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
-        total_numwritten += numwritten
-        total_numcorrected += ReadCorrector.corrected_count
-        print '{0} records skipped'.format(ReadCorrector.skipped_count)
-        total_numskipped += ReadCorrector.skipped_count
-        loop_t = time.time() - toc - cum_t
-        cum_t += loop_t
-        print 'Finished {0} after {1}'.format(filename, 
-                        time.strftime('%H:%M:%S', time.gmtime(loop_t)))
-
-    print 'Total records written: {0}'.format(total_numwritten)
-    print 'Total records skipped: {0}'.format(total_numskipped)
-    print 'Total of {0} tags corrected.'.format(total_numcorrected)
-            
-    total_t = time.time() - toc    
-    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
-                                                        time.gmtime(total_t)))
-            
-                
+#
+#def process_MIDtag2(infiles=None, barcodes=None, filepattern=False, 
+#                   barcode_pattern=False, datapath='', barcode_path='',
+#                   outfile_postfix='-clean', outdir='cleaned_data'):
+#    ''' Goes through fastq files and corrects any errors in MIDtag 
+#    
+#    This version writes to fasta files, not compressed with bgzf. 
+#    
+#    '''
+#    import editdist as ed
+#
+#    # Construct Tag dictionary
+#    MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
+#                           datapath=barcode_path)
+#            
+#    # Setup Record Cycler
+#    RecCycler = Cycler(infiles=infiles, 
+#                       filepattern=filepattern, datapath=datapath)
+#    
+#    keys = [key[:6] for key in MIDdict.iterkeys()]
+#    keys.sort()
+#    
+#    # Make ouput directory if required
+#    outpath = os.path.join(datapath, outdir)
+#    if not os.path.isdir(outpath):
+#        os.mkdir(outpath)
+# 
+#    class Read_Corrector_Class():
+#    
+#        def __init__(self):
+#            ''' Class for a Generator to yield reads that pass a quality check or are corrected 
+#            
+#            Keeps track of number of skipped and corrected reads as class attributes.
+#            '''
+#            self.skipped_count = 0
+#            self.corrected_count = 0
+#    
+#        def ok_reads_gen(self, recgen, keys):
+#            
+#            for rec in recgen:
+#                recMID = str(rec.seq[:6])
+#                if recMID not in keys:
+#                    # Sequencing error in the tag. Work out nearest candidate.
+#                    distvec = np.array([ed.distance(recMID, key) for key in keys]) 
+#                    min_dist_candidates = [keys[idx] for idx in np.where(distvec == distvec.min())[0]]
+#                    if len(min_dist_candidates) > 1:
+#                        # Muliple candidates. True MID is Ambiguous 
+#    #                    print ('Multiple minimum distances. ' 
+#    #                    'MID could not be resolved between\n{0}' 
+#    #                    '  and \n{1}').format(recMID, min_dist_candidates)
+#    #                    print 'Skipping read.'
+#                        self.skipped_count += 1
+#                        continue
+#                    elif len(min_dist_candidates) == 1:
+#                        # Correct the erroneous tag with the candidate.
+#                        # Letter annotations must be removed before editing seq.
+#                        temp_var = rec.letter_annotations
+#                        rec.letter_annotations = {}
+#                        # Change seq to mutableseq
+#                        rec.seq = rec.seq.tomutable()
+#                        rec.seq[:6] = min_dist_candidates[0]
+#                        rec.seq = rec.seq.toseq()
+#                        rec.letter_annotations.update(temp_var)
+#                        self.corrected_count += 1
+#                        
+#                yield rec
+#            
+#    # main loop
+#    total_numwritten = 0
+#    total_numskipped = 0
+#    total_numcorrected = 0
+#    toc = time.time()
+#    cum_t = 0
+#    for seqfile in RecCycler.seqfilegen:
+#            
+#        # Make reads class for generator
+#        ReadCorrector = Read_Corrector_Class()
+#        
+#        # Set output filename and handle
+#        filename = RecCycler.curfilename
+#        filename = filename.split('.')
+#        filename[0] = filename[0] + outfile_postfix
+#        
+#        # Replace postfix
+#        if filename[-1] == 'bgzf':
+#            if filename[-2] == 'fastq':
+#                output_filename = '.'.join(filename[:-1])
+#            else:    
+#                output_filename = '.'.join(filename[:-1] + ['fastq'])
+#                
+#        outfile_path = os.path.join(outpath, output_filename)
+#        
+##        output_filehdl = bgzf.BgzfWriter(output_filename, mode='wb')
+#        output_filehdl = open(outfile_path, mode='wb')
+#        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
+#                                 output_filehdl, 'fastq')
+#        output_filehdl.flush()
+#        output_filehdl.close()
+#
+#        print ('{0} records written, of which ' 
+#        '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
+#        total_numwritten += numwritten
+#        total_numcorrected += ReadCorrector.corrected_count
+#        print '{0} records skipped'.format(ReadCorrector.skipped_count)
+#        total_numskipped += ReadCorrector.skipped_count
+#        loop_t = time.time() - toc - cum_t
+#        cum_t += loop_t
+#        print 'Finished {0} after {1}'.format(filename, 
+#                        time.strftime('%H:%M:%S', time.gmtime(loop_t)))
+#
+#    print 'Total records written: {0}'.format(total_numwritten)
+#    print 'Total records skipped: {0}'.format(total_numskipped)
+#    print 'Total of {0} tags corrected.'.format(total_numcorrected)
+#            
+#    total_t = time.time() - toc    
+#    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+#                                                        time.gmtime(total_t)))
+#            
+#                
 if __name__ == '__main__':
     
     
