@@ -10,11 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
-
-from
-
-fromspreprocesssimport setup_filter, filter_reads
-from file_conversions import process_MIDtag, reads2fasta
+from preprocess import setup_filter, filter_reads, process_MIDtag, reads2fasta
 from cluster import cluster_cdhit, summary
 
 #==============================================================================
@@ -68,7 +64,7 @@ for name in filtered_files:
     temp[0] = temp[0] + cleaned_file_postfix
     temp = '.'.join(temp) 
     cleaned_files.append(temp) 
-cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
+cleaned_inpath = os.path.join(filtered_inpath, cleaned_outdir)
 
 #===============================================================================
 # Cluster Data 

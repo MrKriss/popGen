@@ -10,8 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 
-from preprocess import setup_filter, filter_reads
-from file_conversions import process_MIDtag, reads2fasta
+from preprocess import setup_filter, filter_reads, process_MIDtag, reads2fasta
 from cluster import cluster_cdhit, summary
 
 #==============================================================================
@@ -23,8 +22,10 @@ LANE = '8'
 starting_dir = os.getcwd()
 
 # Set paths and file patterns 
-inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+#inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+#barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+inpath = '/home/musselle/data/lane' + LANE
+barpath = '/home/musselle/data/barcodes'
 os.chdir(inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
@@ -33,7 +34,7 @@ raw_files.sort()
 # Setup and run filter
 #===============================================================================
 f = setup_filter({'phred': 20, 'propN': 0.10})
-outdir = 'L' + LANE + '_phredprop_filtered'
+outdir = 'L' + LANE + '_filtered'
 filter_reads(infiles=raw_files, filepattern=True, 
              inpath=inpath, outdir=outdir, filterfunc=f)
 
@@ -44,7 +45,7 @@ for name in raw_files:
     temp[0] = temp[0] + '-pass'
     temp = '.'.join(temp) 
     filtered_files.append(temp)
-filtered_inpath = inpath + '/' + outdir
+filtered_inpath = os.path.join(inpath, outdir)
 
 #===============================================================================
 # Process and Correct MID tag 
@@ -63,7 +64,7 @@ for name in filtered_files:
     temp[0] = temp[0] + cleaned_file_postfix
     temp = '.'.join(temp) 
     cleaned_files.append(temp) 
-cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
+cleaned_inpath = os.path.join(filtered_inpath, cleaned_outdir)
 
 #===============================================================================
 # Cluster Data 
@@ -81,6 +82,3 @@ clustered_file = 'lane' + LANE + 'clustered_reads'
 #
 ## Display Summary
 #summary(clustered_file)
-
-
-
