@@ -14,7 +14,7 @@ from subprocess import call
 import numpy as np
 
 
-def gz2bgzf(infiles=None, filepattern=False, datapath='', SQLindex=True):
+def gz2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
     ''' Convert the list of files from .gz to .bgzf,
     And also produce an SQL index if needed. 
     
@@ -22,8 +22,8 @@ def gz2bgzf(infiles=None, filepattern=False, datapath='', SQLindex=True):
     If not specified will look at file type and glob the result to infiles. 
   
     '''
-    if datapath:
-        os.chdir(datapath)
+    if inpath:
+        os.chdir(inpath)
   
     # Handle multiple types of input for infiles
     assert infiles is not None, 'No files listed or file pattern specified.'         
@@ -69,14 +69,14 @@ def gz2bgzf(infiles=None, filepattern=False, datapath='', SQLindex=True):
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(infiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
   
-def makeSQLindex(infiles=None, filepattern=False, datapath=''):
+def makeSQLindex(infiles=None, filepattern=False, inpath=''):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bgzf file 
     
     if infiles is list, goes through all file names in list
     
     '''
-    if datapath:
-        os.chdir(datapath)
+    if inpath:
+        os.chdir(inpath)
   
     # Handle multiple types of input for infiles
     assert infiles is not None, 'No files listed or file pattern specified.'         
@@ -112,7 +112,7 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
     for clustering'''
     
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, datapath=inpath)
+                       filepattern=filepattern, inpath=inpath)
     count = 0
     outfile_part_list = []
 
@@ -139,7 +139,7 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
         print 'Done'         
 
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
-                   barcode_pattern=False, datapath='', barcode_path='',
+                   barcode_pattern=False, inpath='', barcode_path='',
                    outfile_postfix='-clean', outdir='cleaned_data'):
     ''' Goes through fastq files and corrects any errors in MIDtag 
     
@@ -148,17 +148,17 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
 
     # Construct Tag dictionary
     MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
-                           datapath=barcode_path)
+                           inpath=barcode_path)
             
     # Setup Record Cycler
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, datapath=datapath)
+                       filepattern=filepattern, inpath=inpath)
     
     keys = [key[:6] for key in MIDdict.iterkeys()]
     keys.sort()
     
     # Make ouput directory if required
-    outpath = os.path.join(datapath, outdir)
+    outpath = os.path.join(inpath, outdir)
     if not os.path.isdir(outpath):
         os.mkdir(outpath)
  
@@ -249,7 +249,7 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
             
 #
 #def process_MIDtag2(infiles=None, barcodes=None, filepattern=False, 
-#                   barcode_pattern=False, datapath='', barcode_path='',
+#                   barcode_pattern=False, inpath='', barcode_path='',
 #                   outfile_postfix='-clean', outdir='cleaned_data'):
 #    ''' Goes through fastq files and corrects any errors in MIDtag 
 #    
@@ -260,17 +260,17 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
 #
 #    # Construct Tag dictionary
 #    MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
-#                           datapath=barcode_path)
+#                           inpath=barcode_path)
 #            
 #    # Setup Record Cycler
 #    RecCycler = Cycler(infiles=infiles, 
-#                       filepattern=filepattern, datapath=datapath)
+#                       filepattern=filepattern, inpath=inpath)
 #    
 #    keys = [key[:6] for key in MIDdict.iterkeys()]
 #    keys.sort()
 #    
 #    # Make ouput directory if required
-#    outpath = os.path.join(datapath, outdir)
+#    outpath = os.path.join(inpath, outdir)
 #    if not os.path.isdir(outpath):
 #        os.mkdir(outpath)
 # 
@@ -375,7 +375,7 @@ if __name__ == '__main__':
 #===========================================================================
 # Test for functions
 #===========================================================================
-#    datapath = '/space/musselle/datasets/gazellesAndZebras/testdata'
+#    inpath = '/space/musselle/datasets/gazellesAndZebras/testdata'
 #    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
 #    
 #    files_test = 'testdata_1percent.bgzf'
@@ -383,11 +383,11 @@ if __name__ == '__main__':
 #    files_L6 = 'lane6_NoIndex_L006_R1_001.fastq.bgzf'
 #    files_L8 = 'lane8_NoIndex_L006_R1_001.fastq.bgzf'
 #    
-#    gz2bgzf(None, '*.gz', datapath = datapath + 'lane6/')
-#    gz2bgzf(None, '*.gz', datapath = datapath + 'lane8/')
+#    gz2bgzf(None, '*.gz', inpath = inpath + 'lane6/')
+#    gz2bgzf(None, '*.gz', inpath = inpath + 'lane8/')
     
 #    process_MIDtag2(infiles=files_test, barcodes='*.txt', 
-#                   barcode_pattern=True, datapath=datapath, 
+#                   barcode_pattern=True, inpath=inpath, 
 #                   barcode_path=barpath)
     
 #===============================================================================
@@ -401,9 +401,9 @@ if __name__ == '__main__':
     starting_dir = os.getcwd()
 
     # Set paths and file patterns 
-    datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
     barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    os.chdir(datapath)
+    os.chdir(inpath)
 #    raw_files = glob.glob('*[0-9].fastq.bgzf')
 #    raw_files.sort()
     
@@ -418,14 +418,14 @@ if __name__ == '__main__':
         temp[0] = temp[0] + '-pass'
         temp = '.'.join(temp) 
         filtered_files.append(temp)
-    filtered_datapath = datapath + '/' + outdir
+    filtered_inpath = inpath + '/' + outdir
     
     cleaned_file_postfix = '-clean' 
     cleaned_outdir = 'cleaned_data'
     barcode_pattern = '*[' + LANE + '].txt'
     
     process_MIDtag2(infiles=filtered_files, barcodes=barcode_pattern,
-               barcode_pattern=True, datapath=filtered_datapath, 
+               barcode_pattern=True, inpath=filtered_inpath, 
                barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
                outdir=cleaned_outdir)
     
@@ -443,13 +443,13 @@ if __name__ == '__main__':
             temp = '.'.join(temp) 
         cleaned_files.append(temp) 
         
-    cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
+    cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
     
     #===============================================================================
     # Cluster Data 
     #===============================================================================
     allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-    reads2fasta(infiles=cleaned_files, datapath=cleaned_datapath, outfile=allreads_file)
+    reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
     
     # Variables 
     c_thresh = 0.9
@@ -474,9 +474,9 @@ if __name__ == '__main__':
     starting_dir = os.getcwd()
 
     # Set paths and file patterns 
-    datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
     barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    os.chdir(datapath)
+    os.chdir(inpath)
 #    raw_files = glob.glob('*[0-9].fastq.bgzf')
 #    raw_files.sort()
     
@@ -491,14 +491,14 @@ if __name__ == '__main__':
         temp[0] = temp[0] + '-pass'
         temp = '.'.join(temp) 
         filtered_files.append(temp)
-    filtered_datapath = datapath + '/' + outdir
+    filtered_inpath = inpath + '/' + outdir
     
     cleaned_file_postfix = '-clean' 
     cleaned_outdir = 'cleaned_data'
     barcode_pattern = '*[' + LANE + '].txt'
     
     process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
-               barcode_pattern=True, datapath=filtered_datapath, 
+               barcode_pattern=True, inpath=filtered_inpath, 
                barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
                outdir=cleaned_outdir)
     
@@ -509,13 +509,13 @@ if __name__ == '__main__':
         temp[0] = temp[0] + cleaned_file_postfix
         temp = '.'.join(temp) 
         cleaned_files.append(temp) 
-    cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
+    cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
     
     #===============================================================================
     # Cluster Data 
     #===============================================================================
     allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-    reads2fasta(infiles=cleaned_files, datapath=cleaned_datapath, outfile=allreads_file)
+    reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
     
     # Variables 
     c_thresh = 0.9

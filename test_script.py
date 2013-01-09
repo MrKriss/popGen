@@ -14,7 +14,7 @@ import editdist as ed
 if __name__ == '__main__':
     
     barcode_path = '/space/musselle/datasets/gazellesAndZebras/barcodes/'
-    tags = make_MIDdict('*[6].txt', filepattern=True, datapath=barcode_path)
+    tags = make_MIDdict('*[6].txt', filepattern=True, inpath=barcode_path)
 
     distmat = np.zeros((len(tags), len(tags)))
     MIDs = [key[:6] for key in tags.iterkeys()]

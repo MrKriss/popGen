@@ -22,8 +22,8 @@ lane8path = '/space/musselle/datasets/gazellesAndZebras/lane8'
 
 maxnumseq = 160000
 
-RecCyclerL6 = Cycler(filepattern='*[0-9].fastq.bgzf', datapath = lane6path, maxnumseq=maxnumseq)
-RecCyclerL8 = Cycler(filepattern='*[0-9].fastq.bgzf', datapath = lane8path, maxnumseq=maxnumseq)
+RecCyclerL6 = Cycler(filepattern='*[0-9].fastq.bgzf', inpath = lane6path, maxnumseq=maxnumseq)
+RecCyclerL8 = Cycler(filepattern='*[0-9].fastq.bgzf', inpath = lane8path, maxnumseq=maxnumseq)
 
 output_filename = 'testdata_1percent.bgzf'
 

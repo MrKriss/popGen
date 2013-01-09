@@ -10,10 +10,10 @@ import numpy as np
 import matplotlib.pyplot as plt 
 
 
-def makeHist(files , datapath, bins = 50):
+def makeHist(files , inpath, bins = 50):
     ''' Function to plot histograms of stored data files'''
 
-    os.chdir(datapath)
+    os.chdir(inpath)
  
     data = [0] * len(files)
     
@@ -31,11 +31,11 @@ def makeHist(files , datapath, bins = 50):
 if __name__ == '__main__' : 
     
 
-    datapath = '/space/musselle/datasets/gazellesAndZebras'
+    inpath = '/space/musselle/datasets/gazellesAndZebras'
     fs1 = ['lane6_meanPhred.npy', 'lane8_meanPhred.npy']
     fs2 = ['lane6_propN.npy', 'lane8_propN.npy']
     
-    makeHist(fs1, datapath)
+    makeHist(fs1, inpath)
     plt.title('Mean Phred Score')
-    makeHist(fs2, datapath)
+    makeHist(fs2, inpath)
     plt.title('Proportion of Ns')

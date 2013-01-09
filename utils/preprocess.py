@@ -14,7 +14,8 @@ import gzip
 import time
 
 
-def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, outdir='filtered_reads'):
+def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None, 
+                 outdir='filtered_reads'):
     ''' Filter reads based on criteria 
     
     Default is to use Machine Specific read filter, specific to Casava 
@@ -23,7 +24,11 @@ def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, out
     filterfunc must take in a sequence record object, and return a boolean
     
     '''   
-    starting_dir = os.getcwd()
+    # Path variables
+    starting_dir = os.getcwd()    
+    outpath = os.path.join(starting_dir, outdir) 
+    if not os.path.isdir(outpath):
+        os.mkdir(outdir)
 
     # Define filter function if not given 
     if filterfunc is None:
@@ -36,11 +41,8 @@ def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, out
          
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.
-    RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, datapath=datapath)
-    RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, datapath=datapath)
-
-    if not os.path.isdir('./' + outdir):
-        os.mkdir(outdir)
+    RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
+    RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
     
     # timings
     toc = time.time()
@@ -57,16 +59,14 @@ def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, out
         # Construct file names
         name = RecCycler1.curfilename.split('.')  
         pass_filename = [name[0] + '-pass'] + name[1:] 
-        pass_filename = '.'.join(pass_filename)
+        pass_filename = os.path.join(outpath, '.'.join(pass_filename))
         fail_filename = [name[0] + '-fail']  + name[1:]
-        fail_filename = '.'.join(fail_filename)
+        fail_filename = os.path.join(outpath, '.'.join(fail_filename))
         name = '.'.join(name)
         
         # Setup Generators              
         passgen = (rec for rec in recordgen1 if filterfunc(rec))
         failgen = (rec for rec in recordgen2 if not filterfunc(rec))
-        
-        os.chdir(outdir)
         
         if name.endswith('.bgzf'):
             pass_filehdl = bgzf.BgzfWriter(pass_filename)
@@ -81,17 +81,15 @@ def filter_reads(infiles=None, filepattern='', datapath='', filterfunc=None, out
             print 'Input file format not supported'
             sys.exit()
         
-        print 'Writing passes to file {0} ....'.format(pass_filename)
+        print 'Writing passes to \n{0} ....'.format(pass_filename)
         numwritten = SeqIO.write( passgen , pass_filehdl , 'fastq')
         pass_filehdl.close()
         print '{0} records written'.format(numwritten)
         
-        print 'Writing fails to file  {0} ....'.format(fail_filename)
+        print 'Writing fails to \n{0} ....'.format(fail_filename)
         numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
         fail_filehdl.close()
         print '{0} records written'.format(numwritten)
-        
-        os.chdir('..')
         
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
@@ -144,19 +142,19 @@ if __name__ == '__main__':
     dataloc = '/space/musselle/datasets/gazellesAndZebras'
     files = 'testdata_1percent.bgzf'
     outdir = 'machinefiltertest'
-    filter_reads(infiles=files, datapath=dataloc, outdir=outdir)
+    filter_reads(infiles=files, inpath=dataloc, outdir=outdir)
     
     outdir = 'propNfiltertest'
     f = setup_filter({'propN' : 0.1})
-    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredfiltertest'
     f = setup_filter({'phred' : 15})
-    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
     
     outdir = 'phredpropN_filtertest'
     f = setup_filter({'phred' : 15, 'propN' : 0.05})
-    filter_reads(infiles=files, datapath=dataloc, outdir=outdir, filterfunc=f)
+    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
     
     
     

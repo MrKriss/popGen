@@ -13,7 +13,7 @@ import glob
 
 from
 
-from filter import setup_filter, filter_reads
+fromspreprocesssimport setup_filter, filter_reads
 from file_conversions import process_MIDtag, reads2fasta
 from cluster import cluster_cdhit, summary
 
@@ -26,9 +26,11 @@ LANE = '6'
 starting_dir = os.getcwd()
 
 # Set paths and file patterns 
-datapath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-os.chdir(datapath)
+#inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+#barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+inpath = '/home/musselle/data/lane' + LANE
+barpath = '/home/musselle/data/barcodes'
+os.chdir(inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 
@@ -36,9 +38,9 @@ raw_files.sort()
 # Setup and run filter
 #===============================================================================
 f = setup_filter({'phred': 20, 'propN': 0.10})
-outdir = 'L6_phredprop_filtered'
+outdir = 'L' + LANE + '_filtered'
 filter_reads(infiles=raw_files, filepattern=True, 
-             datapath=datapath, outdir=outdir, filterfunc=f)
+             inpath=inpath, outdir=outdir, filterfunc=f)
 
 # Update names and path
 filtered_files = []
@@ -47,7 +49,7 @@ for name in raw_files:
     temp[0] = temp[0] + '-pass'
     temp = '.'.join(temp) 
     filtered_files.append(temp)
-filtered_datapath = datapath + '/' + outdir
+filtered_inpath = os.path.join(inpath, outdir)
 
 #===============================================================================
 # Process and Correct MID tag 
@@ -56,7 +58,7 @@ cleaned_file_postfix = '-clean'
 cleaned_outdir = 'cleaned_data'
 barcode_pattern = '*[' + LANE + '].txt'
 process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
-               barcode_pattern=True, datapath=filtered_datapath, 
+               barcode_pattern=True, inpath=filtered_inpath, 
                barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
                outdir=cleaned_outdir)
 # Update names and path
@@ -66,13 +68,13 @@ for name in filtered_files:
     temp[0] = temp[0] + cleaned_file_postfix
     temp = '.'.join(temp) 
     cleaned_files.append(temp) 
-cleaned_datapath = filtered_datapath + '/' + cleaned_outdir
+cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
 
 #===============================================================================
 # Cluster Data 
 #===============================================================================
 allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-reads2fasta(infiles=cleaned_files, inpath=cleaned_datapath, outfile=allreads_file)
+reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
 
 # Variables 
 c_thresh = 0.9
