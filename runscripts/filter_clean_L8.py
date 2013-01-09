@@ -24,8 +24,8 @@ starting_dir = os.getcwd()
 # Set paths and file patterns 
 #inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
 #barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-inpath = '/home/musselle/data/lane' + LANE
-barpath = '/home/musselle/data/barcodes'
+inpath = '/home/musselle/san/data/lane' + LANE
+barpath = '/home/musselle/san/data/barcodes'
 os.chdir(inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
