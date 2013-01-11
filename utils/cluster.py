@@ -51,7 +51,7 @@ def summary(infile, cluster_sizes=None, seq_lengths=None):
     if seq_lengths is None:
         seq_lengths = '1-78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90'
     
-    cmd = 'plot_len.pl {0} {1} {2}'.format(infile, cluster_sizes, seq_lengths)
+    cmd = 'plot_len1.pl {0} {1} {2}'.format(infile, cluster_sizes, seq_lengths)
     
     process = sub.Popen(shlex.split(cmd), stdout=sub.PIPE)
     

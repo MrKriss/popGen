@@ -369,39 +369,20 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
     with open(os.path.join(outpath, outfile), 'wb') as f:
         print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
         call(cmd, stdout=f) 
-        print 'Done'         
+    
+    print 'Done, cleaning up temp files ....'
+    call(['rm', 'output*'])    
 
 if __name__ == '__main__':
     
 #===============================================================================
-#  Test for data filters
-#===============================================================================
-    dataloc = '/space/musselle/datasets/gazellesAndZebras'
-    files = 'testdata_1percent.bgzf'
-    outdir = 'machinefiltertest'
-    filter_reads(infiles=files, inpath=dataloc, outdir=outdir)
-    
-    outdir = 'propNfiltertest'
-    f = setup_filter({'propN' : 0.1})
-    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
-    
-    outdir = 'phredfiltertest'
-    f = setup_filter({'phred' : 15})
-    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
-    
-    outdir = 'phredpropN_filtertest'
-    f = setup_filter({'phred' : 15, 'propN' : 0.05})
-    filter_reads(infiles=files, inpath=dataloc, outdir=outdir, filterfunc=f)
-    
-#===============================================================================
-# Test Process MID Tags 1 
+# Test Preprocess Work Flow
 #===============================================================================
     
     import glob
     from cluster import cluster_cdhit, summary
     
     LANE = '6'
-    starting_dir = os.getcwd()
 
     # Set paths and file patterns 
     inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE

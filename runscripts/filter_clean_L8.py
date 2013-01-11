@@ -70,7 +70,8 @@ cleaned_inpath = os.path.join(filtered_inpath, cleaned_outdir)
 # Cluster Data 
 #===============================================================================
 allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
+reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, 
+            outpath=cleaned_inpath, outfile=allreads_file)
 
 # Variables 
 c_thresh = 0.9
