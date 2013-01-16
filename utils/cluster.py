@@ -65,9 +65,10 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
     cmd =  '{0} {1} {2} {3}'.format(os.path.join(cd_hit_path, 'plot_len1.pl'),
                 os.path.join(inpath, infile),
                 cluster_sizes, seq_lengths)
-  
-    print 'Running\n' + shlex.split(cmd)
-    process = sub.Popen(shlex.split(cmd), stdout=sub.PIPE)
+
+    cmd = shlex.split(cmd)  
+    print 'Running\n' + cmd[0] 
+    process = sub.Popen(cmd, stdout=sub.PIPE)
     
     output = process.communicate()[0]
     print output 
