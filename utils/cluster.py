@@ -44,9 +44,8 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
 def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
     ''' Display summary of cluster sizes '''
      
-    home = os.path.expanduser("~")   
-    cd_hit_path = os.path.join(home,'/bin/cd-hit-v4.6.1/')
-
+    cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")   
+     
     print cd_hit_path
 
     if inpath is None:
@@ -77,4 +76,4 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
 
 
 if __name__ == '__main__':
-    summary(myfile)
+    pass
