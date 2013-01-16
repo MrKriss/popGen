@@ -41,10 +41,13 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
 
     sub.call(shlex.split(cd_hit_path + cmd))
 
-def summary(infile, cluster_sizes=None, seq_lengths=None):
+def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
     ''' Display summary of cluster sizes '''
 
     cd_hit_path = '~/bin/cd-hit-v4.6.1/'
+    
+    if inpath is None:
+        inpath = os.getcwd()
 
     if not infile.endswith('clstr'):
         infile = infile + '.clstr'
@@ -52,9 +55,11 @@ def summary(infile, cluster_sizes=None, seq_lengths=None):
         cluster_sizes = '1,2-4,5-9,10-19,20-49,50-99,100-299,500-99999'
     if seq_lengths is None:
         seq_lengths = '1-88,89,90-150'
-    
-    cmd = cd_hit_path + 'plot_len1.pl {0} {1} {2}'.format(infile, cluster_sizes, seq_lengths)
-    
+       
+    cmd =  '{0} {1} {2} {3}'.format(os.path.join(cd_hit_path, 'plot_len1.pl'),
+                os.path.join(inpath, infile),
+                cluster_sizes, seq_lengths)
+  
     print shlex.split(cmd)
     process = sub.Popen(shlex.split(cmd), stdout=sub.PIPE)
     
