@@ -77,4 +77,4 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
 
 
 if __name__ == '__main__':
-    pass
+    summary(myfile)
