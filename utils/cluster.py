@@ -46,8 +46,6 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
      
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")   
      
-    print cd_hit_path
-
     if inpath is None:
         inpath = os.getcwd()
 
@@ -55,6 +53,12 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
         infile = infile + '.clstr'
     if cluster_sizes is None:
         cluster_sizes = '1,2-4,5-9,10-19,20-49,50-99,100-299,500-99999'
+        
+    if cluster_sizes == 'all':
+        # All clusters from size 1 to 10,000
+        cluster_sizes = ','.join([str(i) for i in xrange(1,10001)])
+
+        
     if seq_lengths is None:
         seq_lengths = '1-88,89,90-150'
        
@@ -62,9 +66,7 @@ def summary(infile, inpath=None, cluster_sizes=None, seq_lengths=None):
                 os.path.join(inpath, infile),
                 cluster_sizes, seq_lengths)
   
-    print cmd
-  
-    print shlex.split(cmd)
+    print 'Running\n' + shlex.split(cmd)
     process = sub.Popen(shlex.split(cmd), stdout=sub.PIPE)
     
     output = process.communicate()[0]
