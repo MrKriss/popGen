@@ -74,6 +74,7 @@ class Cycler(object):
             print f
 
         self.numfiles = len(infiles)
+        self.infiles = infiles
         
         # Max number of record to run the generator for (default = all)
         self.maxnumseq = maxnumseq

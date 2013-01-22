@@ -15,13 +15,15 @@ from Bio import SeqIO, bgzf
 from utils import smartopen, Cycler, make_MIDdict
 
 def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None, 
-                 outdir='filtered_reads'):
+                 outdir='filtered_reads', keepfails=False ):
     ''' Filter reads based on criteria 
     
     Default is to use Machine Specific read filter, specific to Casava 
     1.8 Illumina output format at current
     
     filterfunc must take in a sequence record object, and return a boolean
+    
+    keepfails - if true saves all records that failed the filter too.
     
     '''   
     # Path variables
@@ -101,13 +103,117 @@ def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None,
                                                         time.gmtime(total_t)))
     os.chdir(starting_dir)
 
+
+def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=None, 
+                          outdir='filtered_reads'):
+    
+    ''' Filter reads based on criteria specified by a sequence of functions given
+     in filterfuncs.
+    
+    Default is to use Machine Specific read filter, specific to Casava 
+    1.8 Illumina output format at current
+    
+    indervidual functions in filterfunc must take in a sequence record object, 
+    and return a boolean
+    
+    differs from filter_reads in that this does not save records that fail a filter,
+    only those that pass.
+    
+    '''   
+    # Path variables
+    starting_dir = os.getcwd()    
+    outpath = os.path.join(starting_dir, outdir) 
+    if not os.path.isdir(outpath):
+        os.mkdir(outdir)
+
+    # Define single illumina machine filter function if none given 
+    if filterfuncs is None:
+        def illumina_filter(rec):
+            ''' Use machine specific filter         
+            N = was not pickup up by machine filter i.e. passed
+            Y = was flagged by machine filter i.e. fail 
+            '''
+            return rec.description.split()[1].split(':')[1] == 'N'
+        filterfuncs = [illumina_filter]
+    
+    # Record Cycler      
+    RecCycler = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
+    
+    files_list = RecCycler.infiles
+    
+    
+    
+    # timings
+    toc = time.time()
+    cum_t = 0
+    for SeqFile in SeqFileCycler.seqfilegen:
+
+        print 'Processing {0}'.format(RecCycler1.curfilename) 
+        
+        for func in filterfuncs:
+        
+        
+            
+        
+        
+        # Construct file names
+        name = RecCycler1.curfilename.split('.')  
+        temp_filename = [name[0] + '-temp'] + name[1:]
+        
+        # Generator initiated
+        passgen = (rec for rec in recordgen1 if filterfunc(rec))
+        
+        
+        
+        temp_filename = os.path.join(outpath, '.'.join(temp_filename))
+        fail_filename = [name[0] + '-fail']  + name[1:]
+        fail_filename = os.path.join(outpath, '.'.join(fail_filename))
+        name = '.'.join(name)
+        
+        # Setup Generators              
+        passgen = (rec for rec in recordgen1 if filterfunc(rec))
+        failgen = (rec for rec in recordgen2 if not filterfunc(rec))
+        
+        if name.endswith('.bgzf'):
+            pass_filehdl = bgzf.BgzfWriter(pass_filename)
+            fail_filehdl = bgzf.BgzfWriter(fail_filename)
+        elif name.endswith('.fastq'):
+            pass_filehdl = open(pass_filename, 'wb')
+            fail_filehdl = open(fail_filename, 'wb')
+        elif name.endswith('.gz'):
+            pass_filehdl = gzip.open(pass_filename, 'wb')
+            fail_filehdl = gzip.open(fail_filename, 'wb')
+        else:
+            print 'Input file format not supported'
+            sys.exit()
+        
+        print 'Writing passes to \n{0} ....'.format(pass_filename)
+        numwritten = SeqIO.write( passgen , pass_filehdl , 'fastq')
+        pass_filehdl.close()
+        print '{0} records written'.format(numwritten)
+        
+        print 'Writing fails to \n{0} ....'.format(fail_filename)
+        numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
+        fail_filehdl.close()
+        print '{0} records written'.format(numwritten)
+        
+        loop_t = time.time() - toc - cum_t
+        cum_t += loop_t
+        print 'Finished file {0} after {1}'.format(RecCycler1.curfilenum, 
+                                time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+        
+    total_t = time.time() - toc    
+    print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+                                                        time.gmtime(total_t)))
+    os.chdir(starting_dir)
+
+
 def setup_filter(target_dict):
     ''' Function to return a filter function defined using the given dictionary
     
     Keys are the variables to filter, and the values are the minimum thresholds 
     
     '''
-
     if len(target_dict) == 1:
         if 'phred' in target_dict:
             # Define filterfunc
@@ -136,6 +242,9 @@ def setup_filter(target_dict):
             raise Exception('Target variables not set as ''phred'' and ''propN''')
     else:
         raise Exception('Number of target values > 2')
+
+
+
 
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
                    barcode_pattern=False, inpath='', barcode_path='',
