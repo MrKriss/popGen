@@ -105,7 +105,7 @@ def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None,
 
 
 def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=None, 
-                          outdir='filtered_reads'):
+                          outdir='filtered_reads', keep_fails=False):
     
     ''' Filter reads based on criteria specified by a sequence of functions given
      in filterfuncs.
@@ -119,7 +119,20 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
     differs from filter_reads in that this does not save records that fail a filter,
     only those that pass.
     
+    if keep_fails = True, will keep reads that fail any of the filter functions given.
+    
     '''   
+    def run_all_filterfuncs(filterfuncs, rec):
+        ''' Run all filter functions on the record, and only return True it if 
+        it passes all of them '''
+        ans = []
+        for func in filterfuncs:
+            ans.append(func(rec))
+        if ans.count(True) == len(ans) :
+            return True
+        else:
+            return False    
+    
     # Path variables
     starting_dir = os.getcwd()    
     outpath = os.path.join(starting_dir, outdir) 
@@ -136,67 +149,68 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
             return rec.description.split()[1].split(':')[1] == 'N'
         filterfuncs = [illumina_filter]
     
-    # Record Cycler      
-    RecCycler = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
     
-    files_list = RecCycler.infiles
-    
-    
+    if keep_fails:
+        # Two Record Cyclers      
+        RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
+        RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
+    else:
+        # Single Record Cycler      
+        RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
     
     # timings
     toc = time.time()
-    cum_t = 0
-    for SeqFile in SeqFileCycler.seqfilegen:
-
-        print 'Processing {0}'.format(RecCycler1.curfilename) 
+    cum_t = 0 
+    for recordgen in RecCycler1.seqfilegen:
+    
+        if keep_fails:
+            # Load second record generator
+            recordgen2 = RecCycler2.seqfilegen.next()
         
-        for func in filterfuncs:
-        
-        
-            
-        
-        
+        print 'Processing {0}'.format(RecCycler1.curfilename)
+                  
+        # Generator initiated 
+        # Record only returned if it passes all filter functions in the list 
+        passgen = (rec for rec in recordgen if run_all_filterfuncs(filterfuncs, rec))
+        if keep_fails:
+            # Initiate Generator for fails
+            failgen = (rec for rec in recordgen2 if not run_all_filterfuncs(filterfuncs, rec))
+             
         # Construct file names
         name = RecCycler1.curfilename.split('.')  
-        temp_filename = [name[0] + '-temp'] + name[1:]
-        
-        # Generator initiated
-        passgen = (rec for rec in recordgen1 if filterfunc(rec))
-        
-        
-        
-        temp_filename = os.path.join(outpath, '.'.join(temp_filename))
+        pass_filename = [name[0] + '-pass'] + name[1:] 
+        pass_filename = os.path.join(outpath, '.'.join(pass_filename))
         fail_filename = [name[0] + '-fail']  + name[1:]
         fail_filename = os.path.join(outpath, '.'.join(fail_filename))
         name = '.'.join(name)
-        
-        # Setup Generators              
-        passgen = (rec for rec in recordgen1 if filterfunc(rec))
-        failgen = (rec for rec in recordgen2 if not filterfunc(rec))
-        
+    
         if name.endswith('.bgzf'):
             pass_filehdl = bgzf.BgzfWriter(pass_filename)
-            fail_filehdl = bgzf.BgzfWriter(fail_filename)
+            if keep_fails:
+                fail_filehdl = bgzf.BgzfWriter(fail_filename)
         elif name.endswith('.fastq'):
             pass_filehdl = open(pass_filename, 'wb')
-            fail_filehdl = open(fail_filename, 'wb')
+            if keep_fails:
+                fail_filehdl = open(fail_filename, 'wb')
         elif name.endswith('.gz'):
             pass_filehdl = gzip.open(pass_filename, 'wb')
-            fail_filehdl = gzip.open(fail_filename, 'wb')
+            if keep_fails:
+                fail_filehdl = gzip.open(fail_filename, 'wb')
         else:
             print 'Input file format not supported'
             sys.exit()
-        
+                   
         print 'Writing passes to \n{0} ....'.format(pass_filename)
         numwritten = SeqIO.write( passgen , pass_filehdl , 'fastq')
         pass_filehdl.close()
         print '{0} records written'.format(numwritten)
         
-        print 'Writing fails to \n{0} ....'.format(fail_filename)
-        numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
-        fail_filehdl.close()
-        print '{0} records written'.format(numwritten)
-        
+        if keep_fails:
+            print 'Writing fails to \n{0} ....'.format(fail_filename)
+            numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
+            fail_filehdl.close()
+            print '{0} records written'.format(numwritten)
+            
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
         print 'Finished file {0} after {1}'.format(RecCycler1.curfilenum, 

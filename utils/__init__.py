@@ -64,7 +64,7 @@ class Cycler(object):
         if not infiles:
             # Fetch files by file types
             assert filepattern, 'No files listed and No file type specified.'
-            infiles = glob.glob(filepattern)
+            infiles = glob.glob(os.path.join(inpath,filepattern))
         elif type(infiles) == str:
             # Convert to list
             infiles = [infiles]
