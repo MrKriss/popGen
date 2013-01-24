@@ -11,6 +11,8 @@ from subprocess import call
 
 import numpy as np
 from Bio import SeqIO, bgzf
+import editdist as ed
+
 
 from utils import smartopen, Cycler, make_MIDdict
 
@@ -103,42 +105,85 @@ def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None,
                                                         time.gmtime(total_t)))
     os.chdir(starting_dir)
 
-
 def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=None, 
-                          outdir='filtered_reads', keep_fails=False):
+                          outdir='filtered_reads', log_fails=False):
     
     ''' Filter reads based on criteria specified by a sequence of functions given
      in filterfuncs.
     
-    Default is to use Machine Specific read filter, specific to Casava 
-    1.8 Illumina output format at current
+    Default if filterfuncs=None is to use Machine Specific read filter, specific to Casava 
+    1.8 Illumina output format at current.
     
-    indervidual functions in filterfunc must take in a sequence record object, 
-    and return a boolean
+    indirvidual functions in filterfunc must take in a sequence record object, 
+    and return a boolean.
     
     differs from filter_reads in that this does not save records that fail a filter,
-    only those that pass.
+    only those that pass, but if log_fails = True, will log all reads that fail 
+    any of the filter functions given, along with the filter number it failed at:
+    logfile example:
     
-    if keep_fails = True, will keep reads that fail any of the filter functions given.
+    (rec.id) <TAB> (enumeration of filter failed from list given)  
+    e.g.
+    HWI-ST0747:233:C0RH3ACXX:6:2109:3962:10857    2
+    HWI-ST0747:233:C0RH3ACXX:6:1159:3231:10224    0
+    ...
     
-    '''   
-    def run_all_filterfuncs(filterfuncs, rec):
-        ''' Run all filter functions on the record, and only return True it if 
-        it passes all of them '''
-        ans = []
-        for func in filterfuncs:
-            ans.append(func(rec))
-        if ans.count(True) == len(ans) :
-            return True
-        else:
-            return False    
     
+    Final output file is written in same file format as the input file. 
+    
+    Supported formats: .bgzf, .fastq and .gz
+    
+    '''
+    #===============================================================================
+    # Setup variables and utility functions 
+    #===============================================================================
+       
     # Path variables
-    starting_dir = os.getcwd()    
-    outpath = os.path.join(starting_dir, outdir) 
+    starting_dir = os.getcwd()
+    if inpath:
+        outpath = os.path.join(inpath, outdir) 
+    else:        
+        outpath = os.path.join(starting_dir, outdir) 
+    
     if not os.path.isdir(outpath):
+        if inpath:
+            os.chdir(inpath)
         os.mkdir(outdir)
-
+        os.chdir(starting_dir)
+        
+    # Define filter function loop
+    if log_fails: 
+        # Set up log file
+        print 'Saving Failed reads to log file: fails.log'
+        if os.path.isfile(os.path.join(starting_dir, outdir, 'fails.log')):
+            print 'Overwriting previous Log file'
+            logfile = open(os.path.join(outpath, 'fails.log'), 'wb')
+        else:
+            logfile = open(os.path.join(outpath, 'fails.log'), 'wb')
+               
+        def run_all_filterfuncs(filterfuncs, rec):              
+            ''' Run all filter functions on the record, and only return True if 
+            it passes all of them '''
+ 
+            ans = []
+            for n, func in enumerate(filterfuncs):
+                ans.append(func(rec))
+                print ans
+                if ans[-1] == False: 
+                    return False
+                    logfile.write('%s\t%s\n' % (rec.id, n))
+            return True           
+    else:
+        def run_all_filterfuncs(filterfuncs, rec):
+            ''' Run all filter functions on the record, and only return True it if 
+            it passes all of them '''
+            ans = []
+            for func in filterfuncs:
+                ans.append(func(rec))
+                if ans[-1] == False: 
+                    return False            
+            return True    
+        
     # Define single illumina machine filter function if none given 
     if filterfuncs is None:
         def illumina_filter(rec):
@@ -148,56 +193,39 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
             '''
             return rec.description.split()[1].split(':')[1] == 'N'
         filterfuncs = [illumina_filter]
-    
-    
-    if keep_fails:
-        # Two Record Cyclers      
-        RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
-        RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
-    else:
-        # Single Record Cycler      
-        RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
+        
+    # Single Record Cycler      
+    RecCycler = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
+
+    #===========================================================================
+    # MainLoop
+    #===========================================================================
     
     # timings
     toc = time.time()
     cum_t = 0 
-    for recordgen in RecCycler1.seqfilegen:
-    
-        if keep_fails:
-            # Load second record generator
-            recordgen2 = RecCycler2.seqfilegen.next()
-        
-        print 'Processing {0}'.format(RecCycler1.curfilename)
+    for recordgen in RecCycler.seqfilegen:
+           
+        print 'Processing {0}'.format(RecCycler.curfilename)
                   
         # Generator initiated 
         # Record only returned if it passes all filter functions in the list 
         passgen = (rec for rec in recordgen if run_all_filterfuncs(filterfuncs, rec))
-        if keep_fails:
-            # Initiate Generator for fails
-            failgen = (rec for rec in recordgen2 if not run_all_filterfuncs(filterfuncs, rec))
              
         # Construct file names
-        name = RecCycler1.curfilename.split('.')  
+        name = RecCycler.curfilename.split('.')  
         pass_filename = [name[0] + '-pass'] + name[1:] 
         pass_filename = os.path.join(outpath, '.'.join(pass_filename))
-        fail_filename = [name[0] + '-fail']  + name[1:]
-        fail_filename = os.path.join(outpath, '.'.join(fail_filename))
         name = '.'.join(name)
     
         if name.endswith('.bgzf'):
             pass_filehdl = bgzf.BgzfWriter(pass_filename)
-            if keep_fails:
-                fail_filehdl = bgzf.BgzfWriter(fail_filename)
         elif name.endswith('.fastq'):
             pass_filehdl = open(pass_filename, 'wb')
-            if keep_fails:
-                fail_filehdl = open(fail_filename, 'wb')
         elif name.endswith('.gz'):
             pass_filehdl = gzip.open(pass_filename, 'wb')
-            if keep_fails:
-                fail_filehdl = gzip.open(fail_filename, 'wb')
         else:
-            print 'Input file format not supported'
+            print 'Input file format not supported: %s' % name
             sys.exit()
                    
         print 'Writing passes to \n{0} ....'.format(pass_filename)
@@ -205,68 +233,104 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
         pass_filehdl.close()
         print '{0} records written'.format(numwritten)
         
-        if keep_fails:
-            print 'Writing fails to \n{0} ....'.format(fail_filename)
-            numwritten = SeqIO.write( failgen , fail_filehdl , 'fastq')
-            fail_filehdl.close()
-            print '{0} records written'.format(numwritten)
-            
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
-        print 'Finished file {0} after {1}'.format(RecCycler1.curfilenum, 
+        print 'Finished file {0} after {1}'.format(RecCycler.curfilenum, 
                                 time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+    # Clean up
+    if log_fails:     
+        logfile.flush()
+        logfile.close()
         
     total_t = time.time() - toc    
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
     os.chdir(starting_dir)
 
-
-def setup_filter(target_dict):
-    ''' Function to return a filter function defined using the given dictionary
+def setup_illumina_filter():
+    ''' Returns function based on illumina machine filter         
+    N = was not pickup up by machine filter i.e. passed
+    Y = was flagged by machine filter i.e. fail 
+    '''
+    # Define filter function
+    def f(rec):
+        ''' filter function for phred '''
+        return rec.description.split()[1].split(':')[1] == 'N'
+    return f  
     
-    Keys are the variables to filter, and the values are the minimum thresholds 
+def setup_phred_filter(value):
+    ''' Returns a filter function based on the mean phred of each read.
+    
+    If a read has a mean phred of less than the given value, the filter returns
+     false.   
+    '''
+    # Define filter function
+    def f(rec):
+        ''' filter function for phred '''
+        return np.array(rec.letter_annotations['phred_quality']).mean() > value
+    return f  
+    
+def setup_propN_filter(value):
+    ''' Returns a filter function based on the proportion of Ns in the read.
+
+    If a read has a higher proportion of Ns than the given value, the filter 
+    returns false.
+    '''
+    # Define filter function
+    def f(rec):
+        ''' Filter function for propN'''
+        return float(rec.seq.count('N')) / len(rec.seq) < value
+    return f
+            
+def setup_cutsite_filter(target_cutsite, mindist):
+    ''' Returns a filter function based on the match of the read cutsite to the 
+    target_cutsite given.
+    
+    Reads that differ in edit distance by more than mindist, cause filter to 
+    return false 
     
     '''
-    if len(target_dict) == 1:
-        if 'phred' in target_dict:
-            # Define filterfunc
-            def f(rec):
-                ''' filter function for phred '''
-                return np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
-            return f
-    
-        elif 'propN' in target_dict:
-            # Define filterfunc
-            def f(rec):
-                ''' filter function fro propN'''
-                return float(rec.seq.count('N')) / len(rec.seq) < target_dict['propN']
-            return f
+    cutsite_length = len(target_cutsite)
+    # Define filterfunc
+    def f(rec):
+        ''' Filter function for cutsite'''
         
-    elif len(target_dict) == 2:
-        if 'phred' in target_dict and 'propN' in target_dict:
-            # Define filterfunc
-            def f(rec):
-                ''' filter function fro phred and propN'''
-                A = np.array(rec.letter_annotations['phred_quality']).mean() > target_dict['phred']
-                B = float(rec.seq.count('N')) / len(rec.seq) < target_dict['propN']
-                return A and B
-            return f
+        cutsite = rec.seq[6: 6 + cutsite_length].tostring()
+        cutsite_dist = ed.distance(target_cutsite, cutsite)
+        
+        return cutsite_dist <= mindist
+    return f
+    
+def setup_overhang_filter(target_cutsite, overhang, mindist=0):
+    ''' Returns a filter function based on the overhang part of the cutsite. 
+    
+    The cut site should end with the specified overhang. Those that dont are likely 
+    to be genetic contaminants which have been inedvertantly sequenced, and 
+    therefore should be discarded. 
+       
+    Reads that mismatch in the overhang region by more than mindist, cause the 
+    filter to return false. 
+    '''   
+    cutsite_length = len(target_cutsite)
+    overhang_length = len(overhang)
+    # Define filterfunc
+    def f(rec):
+        ''' Filter function for cutsite'''
+        
+        cutsite = rec.seq[6: 6 + cutsite_length].tostring() 
+        if cutsite.endswith(overhang):
+            return True
         else:
-            raise Exception('Target variables not set as ''phred'' and ''propN''')
-    else:
-        raise Exception('Number of target values > 2')
-
-
-
-
+            overhang_dist = ed.distance(cutsite[-overhang_length:], overhang)
+            return overhang_dist <= mindist
+    return f
+    
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
                    barcode_pattern=False, inpath='', barcode_path='',
                    outfile_postfix='-clean', outdir='cleaned_data'):
     ''' Goes through fastq files and corrects any errors in MIDtag 
     
     '''
-    import editdist as ed
 
     # Construct Tag dictionary
     MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
@@ -367,7 +431,6 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     total_t = time.time() - toc    
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
-
 
 def gz2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
     ''' Convert the list of files from .gz to .bgzf,

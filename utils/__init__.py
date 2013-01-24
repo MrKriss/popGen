@@ -155,8 +155,6 @@ def search_file(filename, search_path, pathsep=os.pathsep):
 #    else:
 #        print "File not found"
 
-
-
 def pklsave(obj, filename):
     ''' Pickle the given object '''
     if not filename.endswith('pkl'):
