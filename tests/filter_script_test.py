@@ -26,7 +26,6 @@ inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
 files = ['small_test_set.fastq']
 
 # Setup Filters
-
 filter_functions = [setup_illumina_filter(), 
                     setup_propN_filter(0.1),
                     setup_phred_filter(25),
