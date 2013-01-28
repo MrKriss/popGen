@@ -14,7 +14,6 @@ import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
 
-
 import pdb
 
 from utils import smartopen, Cycler, make_MIDdict
@@ -180,13 +179,11 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
                     read_count[0] += 1 
                     if log_fails:
                         logfile.write('%s\t%s\n' % (rec.id, n))
-                    pdb.set_trace()
                     break # move on to next record and don't do else:
             else: # if runs through all filterfuncs, run this too. 
                 read_count[0] += 1 
                 print 'Yielding'
                 yield rec # else yield record when all filters are passed        
-
     
     # Define single illumina machine filter function if none given 
     if filterfuncs is None:
@@ -204,8 +201,7 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
     #===========================================================================
     # MainLoop
     #===========================================================================
-    
-    
+      
     # timings
     toc = time.time()
     cum_t = 0 
@@ -237,8 +233,6 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
         numwritten = SeqIO.write(passgen , pass_filehdl , 'fastq')
         pass_filehdl.close()
         print '{0} records written'.format(numwritten)
-        
-        
         
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
@@ -342,9 +336,9 @@ def setup_overhang_filter(target_cutsite, overhang, mindist=0):
     
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
                    barcode_pattern=False, inpath='', barcode_path='',
-                   outfile_postfix='-clean', outdir='cleaned_data'):
+                   outfile_postfix='-clean', outdir='', 
+                   maxdist = 1):
     ''' Goes through fastq files and corrects any errors in MIDtag 
-    
     '''
 
     # Construct Tag dictionary
@@ -576,66 +570,87 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
 
 if __name__ == '__main__':
     
+#==============================================================================
+    ''' RUNS SCRIPT FOR SMALL TEST SET '''
 #===============================================================================
-# Test Preprocess Work Flow
-#===============================================================================
-    
-    import glob
-    from cluster import cluster_cdhit, summary
-    
-    LANE = '6'
 
-    # Set paths and file patterns 
-    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    os.chdir(inpath)
-#    raw_files = glob.glob('*[0-9].fastq.bgzf')
-#    raw_files.sort()
+    starting_dir = os.getcwd()
     
-    raw_files = ['lane6_NoIndex_L006_R1_002.fastq.bgzf']
+    inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
+    files = ['small_test_set.fastq']
     
-    outdir = 'L6_phredprop_filtered'
-
-    # Update names and path
-    filtered_files = []
-    for name in raw_files:
-        temp = name.split('.')
-        temp[0] = temp[0] + '-pass'
-        temp = '.'.join(temp) 
-        filtered_files.append(temp)
-    filtered_inpath = inpath + '/' + outdir
+    # Setup Filters
     
-    cleaned_file_postfix = '-clean' 
-    cleaned_outdir = 'cleaned_data'
-    barcode_pattern = '*[' + LANE + '].txt'
+    filter_functions = [setup_illumina_filter(), 
+                        setup_propN_filter(0.1),
+                        setup_phred_filter(25),
+                        setup_cutsite_filter('TCGAGG', 2),
+                        setup_overhang_filter('TCGAGG', 'GG', 0)]
     
-    process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
-               barcode_pattern=True, inpath=filtered_inpath, 
-               barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
-               outdir=cleaned_outdir)
+    filter_reads_pipeline(infiles=files, inpath=inpath, filterfuncs=filter_functions, 
+                              outdir='filtered_reads', log_fails=True)
     
-    # Update names and path
-    cleaned_files = []
-    for name in filtered_files:
-        temp = name.split('.')
-        temp[0] = temp[0] + cleaned_file_postfix
-        temp = '.'.join(temp) 
-        cleaned_files.append(temp) 
-    cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
-    
-    #===============================================================================
-    # Cluster Data 
-    #===============================================================================
-    allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-    reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
-    
-    # Variables 
-    c_thresh = 0.9
-    n_filter = 8
-    
-    clustered_file = 'lane' + LANE + 'clustered_reads'
-    cluster_cdhit(infile=allreads_file, outfile=clustered_file, c_thresh=c_thresh, n_filter=n_filter)
-    
-    # Display Summary
-    summary(clustered_file)
-    
+#      
+##===============================================================================
+## Test Preprocess Work Flow
+##===============================================================================
+#    
+#    import glob
+#    from cluster import cluster_cdhit, summary
+#    
+#    LANE = '6'
+#
+#    # Set paths and file patterns 
+#    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+#    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+#    os.chdir(inpath)
+##    raw_files = glob.glob('*[0-9].fastq.bgzf')
+##    raw_files.sort()
+#    
+#    raw_files = ['lane6_NoIndex_L006_R1_002.fastq.bgzf']
+#    
+#    outdir = 'L6_phredprop_filtered'
+#
+#    # Update names and path
+#    filtered_files = []
+#    for name in raw_files:
+#        temp = name.split('.')
+#        temp[0] = temp[0] + '-pass'
+#        temp = '.'.join(temp) 
+#        filtered_files.append(temp)
+#    filtered_inpath = inpath + '/' + outdir
+#    
+#    cleaned_file_postfix = '-clean' 
+#    cleaned_outdir = 'cleaned_data'
+#    barcode_pattern = '*[' + LANE + '].txt'
+#    
+#    process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
+#               barcode_pattern=True, inpath=filtered_inpath, 
+#               barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
+#               outdir=cleaned_outdir)
+#    
+#    # Update names and path
+#    cleaned_files = []
+#    for name in filtered_files:
+#        temp = name.split('.')
+#        temp[0] = temp[0] + cleaned_file_postfix
+#        temp = '.'.join(temp) 
+#        cleaned_files.append(temp) 
+#    cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
+#    
+#    #===============================================================================
+#    # Cluster Data 
+#    #===============================================================================
+#    allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
+#    reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
+#    
+#    # Variables 
+#    c_thresh = 0.9
+#    n_filter = 8
+#    
+#    clustered_file = 'lane' + LANE + 'clustered_reads'
+#    cluster_cdhit(infile=allreads_file, outfile=clustered_file, c_thresh=c_thresh, n_filter=n_filter)
+#    
+#    # Display Summary
+#    summary(clustered_file)
+#    
