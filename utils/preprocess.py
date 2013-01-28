@@ -8,11 +8,14 @@ import sys
 import time
 import gzip
 from subprocess import call
+from collections import Counter
 
 import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
 
+
+import pdb
 
 from utils import smartopen, Cycler, make_MIDdict
 
@@ -150,40 +153,41 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
             os.chdir(inpath)
         os.mkdir(outdir)
         os.chdir(starting_dir)
+    
+    # Setup Counters
+    c = Counter()
+    read_count = [0]
         
     # Define filter function loop
     if log_fails: 
         # Set up log file
-        print 'Saving Failed reads to log file: fails.log'
+        print '\nSaving Failed reads to log file: fails.log'
         if os.path.isfile(os.path.join(starting_dir, outdir, 'fails.log')):
             print 'Overwriting previous Log file'
             logfile = open(os.path.join(outpath, 'fails.log'), 'wb')
         else:
             logfile = open(os.path.join(outpath, 'fails.log'), 'wb')
                
-        def run_all_filterfuncs(filterfuncs, rec):              
-            ''' Run all filter functions on the record, and only return True if 
-            it passes all of them '''
- 
-            ans = []
+    def make_pass_gen(recordgen, filterfuncs):
+        ''' An easier to read implimentation of a generator to only yield 
+        records that pass all filter functions specified'''
+    
+        for rec in recordgen:
             for n, func in enumerate(filterfuncs):
-                ans.append(func(rec))
-                print ans
-                if ans[-1] == False: 
-                    return False
-                    logfile.write('%s\t%s\n' % (rec.id, n))
-            return True           
-    else:
-        def run_all_filterfuncs(filterfuncs, rec):
-            ''' Run all filter functions on the record, and only return True it if 
-            it passes all of them '''
-            ans = []
-            for func in filterfuncs:
-                ans.append(func(rec))
-                if ans[-1] == False: 
-                    return False            
-            return True    
-        
+                # Run filter functions on record       
+                if func(rec) == False:
+                    c.update([n])
+                    read_count[0] += 1 
+                    if log_fails:
+                        logfile.write('%s\t%s\n' % (rec.id, n))
+                    pdb.set_trace()
+                    break # move on to next record and don't do else:
+            else: # if runs through all filterfuncs, run this too. 
+                read_count[0] += 1 
+                print 'Yielding'
+                yield rec # else yield record when all filters are passed        
+
+    
     # Define single illumina machine filter function if none given 
     if filterfuncs is None:
         def illumina_filter(rec):
@@ -201,17 +205,18 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
     # MainLoop
     #===========================================================================
     
+    
     # timings
     toc = time.time()
     cum_t = 0 
     for recordgen in RecCycler.seqfilegen:
            
-        print 'Processing {0}'.format(RecCycler.curfilename)
-                  
+        print '\nProcessing {0}'.format(RecCycler.curfilename)
+                               
         # Generator initiated 
         # Record only returned if it passes all filter functions in the list 
-        passgen = (rec for rec in recordgen if run_all_filterfuncs(filterfuncs, rec))
-             
+        passgen = make_pass_gen(recordgen, filterfuncs)
+                          
         # Construct file names
         name = RecCycler.curfilename.split('.')  
         pass_filename = [name[0] + '-pass'] + name[1:] 
@@ -229,19 +234,29 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
             sys.exit()
                    
         print 'Writing passes to \n{0} ....'.format(pass_filename)
-        numwritten = SeqIO.write( passgen , pass_filehdl , 'fastq')
+        numwritten = SeqIO.write(passgen , pass_filehdl , 'fastq')
         pass_filehdl.close()
         print '{0} records written'.format(numwritten)
+        
+        
         
         loop_t = time.time() - toc - cum_t
         cum_t += loop_t
         print 'Finished file {0} after {1}'.format(RecCycler.curfilenum, 
                                 time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+    print '\nFilter stats'
+    print '\nFilter No.\tHits'    
+    for n in range(len(filterfuncs)):
+        print '%s\t\t%s' % (n,c[n])
+
+    print '\nTotal No. Reads Processed:  %s' % read_count[0]
+    print '\nTotal No. filtered:  %s (%s %%)' % (sum(c.values()), 
+                                                    float(read_count[0])/sum(c.values()))
     # Clean up
     if log_fails:     
         logfile.flush()
         logfile.close()
-        
+    
     total_t = time.time() - toc    
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
