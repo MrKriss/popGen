@@ -182,7 +182,6 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
                     break # move on to next record and don't do else:
             else: # if runs through all filterfuncs, run this too. 
                 read_count[0] += 1 
-                print 'Yielding'
                 yield rec # else yield record when all filters are passed        
     
     # Define single illumina machine filter function if none given 
@@ -244,8 +243,9 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
         print '%s\t\t%s' % (n,c[n])
 
     print '\nTotal No. Reads Processed:  %s' % read_count[0]
-    print '\nTotal No. filtered:  %s (%s %%)' % (sum(c.values()), 
-                                                    float(read_count[0])/sum(c.values()))
+    print '\nTotal No. filtered:  %s (%.2f %%)' % (sum(c.values()), 
+                                                    100 * (sum(c.values())/ 
+                                                           float(read_count[0])))
     # Clean up
     if log_fails:     
         logfile.flush()
@@ -337,8 +337,14 @@ def setup_overhang_filter(target_cutsite, overhang, mindist=0):
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
                    barcode_pattern=False, inpath='', barcode_path='',
                    outfile_postfix='-clean', outdir='', 
-                   maxdist = 1):
-    ''' Goes through fastq files and corrects any errors in MIDtag 
+                   MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6):
+    ''' Goes through files and corrects any errors in MIDtag and cutsite
+    
+    TODO:
+    Currently MIDtag_len and cutsite_len are unused. make these constants in 
+    the larger scope of the pipeline to account for different MID tag/ cut site 
+    possibilities.
+    
     '''
 
     # Construct Tag dictionary
@@ -350,6 +356,8 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     
     keys = [key[:6] for key in MIDdict.iterkeys()]
     keys.sort()
+    
+    cutsite = 'TGCAGG' 
     
     # Make ouput directory if required
     outpath = os.path.join(inpath, outdir)
@@ -366,14 +374,24 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
             self.skipped_count = 0
             self.corrected_count = 0
     
-        def ok_reads_gen(self, recgen, keys):
+        def clean_reads_gen(self, recgen, keys):
             
             for rec in recgen:
+                
+                #===============================================================
+                # Analise MID tag section
+                #===============================================================
                 recMID = str(rec.seq[:6])
                 if recMID not in keys:
                     # Sequencing error in the tag. Work out nearest candidate.
                     distvec = np.array([ed.distance(recMID, key) for key in keys]) 
-                    min_dist_candidates = [keys[idx] for idx in np.where(distvec == distvec.min())[0]]
+                    
+                    min_dist_candidates = []
+                    distvec_min = distvec.min()
+                    for elem in distvec:
+                        if elem == distvec_min and elem <= max_edit_dist:
+                            min_dist_candidates.append(keys[elem])
+
                     if len(min_dist_candidates) > 1:
                         # Muliple candidates. True MID is Ambiguous 
     #                    print ('Multiple minimum distances. ' 
@@ -384,7 +402,7 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
                         continue
                     elif len(min_dist_candidates) == 1:
                         # Correct the erroneous tag with the candidate.
-                        # Letter annotations must be removed before editing seq.
+                        # Letter annotations must be removed before editing rec.seq
                         temp_var = rec.letter_annotations
                         rec.letter_annotations = {}
                         # Change seq to mutableseq
@@ -394,9 +412,38 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
                         rec.letter_annotations.update(temp_var)
                         self.corrected_count += 1
                         
+                #===============================================================
+                # Analise Cut site section
+                #===============================================================
+                rec_cutsite = str(rec.seq[6:12])
+                if rec_cutsite != cutsite:
+                    # Sequencing error in the cutsite. Correct if less than max_edit_dist
+                    
+                    cutsite_dist = ed.distance(rec_cutsite, cutsite)
+
+                    if cutsite_dist <= max_edit_dist:
+                        # Correct the erroneous cutsite with the actual cutsite.
+                        # Letter annotations must be removed before editing rec.seq
+                        temp_var = rec.letter_annotations
+                        rec.letter_annotations = {}
+                        # Change seq to mutableseq
+                        rec.seq = rec.seq.tomutable()
+                        rec.seq[6:12] = cutsite
+                        rec.seq = rec.seq.toseq()
+                        rec.letter_annotations.update(temp_var)
+                        self.corrected_count += 1
+                    else:
+                        # Amount of error in cute site is too large to correct 
+                        # May also be from contaminants. So read is skipped altogether 
+                        self.skipped_count += 1
+                        continue
+                # Note: rec only yielded if the MID tag and the cutsite are 
+                # sucessfully cleaned         
                 yield rec
             
-    # main loop
+    #===========================================================================
+    # MAIN LOOP
+    #===========================================================================
     total_numwritten = 0
     total_numskipped = 0
     total_numcorrected = 0
@@ -413,11 +460,11 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
         filename[0] = filename[0] + outfile_postfix
         filename = '.'.join(filename)
         
-        outfile_path = os.path.join(outpath, filename)
-        
+        outfile_path = os.path.join(outpath, filename)        
         output_filehdl = bgzf.BgzfWriter(outfile_path, mode='wb')
         
-        numwritten = SeqIO.write(ReadCorrector.ok_reads_gen(seqfile, keys), 
+        # write records that are cleaned up
+        numwritten = SeqIO.write(ReadCorrector.clean_reads_gen(seqfile, keys), 
                                  output_filehdl, 'fastq')
         output_filehdl.flush()        
         output_filehdl.close()        
@@ -576,20 +623,42 @@ if __name__ == '__main__':
 
     starting_dir = os.getcwd()
     
+    LANE = '6'
+    
+    # Path setup
     inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
-    files = ['small_test_set.fastq']
+    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+    raw_files = ['small_test_set.fastq']
     
     # Setup Filters
-    
+    outdir = 'filtered_reads'
     filter_functions = [setup_illumina_filter(), 
                         setup_propN_filter(0.1),
                         setup_phred_filter(25),
                         setup_cutsite_filter('TCGAGG', 2),
                         setup_overhang_filter('TCGAGG', 'GG', 0)]
     
-    filter_reads_pipeline(infiles=files, inpath=inpath, filterfuncs=filter_functions, 
-                              outdir='filtered_reads', log_fails=True)
-    
+    filter_reads_pipeline(infiles=raw_files, inpath=inpath, filterfuncs=filter_functions, 
+                              outdir=outdir, log_fails=True)
+    # Update names and path
+    filtered_files = []
+    for name in raw_files:
+        temp = name.split('.')
+        temp[0] = temp[0] + '-pass'
+        temp = '.'.join(temp) 
+        filtered_files.append(temp)
+    filtered_inpath = os.path.join(inpath, outdir)
+      
+    cleaned_file_postfix = '-clean' 
+    cleaned_outdir = '' # 'cleaned_data'
+    barcode_pattern = '*[' + LANE + '].txt'
+
+    process_MIDtag(infiles=filtered_files, barcodes =barcode_pattern,
+                   barcode_pattern=True, 
+                   inpath=filtered_inpath, barcode_path=barpath,
+                   outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir, 
+                   MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6)
+
 #      
 ##===============================================================================
 ## Test Preprocess Work Flow
