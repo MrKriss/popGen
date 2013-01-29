@@ -581,32 +581,35 @@ def file2fasta(filename):
     
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
-def reads2fasta(infiles=None, filepattern=False, inpath='', 
-                outfile='outfile.fasta', outpath = ''):
-    '''Writes the reads (without the MID tag) to one large fasta file 
-    for clustering'''
+def trim_reads(infiles=None, filepattern=False, inpath='', 
+                outfile='outfile.fasta', outpath = '', n = 1):
+    ''' Trims off the MID tag of each read, as well as the last 'n' bases.
+    Writes the trimed reads to one large fasta file for clustering'''
+    
+    start_dir = os.getcwd() 
     
     RecCycler = Cycler(infiles=infiles, 
                        filepattern=filepattern, inpath=inpath)
     count = 0
     outfile_part_list = []
 
-    print ('Removing MID tags and converting {0} files to'
+    print ('Removing MID tags, triming reads and converting {0} files to'
            ' fasta format').format(RecCycler.numfiles)
 
-    # Generator to trip off tag.
+    # Generator to trim off MID tag and end of read.
     for seqfilegen in RecCycler.seqfilegen:
         
-        read_gen = (rec[12:] for rec in seqfilegen)
+        read_gen = (rec[12:-n] for rec in seqfilegen)
         # File name 
         outfile_part = 'output_part' + str(count) + '.fasta'
         outfile_part_list.append(outfile_part)
         count += 1
         with open(os.path.join(outpath, outfile_part), 'wb') as f:
             write_count = SeqIO.write(read_gen, f, 'fasta')
-            print 'Wrote {0} records to file\n{1}'.format(count, outfile_part)
+            print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
     
     # Combine output parts into one big file
+    os.chdir(outpath)
     cmd = ['cat'] + outfile_part_list 
     with open(os.path.join(outpath, outfile), 'wb') as f:
         print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
@@ -614,6 +617,8 @@ def reads2fasta(infiles=None, filepattern=False, inpath='',
     
     print 'Done, cleaning up temp files ....'
     call(['rm', 'output*'])    
+    os.chdir(start_dir)
+
 
 if __name__ == '__main__':
     
