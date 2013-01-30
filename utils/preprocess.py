@@ -616,7 +616,7 @@ def trim_reads(infiles=None, filepattern=False, inpath='',
         call(cmd, stdout=f) 
     
     print 'Done, cleaning up temp files ....'
-    call(['rm', 'output*'])    
+    call('rm output*', shell=True)    
     os.chdir(start_dir)
 
 
