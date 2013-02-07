@@ -291,7 +291,7 @@ def setup_propN_filter(value):
         return float(rec.seq.count('N')) / len(rec.seq) < value
     return f
             
-def setup_cutsite_filter(target_cutsite, mindist):
+def setup_cutsite_filter(target_cutsite, mindist=1):
     ''' Returns a filter function based on the match of the read cutsite to the 
     target_cutsite given.
     
@@ -487,9 +487,9 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     total_t = time.time() - toc    
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
-
-def gz2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
-    ''' Convert the list of files from .gz to .bgzf,
+ 
+def file2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
+    ''' Convert given list of files from .gz or .fastq to .bgzf,
     And also produce an SQL index if needed. 
     
     infiles accepts str of file name of list of str for filenames. 
@@ -514,20 +514,20 @@ def gz2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
     for filename in infiles: 
         toc = time.time()
         
+        f = smartopen(filename)
+        
         # Checks for type of input
-        if filename.split('.')[-1] == '.gz':
+        if filename.endswith('.gz'):
             # Drop .gz and append .bgzf
-            f2read = gzip.open(filename)
             bgzfFileName = '.'.join(filename.split('.')[:-1]) + '.bgzf'  
-        elif filename.split('.')[-1] == '.fastq':
-            f2read = open(filename)
+        elif filename.endswith('.fastq'):
             # Append .bgzf
             bgzfFileName = filename + '.bgzf'
 
         print "Producing BGZF output from {0}...".format(filename)
         w = bgzf.BgzfWriter(bgzfFileName, 'wb')
         while True:
-            data = f2read.read(65536)
+            data = f.read(65536)
             w.write(data)
             if not data:
                 break
@@ -542,7 +542,7 @@ def gz2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
       
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(infiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
-  
+ 
 def makeSQLindex(infiles=None, filepattern=False, inpath=''):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bgzf file 
     
@@ -663,68 +663,3 @@ if __name__ == '__main__':
                    inpath=filtered_inpath, barcode_path=barpath,
                    outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir, 
                    MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6)
-
-#      
-##===============================================================================
-## Test Preprocess Work Flow
-##===============================================================================
-#    
-#    import glob
-#    from cluster import cluster_cdhit, summary
-#    
-#    LANE = '6'
-#
-#    # Set paths and file patterns 
-#    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-#    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-#    os.chdir(inpath)
-##    raw_files = glob.glob('*[0-9].fastq.bgzf')
-##    raw_files.sort()
-#    
-#    raw_files = ['lane6_NoIndex_L006_R1_002.fastq.bgzf']
-#    
-#    outdir = 'L6_phredprop_filtered'
-#
-#    # Update names and path
-#    filtered_files = []
-#    for name in raw_files:
-#        temp = name.split('.')
-#        temp[0] = temp[0] + '-pass'
-#        temp = '.'.join(temp) 
-#        filtered_files.append(temp)
-#    filtered_inpath = inpath + '/' + outdir
-#    
-#    cleaned_file_postfix = '-clean' 
-#    cleaned_outdir = 'cleaned_data'
-#    barcode_pattern = '*[' + LANE + '].txt'
-#    
-#    process_MIDtag(infiles=filtered_files, barcodes=barcode_pattern,
-#               barcode_pattern=True, inpath=filtered_inpath, 
-#               barcode_path=barpath, outfile_postfix=cleaned_file_postfix, 
-#               outdir=cleaned_outdir)
-#    
-#    # Update names and path
-#    cleaned_files = []
-#    for name in filtered_files:
-#        temp = name.split('.')
-#        temp[0] = temp[0] + cleaned_file_postfix
-#        temp = '.'.join(temp) 
-#        cleaned_files.append(temp) 
-#    cleaned_inpath = filtered_inpath + '/' + cleaned_outdir
-#    
-#    #===============================================================================
-#    # Cluster Data 
-#    #===============================================================================
-#    allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-#    reads2fasta(infiles=cleaned_files, inpath=cleaned_inpath, outfile=allreads_file)
-#    
-#    # Variables 
-#    c_thresh = 0.9
-#    n_filter = 8
-#    
-#    clustered_file = 'lane' + LANE + 'clustered_reads'
-#    cluster_cdhit(infile=allreads_file, outfile=clustered_file, c_thresh=c_thresh, n_filter=n_filter)
-#    
-#    # Display Summary
-#    summary(clustered_file)
-#    

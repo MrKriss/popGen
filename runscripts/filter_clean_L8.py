@@ -89,7 +89,9 @@ c_thresh = 0.9
 n_filter = 8
 
 clustered_file = 'lane' + LANE + 'clustered_reads'
-#cluster_cdhit(infile=allreads_file, outfile=clustered_file,
+
+# Need to fix cluster function first.
+# cluster_cdhit(infile=allreads_file, outfile=clustered_file,
 #              c_thresh=c_thresh, n_filter=n_filter)
 #
 ## Display Summary

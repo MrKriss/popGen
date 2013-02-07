@@ -16,28 +16,50 @@ filter_reads_pipeline
 
 from cluster import cluster_cdhit, summary
 
+class Run_Class():
+    ''' Class to hold all configuration data and sequence of methods '''
+     def __init__(self, config):
+         
+         
+         
+
+
+
+
+
 #==============================================================================
-''' RUNS SCRIPT FOR ALLL READS IN LANE 6 '''
+''' RUN SCRIPT FOR ALLL READS IN stickleback RAD data '''
 #===============================================================================
-
-LANE = '6'
-
 starting_dir = os.getcwd()
 
+config = {}
+
+
 # Set paths and file patterns 
+
+config['paths'] = {'inpath'  :  '/home/musselle/san/data/stickleback', 
+                   'barpath' :  '/home/musselle/san/data/stickleback/barcodes'}
+
+config['MID']
+
+
 #inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
 #barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-inpath = '/home/musselle/san/data/lane' + LANE
-barpath = '/home/musselle/san/data/barcodes'
+inpath = '/home/musselle/san/data/stickleback'
+barpath = '/home/musselle/san/data/stickleback/barcodes'
 os.chdir(inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 
+os.chdir(barpath)
+barcodes = glob.glob('*.txt')
+barcodes.sort()
+
+os.chdir(starting_dir)
 #===============================================================================
 # Setup and run filter
 #===============================================================================
-filter_functions = [setup_illumina_filter(), 
-                    setup_propN_filter(0.1),
+filter_functions = [setup_propN_filter(0.1),
                     setup_phred_filter(25),
                     setup_cutsite_filter('TCGAGG', 2),
                     setup_overhang_filter('TCGAGG', 'GG', 0)]
