@@ -11,7 +11,6 @@ from subprocess import call
 from collections import Counter
 import glob
 
-
 import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
@@ -379,6 +378,8 @@ class Workflow(object):
             filename[0] = filename[0] + outfile_postfix
             filename = '.'.join(filename)
             outnames.append(filename)
+            
+            pdb.set_trace()
             
             outfile_path = os.path.join(outpath, filename)        
             output_filehdl = bgzf.BgzfWriter(outfile_path, mode='wb')
