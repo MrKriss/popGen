@@ -57,9 +57,8 @@ if c.barcode_files_setup == 'individual':
     filenames = [f.split('.')[0] for f in c.filenames]
     for fname in filenames:
         if fname not in barnames:
-            print ('Set to individual barcode files, yet at least one input'
+            raise Exception('Set to individual barcode files, yet at least one input'
             'file name does not match the given barcode file names')
-            raise
 
 # MIDtags
 c.cutsite = 'TGCAGG'

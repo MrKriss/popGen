@@ -47,9 +47,8 @@ class Workflow(object):
             filenames = [f.split('.')[0] for f in c.raw_input_files]
             for fname in filenames:
                 if fname not in barnames:
-                    print ('Set to individual barcode files, yet at least one input'
+                    raise Exception('Set to individual barcode files, yet at least one input'
                     'file name does not match the given barcode file names')
-                    raise
                                
         # Define MID tag Dictionary
         if c.barcode_files_setup == 'individual':
@@ -78,9 +77,8 @@ class Workflow(object):
                         global_tags[elem[0]] = elem[1]
             c.MIDtags = global_tags 
         else:
-            print 'Barcode file usage not specified.'
-            print 'Set c.barcode_files_setup to "individual" or "global"'
-            raise
+            raise Exception('Barcode file usage not specified.'
+            'Set c.barcode_files_setup to "individual" or "global"')
            
                 
     def set_input_files(self, infiles, file_pattern, inpath):
@@ -132,8 +130,7 @@ class Workflow(object):
          
         # Input checks       
         if self.filter_functions is None :
-            print 'Error: No filter functions defined'
-            raise
+            raise Exception('No filter functions defined')
         
         #===============================================================================
         # Setup variables and utility functions 
