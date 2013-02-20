@@ -205,8 +205,6 @@ class Workflow(object):
             name = '.'.join(name)
             outnames.append(pass_filename) 
             
-            pdb.set_trace()  
-        
             if name.endswith('.bgzf'):
                 pass_filehdl = bgzf.BgzfWriter(pass_file)
             elif name.endswith('.fastq'):
@@ -380,8 +378,6 @@ class Workflow(object):
             filename[0] = filename[0] + outfile_postfix
             filename = '.'.join(filename)
             outnames.append(filename)
-            
-            pdb.set_trace()
             
             outfile_path = os.path.join(outpath, filename)        
             output_filehdl = bgzf.BgzfWriter(outfile_path, mode='wb')
