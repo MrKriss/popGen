@@ -201,7 +201,7 @@ class Workflow(object):
             # Construct file names
             name = RecCycler.curfilename.split('.')  
             pass_filename = '.'.join([name[0] + '-pass'] + name[1:]) 
-            pass_file = os.path.join(outpath, '.'.join(pass_filename))
+            pass_file = os.path.join(outpath, pass_filename)
             name = '.'.join(name)
             outnames.append(pass_filename) 
             
