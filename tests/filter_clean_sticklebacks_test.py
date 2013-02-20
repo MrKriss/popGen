@@ -49,7 +49,7 @@ raw_files.sort()
 c.raw_input_files = raw_files 
 
 os.chdir(c.barpath)
-barcodes = glob.glob('*0.txt')
+barcodes = glob.glob('sb_testdata.txt')
 barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
