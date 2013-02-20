@@ -45,7 +45,7 @@ raw_files.sort()
 c.raw_input_files = raw_files 
 
 os.chdir(c.barpath)
-barcodes = glob.glob('*[1-9].fastq.bgzf')
+barcodes = glob.glob('*[1-9].txt')
 barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
