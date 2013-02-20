@@ -436,7 +436,8 @@ class Workflow(object):
         for seqfilegen in RecCycler.seqfilegen:
                        
             if c.barcode_files_setup == 'individual':
-                lenMIDs = len(c.MIDtags[RecCycler.curfilename.split('.')[0]].keys()[0])
+                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
+                lenMIDs = len(c.MIDtags[fname].keys()[0])
                 read_start_idx = len(c.cutsite) + lenMIDs  
     
             read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
