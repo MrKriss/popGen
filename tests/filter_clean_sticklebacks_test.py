@@ -43,7 +43,8 @@ c.processedpath = os.path.join(prefix,'sticklebacks/filtered_data')
 
 # Setup input files and barcodes
 os.chdir(c.inpath)
-raw_files = glob.glob('*0.fastq.bgzf')
+#raw_files = glob.glob('*0.fastq.bgzf')
+raw_files = glob.glob('sb_testdata.bgzf')
 raw_files.sort()
 c.raw_input_files = raw_files 
 
@@ -70,10 +71,10 @@ Experiment = Workflow(c)
 #===============================================================================
 # Setup and run filter
 #===============================================================================
-Experiment.filter_functions = [setup_propN_filter(0.1),
-                               setup_phred_filter(25),
-                               setup_cutsite_filter('TCGAGG', 2),
-                               setup_overhang_filter('TCGAGG', 'GG', 0)]
+Experiment.filter_functions = [Experiment.make_propN_filter(0.1),
+                               Experiment.make_phred_filter(25),
+                               Experiment.make_cutsite_filter(max_edit_dist=2),
+                               Experiment.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 
 Experiment.filter_reads_pipeline()
 

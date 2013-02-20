@@ -161,12 +161,11 @@ class Workflow(object):
             else:
                 logfile = open(os.path.join(outpath, 'fails.log'), 'wb')
                    
-        def make_pass_gen(self, recordgen):
+        def make_pass_gen(recordgen):
             ''' An easier to read implimentation of a generator to only yield 
             records that pass all filter functions specified'''
             
             filterfuncs = self.filter_functions
-            
             
             for rec in recordgen:
                 for n, func in enumerate(filterfuncs):
@@ -201,7 +200,7 @@ class Workflow(object):
                
             # Generator initiated 
             # Record only returned if it passes all filter functions in the list 
-            passgen = make_pass_gen(self, recordgen)
+            passgen = make_pass_gen(recordgen)
                               
             # Construct file names
             name = RecCycler.curfilename.split('.')  
@@ -496,7 +495,7 @@ class Workflow(object):
             return float(rec.seq.count('N')) / len(rec.seq) < value
         return f
                 
-    def setup_cutsite_filter(self, target_cutsite=None, mindist=None):
+    def make_cutsite_filter(self, target_cutsite=None, max_edit_dist=None):
         ''' Returns a filter function based on the match of the read cutsite to the 
         target_cutsite given.
         
@@ -504,22 +503,43 @@ class Workflow(object):
         return false 
         
         '''
-        self.c.cutsite
-        cutsite_length = len(self.c.cutsite)
-        
-     
-        
+
+        if target_cutsite is None:
+            target_cutsite = self.c.cutsite
+
+        if max_edit_dist is None:
+            max_edit_dist = self.c.max_edit_dist
+
+        cutsite_length = len(target_cutsite)
+    
         # Define filterfunc
         def f(rec):
             ''' Filter function for cutsite'''
             
-            cutsite = rec.seq[6: 6 + cutsite_length].tostring()
+            # Must calculate MIDlength, but this may vary between files
+            if self.c.barcode_files_setup == 'individual':
+                
+                fname = self.current_file.split('.')[0].split('-')[0]
+                
+                if f.target_file is None or f.target_file != fname:
+                    f.target_file = fname
+                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
+                
+            if self.c.barcode_files_setup == 'global':
+                if f.MIDlength is None: 
+                    f.MIDlength = len(self.c.MIDtags.keys()[0])
+                
+            cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
             cutsite_dist = ed.distance(target_cutsite, cutsite)
             
-            return cutsite_dist <= mindist
+            return cutsite_dist <= max_edit_dist
+        
+        f.target_file = None
+        f.MIDlength = None
+        
         return f
         
-    def setup_overhang_filter(target_cutsite, overhang, mindist=0):
+    def make_overhang_filter(self, target_cutsite=None, overhang=None, max_edit_dist=0):
         ''' Returns a filter function based on the overhang part of the cutsite. 
         
         The cut site should end with the specified overhang. Those that dont are likely 
@@ -529,18 +549,41 @@ class Workflow(object):
         Reads that mismatch in the overhang region by more than mindist, cause the 
         filter to return false. 
         '''   
+    
+        if target_cutsite is None:
+            target_cutsite = self.c.cutsite
+            overhang = target_cutsite[-2:]
+        
         cutsite_length = len(target_cutsite)
         overhang_length = len(overhang)
         # Define filterfunc
         def f(rec):
             ''' Filter function for cutsite'''
             
-            cutsite = rec.seq[6: 6 + cutsite_length].tostring() 
+            # Must calculate MIDlength, but this may vary between files
+            if self.c.barcode_files_setup == 'individual':
+                
+                fname = self.current_file.split('.')[0].split('-')[0]
+                
+                if f.target_file is None or f.target_file != fname:
+                    f.target_file = fname
+                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
+                
+            if self.c.barcode_files_setup == 'global':
+                if f.MIDlength is None: 
+                    f.MIDlength = len(self.c.MIDtags.keys()[0])
+            
+
+            cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
             if cutsite.endswith(overhang):
                 return True
             else:
                 overhang_dist = ed.distance(cutsite[-overhang_length:], overhang)
-                return overhang_dist <= mindist
+                return overhang_dist <= max_edit_dist
+            
+        f.MIDlength = None
+        f.target_file = None
+            
         return f
         
 #===============================================================================
