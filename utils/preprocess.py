@@ -205,7 +205,7 @@ class Workflow(object):
             name = '.'.join(name)
             outnames.append(pass_filename) 
             
-            pbd.set_trace()  
+            pdb.set_trace()  
         
             if name.endswith('.bgzf'):
                 pass_filehdl = bgzf.BgzfWriter(pass_file)
