@@ -450,7 +450,8 @@ class Workflow(object):
                 print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
         
         # Combine output parts into one big file
-        os.chdir(outpath)
+        if outpath:
+            os.chdir(outpath)
         cmd = ['cat'] + outfile_part_list 
         with open(os.path.join(outpath, outfile), 'wb') as f:
             print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
