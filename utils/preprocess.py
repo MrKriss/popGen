@@ -409,7 +409,7 @@ class Workflow(object):
         self.next_input_files = outnames
         self.next_input_path = outpath
 
-    def trim_reads(self, outfile='outfile.fasta', outpath = '', n = 1):
+    def trim_reads(self, out_filename='out_filename.fasta', outpath = '', n = 1):
         ''' Trims off the MID tag of each read, as well as the last 'n' bases.
         Writes the trimed reads to one large fasta file for clustering'''
         
@@ -449,8 +449,8 @@ class Workflow(object):
         if outpath:
             os.chdir(outpath)
         cmd = ['cat'] + outfile_part_list 
-        with open(os.path.join(outpath, outfile), 'wb') as f:
-            print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
+        with open(os.path.join(outpath, out_filename), 'wb') as f:
+            print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
             call(cmd, stdout=f) 
         
         print 'Done, cleaning up temp files ....'
@@ -1152,7 +1152,7 @@ def file2fasta(filename):
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
 def trim_reads(infiles=None, filepattern=False, inpath='', 
-                outfile='outfile.fasta', outpath = '', n = 1):
+                out_filename='out_filename.fasta', outpath = '', n = 1):
     ''' Trims off the MID tag of each read, as well as the last 'n' bases.
     Writes the trimed reads to one large fasta file for clustering'''
     
@@ -1181,8 +1181,8 @@ def trim_reads(infiles=None, filepattern=False, inpath='',
     # Combine output parts into one big file
     os.chdir(outpath)
     cmd = ['cat'] + outfile_part_list 
-    with open(os.path.join(outpath, outfile), 'wb') as f:
-        print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, outfile))
+    with open(os.path.join(outpath, out_filename), 'wb') as f:
+        print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
         call(cmd, stdout=f) 
     
     print 'Done, cleaning up temp files ....'

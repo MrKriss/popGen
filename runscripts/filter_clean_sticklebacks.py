@@ -83,14 +83,14 @@ Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 # Cluster Data 
 #===============================================================================
 allreads_file = 'sb_' + 'allreads_preprocessed.fasta'
-Experiment.trim_reads(outfile=allreads_file, n = 1)
+Experiment.trim_reads(out_filename=allreads_file, n = 1)
 
 ## Variables 
 #c_thresh = 0.9
 #n_filter = 8
 #
 #clustered_file = 'lane' + LANE + 'clustered_reads'
-#cluster_cdhit(infile=allreads_file, outfile=clustered_file,
+#cluster_cdhit(infile=allreads_file, out_filename=clustered_file,
 #              c_thresh=c_thresh, n_filter=n_filter)
 #
 ## Display Summary
