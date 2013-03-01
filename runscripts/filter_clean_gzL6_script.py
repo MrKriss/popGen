@@ -37,6 +37,8 @@ if socket.gethostname() == 'yildun':
     prefix = '/space/musselle/datasets'
 elif socket.gethostname() == 'luca':
     prefix = '/home/musselle/san/data'
+elif socket.gethostname() == 'gg-pc6':
+    prefix = '/home/musselle/data'
 
 # Set paths 
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras') 

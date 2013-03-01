@@ -19,11 +19,6 @@ from preprocess import  Workflow, ConfigClass
 ''' RUN SCRIPT FOR ALLL READS IN stickleback RAD data '''
 #===============================================================================
 
-""" FOR LANE 8 """
-
-LANE =  '8'
-
-experiment_name = 'gzL8'
 
 #===============================================================================
 # Setup Configuration
@@ -37,15 +32,13 @@ if socket.gethostname() == 'yildun':
     prefix = '/space/musselle/datasets'
 elif socket.gethostname() == 'luca':
     prefix = '/home/musselle/san/data'
-elif socket.gethostname() == 'gg-pc6':
-    prefix = '/home/musselle/data'
 
 # Set paths 
-c.data_inpath =  os.path.join(prefix,'gazelles-zebras') 
-c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
-c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
-c.processed_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
-c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
+c.data_inpath =  os.path.join(prefix,'sticklebacks') 
+c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
+c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
@@ -54,13 +47,13 @@ raw_files.sort()
 c.raw_input_files = raw_files 
 
 os.chdir(c.barcode_inpath)
-barcodes = glob.glob('*%s.txt' % (LANE))
+barcodes = glob.glob('*[0-9].txt')
 barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
 
 # Set barcode file mode  
-c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
+c.barcode_files_setup = 'individual' # Each reads file has an associated barcode file 
 
 # MIDtags
 c.cutsite = 'TGCAGG'
@@ -74,25 +67,9 @@ c.log_fails = True
 Experiment = Workflow(c) 
 
 #===============================================================================
-# Setup and run filter
-#===============================================================================
-Experiment.filter_functions = [Experiment.make_propN_filter(0.1),
-                               Experiment.make_phred_filter(25),
-                               Experiment.make_cutsite_filter(max_edit_dist=2),
-                               Experiment.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
-
-Experiment.filter_reads_pipeline()
-
-#===============================================================================
-# Process and Correct MID tag 
-#===============================================================================
-Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
-
-#===============================================================================
 # Cluster Data 
 #===============================================================================
-allreads_file = experiment_name + '_allreads_preprocessed.fasta'
-Experiment.trim_reads(out_filename=allreads_file, n = 1)
+
 
 # default Vars for clustering 
 default_vars = { 'c_thresh' : 0.90,
@@ -100,6 +77,8 @@ default_vars = { 'c_thresh' : 0.90,
                  'threads' : 1,
                  'mem' : 0,
                  'maskN' : False}
+                
+experiment_name = 'sb_clustered_reads'
 
 # Variations to run
 clustering_runs = [ { 'c_thresh' : 0.95},
@@ -116,8 +95,8 @@ for d in clustering_runs:
     inputs_dict.update(default_vars)
     inputs_dict.update(d)
     
-    dirname = experiment_name + '_clustered_reads'
-    outfile = experiment_name + '_clustered_reads'
+    dirname = experiment_name
+    outfile = experiment_name
     if 'c_thresh' in d:
         dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
         outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
@@ -134,6 +113,7 @@ for d in clustering_runs:
 
     Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
               **inputs_dict)
+
 
 ## Display Summary
 #summary(clustered_file)
