@@ -12,8 +12,9 @@ import glob
 
 import socket
 
-from preprocess import Workflow, ConfigClass
+from preprocess import  Workflow, ConfigClass
 
+      
 #==============================================================================
 ''' RUN SCRIPT FOR ALLL READS IN stickleback RAD data '''
 #===============================================================================
@@ -37,15 +38,16 @@ c.data_inpath =  os.path.join(prefix,'sticklebacks')
 c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
 c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
 c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
-raw_files = glob.glob('*[1-9].fastq.bgzf')
+raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 c.raw_input_files = raw_files 
 
 os.chdir(c.barcode_inpath)
-barcodes = glob.glob('*[1-9].txt')
+barcodes = glob.glob('*[0-9].txt')
 barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
@@ -59,7 +61,7 @@ c.max_edit_dist = 2
         
 # FILTERING
 # Whether to log reads that fail the filtering         
-c.log_fails = True       
+c.log_fails = True
        
 # Define Class
 Experiment = Workflow(c) 
@@ -85,13 +87,49 @@ Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 allreads_file = 'sb_' + 'allreads_preprocessed.fasta'
 Experiment.trim_reads(out_filename=allreads_file, n = 1)
 
-## Variables 
-#c_thresh = 0.9
-#n_filter = 8
-#
-#clustered_file = 'lane' + LANE + 'clustered_reads'
-#cluster_cdhit(infile=allreads_file, out_filename=clustered_file,
-#              c_thresh=c_thresh, n_filter=n_filter)
-#
+# default Vars for clustering 
+default_vars = { 'c_thresh' : 0.90,
+                 'n_filter' : 8,
+                 'threads' : 1,
+                 'mem' : 0,
+                 'maskN' : False}
+                
+experiment_name = 'sb_clustered_reads'
+
+# Variations to run
+clustering_runs = [ { 'c_thresh' : 0.95},
+                    { 'c_thresh' : 0.95, 'maskN' : True},
+                    { 'c_thresh' : 0.90},
+                    { 'c_thresh' : 0.90, 'maskN' : True},
+                    { 'c_thresh' : 0.85},
+                    { 'c_thresh' : 0.85, 'maskN' : True},
+                   ]
+                   
+for d in clustering_runs:
+    
+    inputs_dict = {}
+    inputs_dict.update(default_vars)
+    inputs_dict.update(d)
+    
+    dirname = experiment_name
+    outfile = experiment_name
+    if 'c_thresh' in d:
+        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+    if 'maskN' in d:
+        dirname = dirname + '-maskN'
+        outfile = outfile + '-maskN'
+    
+    path = os.path.join(c.clusters_outpath, dirname)        
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
+    path2outfile  = os.path.join(path, outfile)
+    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
+
+    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+              **inputs_dict)
+
+
 ## Display Summary
 #summary(clustered_file)
