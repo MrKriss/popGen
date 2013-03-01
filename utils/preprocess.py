@@ -15,9 +15,10 @@ import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
 
-import pdb
+from general_utilities import set_trace
 
 from utils import smartopen, Cycler, make_MIDdict
+from cluster import cluster_cdhit
 
 class ConfigClass(object):
     pass
@@ -414,6 +415,9 @@ class Workflow(object):
         
         c = self.c
         
+        if not outpath:
+            outpath = c.processed_outpath
+        
         start_dir = os.getcwd() 
         
         RecCycler = Cycler(infiles=self.next_input_files, 
@@ -448,6 +452,9 @@ class Workflow(object):
         if outpath:
             os.chdir(outpath)
         cmd = ['cat'] + outfile_part_list 
+        
+        os.path.join(outpath, out_filename)
+        
         with open(os.path.join(outpath, out_filename), 'wb') as f:
             print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
             call(cmd, stdout=f) 
@@ -456,6 +463,9 @@ class Workflow(object):
         for f in outfile_part_list:
             os.remove(f)   
         os.chdir(start_dir)
+        
+        self.next_input_files = out_filename
+        self.next_input_path = outpath
 
     def make_illumina_filter(self):
         ''' Returns filtering function based on illumina machine filter         
@@ -546,6 +556,7 @@ class Workflow(object):
            
         Reads that mismatch in the overhang region by more than mindist, cause the 
         filter to return false. 
+        
         '''   
     
         if target_cutsite is None:
@@ -581,13 +592,47 @@ class Workflow(object):
             
         f.MIDlength = None
         f.target_file = None
-            
+                  
         return f
 
-    def cdhit_cluster(self, ): 
+    def run_cdhit_clustering(self, **kwargs): 
 
+        if 'infile' not in kwargs:
+            kwargs['infile'] = os.path.join(self.next_input_path, self.next_input_files)
+        if 'outfile' not in kwargs:
+            kwargs['outfile'] = 'all_reads'
+            
+        cluster_cdhit(**kwargs)
         
-
+    ''' Run CD-HIT in parallel on one large fasta file
+    
+    Other flags used:
+    -d 0   --> No limit on description written to cluster file (goes to first space in seq ID). 
+    -r 0   --> Do only +/+ alignment comparisons
+    -s 0.8 --> If shorter sequence is less than 80% of the representative sequence, dont cluster. 
+    
+    Writes stdout to console and saves to log file in real time. 
+    
+    '''
+    
+    cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
+    
+    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
+            '-T {5}').format(infile, outfile, c_thresh, n_filter, mem, threads)   
+    if maskN:
+        cmd = cmd + ' -mask N'
+  
+    proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE)
+    
+    with open(log_filename, 'wb') as logfile:
+        while True:
+            out = proc.stdout.readline()
+            if out == '' and proc.poll() != None:
+                break
+            if out != '':
+                sys.stdout.write(out)
+                sys.stdout.flush()
+                logfile.write(out)
 
 
         

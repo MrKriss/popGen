@@ -15,6 +15,7 @@ import socket
 from preprocess import filter_reads, process_MIDtag, trim_reads, setup_cutsite_filter, \
 setup_overhang_filter, setup_phred_filter, setup_propN_filter, setup_illumina_filter, \
 filter_reads_pipeline, Workflow, ConfigClass
+from runscripts.filter_clean_sticklebacks import Experiment
 
        
 #==============================================================================
@@ -64,7 +65,7 @@ c.max_edit_dist = 2
         
 # FILTERING
 # Whether to log reads that fail the filtering         
-c.log_fails = True       
+c.log_fails = True
        
 # Define Class
 Experiment = Workflow(c) 
@@ -90,14 +91,49 @@ Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 allreads_file = 'sb_' + 'allreads_preprocessed.fasta'
 Experiment.trim_reads(outfile=allreads_file, n = 1)
 
+# default Vars for clustering 
+default_vars = { 'c_thresh' : 0.90,
+                 'n_filter' : 8,
+                 'threads' : 1,
+                 'mem' : 0,
+                 'mask' : False, 
+                 'log_filename' : 'report.log'}
+                
+experiment_name = 'sb_clustered_reads'
 
-## Variables 
-#c_thresh = 0.9
-#n_filter = 8
-#
-#clustered_file = 'lane' + LANE + 'clustered_reads'
-#cluster_cdhit(infile=allreads_file, outfile=clustered_file,
-#              c_thresh=c_thresh, n_filter=n_filter)
-#
+# Variations to run
+clustering_runs = [ { 'c_thresh' : 0.95},
+                    { 'c_thresh' : 0.95, 'mask' : True},
+                    { 'c_thresh' : 0.90},
+                    { 'c_thresh' : 0.90, 'mask' : True},
+                    { 'c_thresh' : 0.85},
+                    { 'c_thresh' : 0.85, 'mask' : True},
+                   ]
+                   
+for d in clustering_runs:
+    
+    inputs_dict = {}
+    inputs_dict.update(default_vars)
+    inputs_dict.update(d)
+    
+    dirname = experiment_name
+    outfile = experiment_name
+    if 'c_thresh' in d:
+        dirname = dirname + '-c{:d}'.format(d['c_thresh']*100)
+        outfile = outfile + '-c{:d}'.format(d['c_thresh']*100)
+    if 'mask' in d:
+        dirname = dirname + '-maskN'
+        outfile = outfile + '-maskN'
+    
+    path = os.path.join(c.clusters_outpath, dirname)        
+    if not os.path.exists(path):
+        os.mkdir(path)
+        
+    path2outfile  = os.path.join(path, outfile)
+
+    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+              **inputs_dict)
+
+
 ## Display Summary
 #summary(clustered_file)
