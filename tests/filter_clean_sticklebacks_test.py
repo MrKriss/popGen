@@ -116,8 +116,8 @@ for d in clustering_runs:
     dirname = experiment_name
     outfile = experiment_name
     if 'c_thresh' in d:
-        dirname = dirname + '-c{:d}'.format(d['c_thresh']*100)
-        outfile = outfile + '-c{:d}'.format(d['c_thresh']*100)
+        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
     if 'mask' in d:
         dirname = dirname + '-maskN'
         outfile = outfile + '-maskN'
