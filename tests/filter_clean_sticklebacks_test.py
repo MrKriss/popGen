@@ -86,7 +86,7 @@ Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 # Cluster Data 
 #===============================================================================
 allreads_file = 'sb_' + 'allreads_preprocessed.fasta'
-Experiment.trim_reads(outfile=allreads_file, n = 1)
+Experiment.trim_reads(out_filename=allreads_file, n = 1)
 
 # default Vars for clustering 
 default_vars = { 'c_thresh' : 0.90,
