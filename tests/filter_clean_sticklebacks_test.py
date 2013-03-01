@@ -124,7 +124,7 @@ for d in clustering_runs:
     
     path = os.path.join(c.clusters_outpath, dirname)        
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path)
         
     path2outfile  = os.path.join(path, outfile)
 
