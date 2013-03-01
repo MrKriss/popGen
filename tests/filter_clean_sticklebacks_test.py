@@ -93,8 +93,7 @@ default_vars = { 'c_thresh' : 0.90,
                  'n_filter' : 8,
                  'threads' : 1,
                  'mem' : 0,
-                 'maskN' : False, 
-                 'log_filename' : 'report.log'}
+                 'maskN' : False}
                 
 experiment_name = 'sb_clustered_reads'
 
@@ -127,6 +126,7 @@ for d in clustering_runs:
         os.makedirs(path)
         
     path2outfile  = os.path.join(path, outfile)
+    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
 
     Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
               **inputs_dict)
