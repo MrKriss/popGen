@@ -12,12 +12,9 @@ import glob
 
 import socket
 
-from preprocess import filter_reads, process_MIDtag, trim_reads, setup_cutsite_filter, \
-setup_overhang_filter, setup_phred_filter, setup_propN_filter, setup_illumina_filter, \
-filter_reads_pipeline, Workflow, ConfigClass
-from runscripts.filter_clean_sticklebacks import Experiment
+from preprocess import  Workflow, ConfigClass
 
-       
+      
 #==============================================================================
 ''' RUN SCRIPT FOR ALLL READS IN stickleback RAD data '''
 #===============================================================================
