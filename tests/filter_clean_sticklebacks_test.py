@@ -93,18 +93,18 @@ default_vars = { 'c_thresh' : 0.90,
                  'n_filter' : 8,
                  'threads' : 1,
                  'mem' : 0,
-                 'mask' : False, 
+                 'maskN' : False, 
                  'log_filename' : 'report.log'}
                 
 experiment_name = 'sb_clustered_reads'
 
 # Variations to run
 clustering_runs = [ { 'c_thresh' : 0.95},
-                    { 'c_thresh' : 0.95, 'mask' : True},
+                    { 'c_thresh' : 0.95, 'maskN' : True},
                     { 'c_thresh' : 0.90},
-                    { 'c_thresh' : 0.90, 'mask' : True},
+                    { 'c_thresh' : 0.90, 'maskN' : True},
                     { 'c_thresh' : 0.85},
-                    { 'c_thresh' : 0.85, 'mask' : True},
+                    { 'c_thresh' : 0.85, 'maskN' : True},
                    ]
                    
 for d in clustering_runs:
@@ -118,7 +118,7 @@ for d in clustering_runs:
     if 'c_thresh' in d:
         dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
         outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
-    if 'mask' in d:
+    if 'maskN' in d:
         dirname = dirname + '-maskN'
         outfile = outfile + '-maskN'
     
