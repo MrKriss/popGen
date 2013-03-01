@@ -25,11 +25,11 @@ LANE = '8'
 starting_dir = os.getcwd()
 
 # Set paths and file patterns 
-#inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-#barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-inpath = '/home/musselle/san/data/lane' + LANE
-barpath = '/home/musselle/san/data/barcodes'
-os.chdir(inpath)
+#data_inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+#barcode_inpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+data_inpath = '/home/musselle/san/data/lane' + LANE
+barcode_inpath = '/home/musselle/san/data/barcodes'
+os.chdir(data_inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 
@@ -44,7 +44,7 @@ filter_functions = [setup_illumina_filter(),
 
 outdir = 'L' + LANE + '_filtered'
 
-filter_reads_pipeline(infiles=raw_files, inpath=inpath, filterfuncs=filter_functions, 
+filter_reads_pipeline(infiles=raw_files, data_inpath=data_inpath, filterfuncs=filter_functions, 
                           outdir=outdir, log_fails=True)
 
 # Update names and path
@@ -54,7 +54,7 @@ for name in raw_files:
     temp[0] = temp[0] + '-pass'
     temp = '.'.join(temp) 
     filtered_files.append(temp)
-filtered_inpath = os.path.join(inpath, outdir)
+filtered_data_inpath = os.path.join(data_inpath, outdir)
 
 #===============================================================================
 # Process and Correct MID tag 
@@ -65,7 +65,7 @@ barcode_pattern = '*[' + LANE + '].txt'
 
 process_MIDtag(infiles=filtered_files, barcodes =barcode_pattern,
                    barcode_pattern=True, 
-                   inpath=filtered_inpath, barcode_path=barpath,
+                   data_inpath=filtered_data_inpath, barcode_path=barcode_inpath,
                    outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir, 
                    MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6)
 
@@ -76,14 +76,14 @@ for name in filtered_files:
     temp[0] = temp[0] + cleaned_file_postfix
     temp = '.'.join(temp) 
     cleaned_files.append(temp) 
-cleaned_inpath = os.path.join(filtered_inpath, cleaned_outdir)
+cleaned_data_inpath = os.path.join(filtered_data_inpath, cleaned_outdir)
 
 #===============================================================================
 # Cluster Data 
 #===============================================================================
 allreads_file = 'lane' + LANE + 'allreads-clean.fasta'
-trim_reads(infiles=cleaned_files, inpath=cleaned_inpath, 
-            outpath=cleaned_inpath, outfile=allreads_file, n=1)
+trim_reads(infiles=cleaned_files, data_inpath=cleaned_data_inpath, 
+            outpath=cleaned_data_inpath, outfile=allreads_file, n=1)
 # Variables 
 c_thresh = 0.9
 n_filter = 8

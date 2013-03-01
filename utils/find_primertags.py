@@ -14,7 +14,7 @@ from utils import Cycler
 from utils import pklsave
 import time
 
-def tags_counter(infiles=None, sl=(6,12), filepattern=False, inpath=''):
+def tags_counter(infiles=None, sl=(6,12), filepattern=False, data_inpath=''):
     '''Writes the reads (without the MID tag) to one large fasta file 
     for clustering'''
     
@@ -23,7 +23,7 @@ def tags_counter(infiles=None, sl=(6,12), filepattern=False, inpath=''):
     TagCounter = Counter()
     
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, inpath=inpath)
+                       filepattern=filepattern, data_inpath=data_inpath)
     
     c = 0
     
@@ -56,9 +56,9 @@ if __name__ == '__main__':
     LANE = '6'
     
     # Set paths and file patterns 
-    inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE + '/L6_phredprop_filtered/'
-#    inpath = '/home/musselle/data/lane' + LANE
-    os.chdir(inpath)
+    data_inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE + '/L6_phredprop_filtered/'
+#    data_inpath = '/home/musselle/data/lane' + LANE
+    os.chdir(data_inpath)
     raw_files = glob.glob('*[0-9]-pass.fastq.bgzf')
     raw_files.sort()
     

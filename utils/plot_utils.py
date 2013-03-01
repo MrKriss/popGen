@@ -13,7 +13,7 @@ from general_utilities import set_trace
 
 from collections import Counter, defaultdict
 
-def cluster_summary_plot(infile, cluster_length_bins=None, mincutoff=10, bins=5000, report=True, *args):
+def cluster_summary_plot(infile, cluster_length_bins=None, mincutoff=10, bins=5000, report=True, plot_hist=True):
     ''' Takes cluster file output by CD-Hit and produces a histergram plot
     
     cluster_length_bins = a list of tuples dictating the left and right most ranges
@@ -90,8 +90,6 @@ def cluster_summary_plot(infile, cluster_length_bins=None, mincutoff=10, bins=50
         print 'Top 5 Cluster Sizes: ', cluster_size_counter.most_common()[:5]
         print 'Top 5 Sequence Lengths: ', seq_length_counter.most_common()[:5]
     
-    set_trace()
-    
     # Process ds to extract needed data for histergrams
     if cluster_length_bins is not None:
         # Update counters for each bin in cluster_length_bins
@@ -112,37 +110,47 @@ def cluster_summary_plot(infile, cluster_length_bins=None, mincutoff=10, bins=50
                         if int(seq_length) >= tup[0] and int(seq_length) <= tup[1]:
                             vars()[name][cluster_size] += seq_len_c[seq_length]
     
-    set_trace()                        
     #===============================================================================
     # Plot results
     #===============================================================================
     
     # TODO Add a level of input checking so if Counter is empty, an empty histogram is plotted
     
-    plt.figure()
-    if cluster_length_bins is not None:   
-        for tup in cluster_length_bins:   
-            name = 'Length-' + str(tup)
-            
-            data = np.array(list(vars()[name].elements()), dtype = np.int)
-            plt.hist(data, bins=bins, histtype='step', label=name, range=(mincutoff, 10000))
-
-    data = np.array(list(cluster_size_counter.elements()), dtype = np.int)
-    plt.hist(data, bins=bins, histtype='step', label='Total',range=(mincutoff, 10000))
-    plt.title("Cluster Size Distribution")
-    plt.xlabel("Value")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.show()
+    if plot_hist:
+    
+        plt.figure()
+        if cluster_length_bins is not None:   
+            for tup in cluster_length_bins:   
+                name = 'Length-' + str(tup)
+                
+                hist_counter(vars()[name], bins=bins, label=name, range=(mincutoff, 10000))
+         
+        hist_counter(cluster_size_counter, bins=bins, label='All Seq Lengths', range=(mincutoff, 10000))   
+        plt.title("Cluster Size Distribution")
+        plt.xlabel("Value")
+        plt.ylabel("Frequency")
+        plt.legend()
+        plt.show()
 
     return ds, cluster_size_counter, seq_length_counter
     
+def hist_counter(counter, **kwargs):
+    ''' Construct a histogram from a Counter Dictionary '''
+    
+    data = np.array(list(counter.elements()), dtype = np.int)
+
+    plt.hist(data, histtype='step', **kwargs)
+    plt.title("Cluster Size Distribution")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+#    plt.legend()
+    plt.show()
     
 
-def makeHist(files , inpath, bins = 50):
+def makeHist(files , data_inpath, bins = 50):
     ''' Function to plot histograms of stored data files'''
 
-    os.chdir(inpath)
+    os.chdir(data_inpath)
  
     data = [0] * len(files)
     
@@ -166,11 +174,11 @@ if __name__ == '__main__' :
     cluster_summary_plot(infile, cluster_length_bins=bins, mincutoff=10, bins=5000, report=True)
 
 
-#    inpath = '/space/musselle/datasets/gazellesAndZebras'
+#    data_inpath = '/space/musselle/datasets/gazellesAndZebras'
 #    fs1 = ['lane6_meanPhred.npy', 'lane8_meanPhred.npy']
 #    fs2 = ['lane6_propN.npy', 'lane8_propN.npy']
 #    
-#    makeHist(fs1, inpath)
+#    makeHist(fs1, data_inpath)
 #    plt.title('Mean Phred Score')
-#    makeHist(fs2, inpath)
+#    makeHist(fs2, data_inpath)
 #    plt.title('Proportion of Ns')

@@ -17,7 +17,7 @@ from utils import Cycler
 if __name__ == '__main__':
     
     dataLoc = '/space/musselle/datasets/gazellesAndZebras/testdata'
-    RecCycl = Cycler(filepattern ='*[0-9].fastq.bgzf', inpath = dataLoc, maxnumseq = 5)
+    RecCycl = Cycler(filepattern ='*[0-9].fastq.bgzf', data_inpath = dataLoc, maxnumseq = 5)
     
     for rec in RecCycl.recgen:
         print rec.seq

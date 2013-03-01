@@ -28,9 +28,9 @@ class Cycler(object):
     infiles - Single file as string or list of files to process as strings with
                 full extensions.
     filepattern - if no infiles specified, runs glob on this string pattern in the
-                path specified by inpath e.g. glob.glob('*.fastq') for all
+                path specified by data_inpath e.g. glob.glob('*.fastq') for all
                 files ending in .fastq
-    inpath - directory data files are stored in, will change to this at start
+    data_inpath - directory data files are stored in, will change to this at start
                of script.
 
     METHODS
@@ -50,21 +50,21 @@ class Cycler(object):
 
     '''
 
-    def __init__(self, infiles=None, filepattern='', inpath='', maxnumseq=None):
+    def __init__(self, infiles=None, filepattern='', data_inpath='', maxnumseq=None):
         ''' Constructor '''
 
-#        if inpath:
-#            if inpath not in sys.path:
-#                sys.path.insert(0, inpath)
+#        if data_inpath:
+#            if data_inpath not in sys.path:
+#                sys.path.insert(0, data_inpath)
         
-        # Remember inpath 
-        self.inpath = inpath
+        # Remember data_inpath 
+        self.data_inpath = data_inpath
          
         # Handle multiple types of input for infiles
         if not infiles:
             # Fetch files by file types
             assert filepattern, 'No files listed and No file type specified.'
-            infiles = glob.glob(os.path.join(inpath,filepattern))
+            infiles = glob.glob(os.path.join(data_inpath,filepattern))
         elif type(infiles) == str:
             # Convert to list
             infiles = [infiles]
@@ -97,7 +97,7 @@ class Cycler(object):
             self.curfilenum = filenum
             self.curfilename = filename
 
-            next_data_file_loc = os.path.join(self.inpath, filename)
+            next_data_file_loc = os.path.join(self.data_inpath, filename)
 
             # Check file extensions
             if filename.endswith('.idx'):
@@ -209,7 +209,7 @@ def find_numrec(filename):
 
     return int(process.communicate()[0].strip())
 
-def make_MIDdict(infiles=None, filepattern=False, inpath=''):
+def make_MIDdict(infiles=None, filepattern=False, data_inpath=''):
     ''' Function to load in MIDs from a list of files into a dictionary '''
 
     # Handle multiple types of input for infiles
@@ -218,7 +218,7 @@ def make_MIDdict(infiles=None, filepattern=False, inpath=''):
         # Fetch files by file types using glob
         import glob 
         st_dir = os.getcwd()
-        os.chdir(inpath)
+        os.chdir(data_inpath)
         infiles = glob.glob(infiles)
         os.chdir(st_dir)
     elif type(infiles) == str:
@@ -230,7 +230,7 @@ def make_MIDdict(infiles=None, filepattern=False, inpath=''):
     tags = {}
     
     for filename in infiles:
-        with open(os.path.join(inpath,filename), 'rb') as f:
+        with open(os.path.join(data_inpath,filename), 'rb') as f:
             for line in f:
                 elem = line.split()
                 tags[elem[0]] = elem[1] 

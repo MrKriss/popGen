@@ -25,12 +25,12 @@ LANE = '6'
 starting_dir = os.getcwd()
 
 # Set paths and file patterns 
-inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
-#barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-#inpath = '/home/musselle/san/data/lane' + LANE
-#barpath = '/home/musselle/san/data/barcodes'
+data_inpath = '/space/musselle/datasets/gazellesAndZebras/lane' + LANE
+#barcode_inpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+#data_inpath = '/home/musselle/san/data/lane' + LANE
+#barcode_inpath = '/home/musselle/san/data/barcodes'
 
-os.chdir(inpath)
+os.chdir(data_inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 os.chdir(starting_dir)
@@ -43,5 +43,5 @@ filter_functions = [setup_illumina_filter(),
                     setup_cutsite_filter('TCGAGG', 2),
                     setup_overhang_filter('TCGAGG', 'GG', 0)]
 
-filter_reads_pipeline(infiles=raw_files, inpath=inpath, filterfuncs=filter_functions, 
+filter_reads_pipeline(infiles=raw_files, data_inpath=data_inpath, filterfuncs=filter_functions, 
                           outdir='filtered_reads', log_fails=True)

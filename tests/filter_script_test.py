@@ -22,7 +22,7 @@ from cluster import cluster_cdhit, summary
 
 starting_dir = os.getcwd()
 
-inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
+data_inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
 files = ['small_test_set.fastq']
 
 # Setup Filters
@@ -32,5 +32,5 @@ filter_functions = [setup_illumina_filter(),
                     setup_cutsite_filter('TCGAGG', 2),
                     setup_overhang_filter('TCGAGG', 'GG', 0)]
 
-filter_reads_pipeline(infiles=files, inpath=inpath, filterfuncs=filter_functions, 
+filter_reads_pipeline(infiles=files, data_inpath=data_inpath, filterfuncs=filter_functions, 
                           outdir='filtered_reads', log_fails=True)

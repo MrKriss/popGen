@@ -45,6 +45,12 @@ def check_fastq_encoding(filename):
     Illumina1.3 is only format to contain characters [@-A]+ other than Sanger and Solexa   
     Illumina1.5 = [B-h]+ not [!-A]
        
+       
+     TODO:
+     Currently has an error in the logic. Must fix. Needs to sample many sequences
+     not just first character.
+       
+       
     '''
     # compile regex expression filters
     sanger_only_scores = re.compile(r'[!-:]+')

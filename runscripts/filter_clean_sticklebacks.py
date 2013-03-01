@@ -33,18 +33,18 @@ elif socket.gethostname() == 'luca':
     prefix = '/home/musselle/san/data'
 
 # Set paths 
-c.inpath =  os.path.join(prefix,'sticklebacks') 
-c.barpath = os.path.join(prefix,'sticklebacks/barcodes')
-c.filteredpath = os.path.join(prefix,'sticklebacks/filtered_data')
-c.processedpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.data_inpath =  os.path.join(prefix,'sticklebacks') 
+c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
+c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
 
 # Setup input files and barcodes
-os.chdir(c.inpath)
+os.chdir(c.data_inpath)
 raw_files = glob.glob('*[1-9].fastq.bgzf')
 raw_files.sort()
 c.raw_input_files = raw_files 
 
-os.chdir(c.barpath)
+os.chdir(c.barcode_inpath)
 barcodes = glob.glob('*[1-9].txt')
 barcodes.sort()
 c.barcode_files = barcodes

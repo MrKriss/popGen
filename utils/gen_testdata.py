@@ -27,7 +27,7 @@ path = os.path.join(prefix, 'sticklebacks/')
 
 maxnumseq = 10000 # 5% of 16,000,000
 
-RecCycler = Cycler(filepattern='*[0].fastq.bgzf', inpath = path, maxnumseq=maxnumseq)
+RecCycler = Cycler(filepattern='*[0].fastq.bgzf', data_inpath = path, maxnumseq=maxnumseq)
 
 output_filename = 'sb_testdata.bgzf'
 

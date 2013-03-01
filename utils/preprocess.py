@@ -37,7 +37,7 @@ class Workflow(object):
         
         # Set raw files for next input 
         self.next_input_files = c.raw_input_files
-        self.next_input_path = c.inpath
+        self.next_input_path = c.data_inpath
         
         # Input checks
         if c.barcode_files_setup == 'individual':
@@ -58,7 +58,7 @@ class Workflow(object):
             for input_filename in c.raw_input_files:
                 name = input_filename.split('.')[0]
                 tags_per_filename[name] = {}
-                with open(os.path.join(c.barpath,name) + '.txt', 'rb') as f:
+                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
                     for line in f:
                         elem = line.split()
                         tags_per_filename[name][elem[0]] = elem[1]
@@ -70,7 +70,7 @@ class Workflow(object):
             
             for bar_filename in c.barcode_files:
                 name = bar_filename.split('.')[0]
-                with open(os.path.join(c.barpath,name) + '.txt', 'rb') as f:
+                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
                     for line in f:
                         elem = line.split()
                         global_tags[elem[0]] = elem[1]
@@ -78,17 +78,16 @@ class Workflow(object):
         else:
             raise Exception('Barcode file usage not specified.'
             'Set c.barcode_files_setup to "individual" or "global"')
-           
-                
-    def set_input_files(self, infiles, file_pattern, inpath):
+                           
+    def set_input_files(self, infiles, file_pattern, data_inpath):
         
         starting_dir = os.getcwd()
         
         if file_pattern:
-            if inpath:
-                os.chdir(inpath)
+            if data_inpath:
+                os.chdir(data_inpath)
             else:
-                os.chdir(self.c.paths.inpath)
+                os.chdir(self.c.paths.data_inpath)
             raw_files = glob.glob('infiles')
             raw_files.sort()
             self.c.next_input_files = raw_files
@@ -138,10 +137,10 @@ class Workflow(object):
         # Path variables
         starting_dir = os.getcwd()
         
-        if not os.path.exists(c.filteredpath):
-            os.makedirs(c.filteredpath) 
+        if not os.path.exists(c.filtered_outpath):
+            os.makedirs(c.filtered_outpath) 
             
-        outpath = c.filteredpath
+        outpath = c.filtered_outpath
         
         # Setup Counters
         count = Counter()
@@ -178,7 +177,7 @@ class Workflow(object):
                     
         # Single Record Cycler      
         RecCycler = Cycler(infiles=self.next_input_files, filepattern=False, 
-                           inpath=self.next_input_path)    
+                           data_inpath=self.next_input_path)    
     
         #===========================================================================
         # MainLoop
@@ -258,13 +257,13 @@ class Workflow(object):
 
         # Setup Record Cycler
         RecCycler = Cycler(infiles=self.next_input_files, 
-                           filepattern=False, inpath=self.next_input_path)
+                           filepattern=False, data_inpath=self.next_input_path)
                 
         # Make ouput directory if required
-        if not os.path.exists(c.processedpath):
-            os.makedirs(c.processedpath) 
+        if not os.path.exists(c.processed_outpath):
+            os.makedirs(c.processed_outpath) 
             
-        outpath = c.processedpath
+        outpath = c.processed_outpath
       
         class Read_Corrector_Class():
         
@@ -418,7 +417,7 @@ class Workflow(object):
         start_dir = os.getcwd() 
         
         RecCycler = Cycler(infiles=self.next_input_files, 
-                           filepattern=False, inpath=self.next_input_path)
+                           filepattern=False, data_inpath=self.next_input_path)
         count = 0
         outfile_part_list = []
     
@@ -538,6 +537,7 @@ class Workflow(object):
         return f
         
     def make_overhang_filter(self, target_cutsite=None, overhang=None, max_edit_dist=0):
+
         ''' Returns a filter function based on the overhang part of the cutsite. 
         
         The cut site should end with the specified overhang. Those that dont are likely 
@@ -583,12 +583,19 @@ class Workflow(object):
         f.target_file = None
             
         return f
+
+    def cdhit_cluster(self, ): 
+
+        
+
+
+
         
 #===============================================================================
 # Individual Functions 
 #===============================================================================
 
-def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None, 
+def filter_reads(infiles=None, filepattern='', data_inpath='', filterfunc=None, 
                  outdir='filtered_reads', keepfails=False ):
     ''' Filter reads based on criteria 
     
@@ -617,8 +624,8 @@ def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None,
          
     # Have to create two separate generators to return passes and fails 
     # as copying a generator object is not possible.
-    RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
-    RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)
+    RecCycler1 = Cycler(infiles=infiles, filepattern=filepattern, data_inpath=data_inpath)
+    RecCycler2 = Cycler(infiles=infiles, filepattern=filepattern, data_inpath=data_inpath)
     
     # timings
     toc = time.time()
@@ -677,7 +684,7 @@ def filter_reads(infiles=None, filepattern='', inpath='', filterfunc=None,
                                                         time.gmtime(total_t)))
     os.chdir(starting_dir)
 
-def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=None, 
+def filter_reads_pipeline(infiles=None, filepattern='', data_inpath='', filterfuncs=None, 
                           outdir='filtered_reads', log_fails=False):
     
     ''' Filter reads based on criteria specified by a sequence of functions given
@@ -712,14 +719,14 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
        
     # Path variables
     starting_dir = os.getcwd()
-    if inpath:
-        outpath = os.path.join(inpath, outdir) 
+    if data_inpath:
+        outpath = os.path.join(data_inpath, outdir) 
     else:        
         outpath = os.path.join(starting_dir, outdir) 
     
     if not os.path.isdir(outpath):
-        if inpath:
-            os.chdir(inpath)
+        if data_inpath:
+            os.chdir(data_inpath)
         os.mkdir(outdir)
         os.chdir(starting_dir)
     
@@ -765,7 +772,7 @@ def filter_reads_pipeline(infiles=None, filepattern='', inpath='', filterfuncs=N
         filterfuncs = [illumina_filter]
         
     # Single Record Cycler      
-    RecCycler = Cycler(infiles=infiles, filepattern=filepattern, inpath=inpath)    
+    RecCycler = Cycler(infiles=infiles, filepattern=filepattern, data_inpath=data_inpath)    
 
     #===========================================================================
     # MainLoop
@@ -905,7 +912,7 @@ def setup_overhang_filter(target_cutsite, overhang, mindist=0):
     return f
     
 def process_MIDtag(infiles=None, barcodes=None, filepattern=False, 
-                   barcode_pattern=False, inpath='', barcode_path='',
+                   barcode_pattern=False, data_inpath='', barcode_path='',
                    outfile_postfix='-clean', outdir='', 
                    MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6):
     ''' Goes through files and corrects any errors in MIDtag and cutsite
@@ -919,10 +926,10 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
 
     # Construct Tag dictionary
     MIDdict = make_MIDdict(infiles=barcodes, filepattern=barcode_pattern,
-                           inpath=barcode_path)
+                           data_inpath=barcode_path)
     # Setup Record Cycler
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, inpath=inpath)
+                       filepattern=filepattern, data_inpath=data_inpath)
     
     keys = [key[:6] for key in MIDdict.iterkeys()]
     keys.sort()
@@ -930,7 +937,7 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     cutsite = 'TGCAGG' 
     
     # Make ouput directory if required
-    outpath = os.path.join(inpath, outdir)
+    outpath = os.path.join(data_inpath, outdir)
     if not os.path.isdir(outpath):
         os.mkdir(outpath)
  
@@ -1058,7 +1065,7 @@ def process_MIDtag(infiles=None, barcodes=None, filepattern=False,
     print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
                                                         time.gmtime(total_t)))
  
-def file2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
+def file2bgzf(infiles=None, filepattern=False, data_inpath='', SQLindex=True):
     ''' Convert given list of files from .gz or .fastq to .bgzf,
     And also produce an SQL index if needed. 
     
@@ -1066,8 +1073,8 @@ def file2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
     If not specified will look at file type and glob the result to infiles. 
   
     '''
-    if inpath:
-        os.chdir(inpath)
+    if data_inpath:
+        os.chdir(data_inpath)
   
     # Handle multiple types of input for infiles
     assert infiles is not None, 'No files listed or file pattern specified.'         
@@ -1113,14 +1120,14 @@ def file2bgzf(infiles=None, filepattern=False, inpath='', SQLindex=True):
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(infiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
  
-def makeSQLindex(infiles=None, filepattern=False, inpath=''):
+def makeSQLindex(infiles=None, filepattern=False, data_inpath=''):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bgzf file 
     
     if infiles is list, goes through all file names in list
     
     '''
-    if inpath:
-        os.chdir(inpath)
+    if data_inpath:
+        os.chdir(data_inpath)
   
     # Handle multiple types of input for infiles
     assert infiles is not None, 'No files listed or file pattern specified.'         
@@ -1151,7 +1158,7 @@ def file2fasta(filename):
     
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
-def trim_reads(infiles=None, filepattern=False, inpath='', 
+def trim_reads(infiles=None, filepattern=False, data_inpath='', 
                 out_filename='out_filename.fasta', outpath = '', n = 1):
     ''' Trims off the MID tag of each read, as well as the last 'n' bases.
     Writes the trimed reads to one large fasta file for clustering'''
@@ -1159,7 +1166,7 @@ def trim_reads(infiles=None, filepattern=False, inpath='',
     start_dir = os.getcwd() 
     
     RecCycler = Cycler(infiles=infiles, 
-                       filepattern=filepattern, inpath=inpath)
+                       filepattern=filepattern, data_inpath=data_inpath)
     count = 0
     outfile_part_list = []
 
@@ -1200,8 +1207,8 @@ if __name__ == '__main__':
     LANE = '6'
     
     # Path setup
-    inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
-    barpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
+    data_inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
+    barcode_inpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
     raw_files = ['small_test_set.fastq']
     
     # Setup Filters
@@ -1212,7 +1219,7 @@ if __name__ == '__main__':
                         setup_cutsite_filter('TCGAGG', 2),
                         setup_overhang_filter('TCGAGG', 'GG', 0)]
     
-    filter_reads_pipeline(infiles=raw_files, inpath=inpath, filterfuncs=filter_functions, 
+    filter_reads_pipeline(infiles=raw_files, data_inpath=data_inpath, filterfuncs=filter_functions, 
                               outdir=outdir, log_fails=True)
     # Update names and path
     filtered_files = []
@@ -1221,7 +1228,7 @@ if __name__ == '__main__':
         temp[0] = temp[0] + '-pass'
         temp = '.'.join(temp) 
         filtered_files.append(temp)
-    filtered_inpath = os.path.join(inpath, outdir)
+    filtered_data_inpath = os.path.join(data_inpath, outdir)
       
     cleaned_file_postfix = '-clean' 
     cleaned_outdir = '' # 'cleaned_data'
@@ -1229,6 +1236,6 @@ if __name__ == '__main__':
 
     process_MIDtag(infiles=filtered_files, barcodes =barcode_pattern,
                    barcode_pattern=True, 
-                   inpath=filtered_inpath, barcode_path=barpath,
+                   data_inpath=filtered_data_inpath, barcode_path=barcode_inpath,
                    outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir, 
                    MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6)
