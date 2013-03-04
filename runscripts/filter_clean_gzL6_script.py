@@ -39,7 +39,7 @@ elif socket.gethostname() == 'gg-pc6':
     prefix = '/home/musselle/data'
 
 # Set paths 
-c.data_inpath =  os.path.join(prefix,'gazelles-zebras') 
+c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
 c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
 c.processed_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
