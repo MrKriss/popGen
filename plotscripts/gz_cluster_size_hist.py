@@ -7,7 +7,6 @@ import os
 import sys 
 
 import numpy as np 
-import matplotlib.pyplot as plt
 
 from plot_utils import cluster_summary_plot, hist_counter
 

@@ -7,9 +7,107 @@ import os
 import sys 
 
 import numpy as np 
-import matplotlib.pyplot as plt
 from subprocess import call, Popen, STDOUT, PIPE
 import shlex
+
+
+class Clustering(object):
+    ''' Class to act as a holder of all wrappers for all clustering methods 
+    '''
+    
+    def __init__(self, preprocessor):
+
+        self.c = preprocessor.c
+        self.next_inputs = preprocessor.next_input_files
+        self.next_path = preprocessor.next_input_path
+        
+        # default Vars for clustering 
+        self.default_parameters = { 'c_thresh' : 0.90,
+                                    'n_filter' : 8,
+                                    'threads' : 1,
+                                    'mem' : 0,
+                                    'maskN' : False}
+        
+        
+        
+
+    def run_cdhit_clustering(self, **kwargs): 
+
+        if 'infile' not in kwargs:
+            kwargs['infile'] = os.path.join(self.next_input_path, self.next_input_files)
+        if 'outfile' not in kwargs:
+            kwargs['outfile'] = 'all_reads'
+            
+        cluster_cdhit(**kwargs)
+
+
+
+
+
+# default Vars for clustering 
+default_vars = { 'c_thresh' : 0.90,
+                 'n_filter' : 8,
+                 'threads' : 1,
+                 'mem' : 0,
+                 'maskN' : False}
+
+# Variations to run
+clustering_runs = [ { 'c_thresh' : 0.95},
+                    { 'c_thresh' : 0.95, 'maskN' : True},
+                    { 'c_thresh' : 0.90},
+                    { 'c_thresh' : 0.90, 'maskN' : True},
+                    { 'c_thresh' : 0.85},
+                    { 'c_thresh' : 0.85, 'maskN' : True},
+                   ]
+                   
+for d in clustering_runs:
+    
+    inputs_dict = {}
+    inputs_dict.update(default_vars)
+    inputs_dict.update(d)
+    
+    dirname = experiment_name + '_clustered_reads'
+    outfile = experiment_name + '_clustered_reads'
+    if 'c_thresh' in d:
+        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+    if 'maskN' in d:
+        dirname = dirname + '-maskN'
+        outfile = outfile + '-maskN'
+    
+    path = os.path.join(c.clusters_outpath, dirname)        
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
+    path2outfile  = os.path.join(path, outfile)
+    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
+
+    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+              **inputs_dict)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
                   mem=0, maskN=True, log_filename='cd-hit-report.log'):

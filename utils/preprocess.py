@@ -547,7 +547,6 @@ class Workflow(object):
         return f
         
     def make_overhang_filter(self, target_cutsite=None, overhang=None, max_edit_dist=0):
-
         ''' Returns a filter function based on the overhang part of the cutsite. 
         
         The cut site should end with the specified overhang. Those that dont are likely 
@@ -595,14 +594,6 @@ class Workflow(object):
                   
         return f
 
-    def run_cdhit_clustering(self, **kwargs): 
-
-        if 'infile' not in kwargs:
-            kwargs['infile'] = os.path.join(self.next_input_path, self.next_input_files)
-        if 'outfile' not in kwargs:
-            kwargs['outfile'] = 'all_reads'
-            
-        cluster_cdhit(**kwargs)
         
 #===============================================================================
 # Individual Functions 
