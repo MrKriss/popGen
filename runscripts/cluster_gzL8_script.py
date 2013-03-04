@@ -6,22 +6,21 @@ Created on 10 Dec 2012
 import os 
 import sys 
 
+import numpy as np 
 import glob
 
 import socket
 
 from preprocess import  Preprocessor, ConfigClass
+from cluster import Clustering
 
-      
 #==============================================================================
-''' RUN SCRIPT FOR ALLL READS IN RAD data '''
+''' Clusrter gzL8'''
 #===============================================================================
 
 """ FOR LANE 8 """
 
 LANE =  '8'
-
-experiment_name = 'gzL8'
 
 #===============================================================================
 # Setup Configuration
@@ -29,6 +28,8 @@ experiment_name = 'gzL8'
 starting_dir = os.getcwd()
 
 c = ConfigClass()
+
+c.experiment_name = 'gzL8'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -38,6 +39,7 @@ elif socket.gethostname() == 'luca':
 elif socket.gethostname() == 'gg-pc6':
     prefix = '/home/musselle/data'
 
+# Set paths for IO
 # Set paths 
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
@@ -45,48 +47,40 @@ c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'fil
 c.processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
 c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
-# Setup input files and barcodes
-os.chdir(c.data_inpath)
-raw_files = glob.glob('*[0-9].fastq.bgzf')
-raw_files.sort()
-c.raw_input_files = raw_files 
+# Setup input files glob
+#os.chdir(c.data_inpath)
+#raw_files = glob.glob('*[0-9].fastq.bgzf')
+#raw_files.sort()
+#c.raw_input_files = raw_files 
 
-os.chdir(c.barcode_inpath)
-barcodes = glob.glob('*%s.txt' % (LANE))
-barcodes.sort()
-c.barcode_files = barcodes
-os.chdir(starting_dir)
+# Setup barcode files glob
+#os.chdir(c.barcode_inpath)
+#barcodes = glob.glob('*[0-9].txt')
+#barcodes.sort()
+#c.barcode_files = barcodes
+#os.chdir(starting_dir)
 
 # Set barcode file mode  
-c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
-
+#c.barcode_files_setup = 'individual' # Each reads file has an associated barcode file 
+#
 # MIDtags
-c.cutsite = 'TGCAGG'
-c.max_edit_dist = 2
+#c.cutsite = 'TGCAGG'
+#c.max_edit_dist = 2
         
 # FILTERING
 # Whether to log reads that fail the filtering         
-c.log_fails = True
+#c.log_fails = True
        
-# Define Class
-Preprocess = Preprocessor(c) 
+# Define Classes
+#Preprocess = Preprocessor(c) 
 
-#===============================================================================
-# Setup and run filter
-#===============================================================================
-Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
-                               Preprocess.make_phred_filter(25),
-                               Preprocess.make_cutsite_filter(max_edit_dist=2),
-                               Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
+#try:
+#    cluster_file_path
+#except NameError:
+#    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
-Preprocess.filter_reads_pipeline()
 
-#===============================================================================
-# Process and Correct MID tag 
-#===============================================================================
-Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
-
-cluster_file_path = Preprocess.trim_reads(n = 1)
+cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_allreads_preprocessed.fasta')
 
 #===============================================================================
 # Cluster Data 
@@ -110,7 +104,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=1)
 
 ## Display Summary
 #summary(clustered_file)
