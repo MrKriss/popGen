@@ -25,7 +25,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'my_experiment'
+c.experiment_name = 'sb'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -69,10 +69,13 @@ c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 # Define Classes
 #Preprocess = Preprocessor(c) 
 
-try:
-    cluster_file_path
-except NameError:
-    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
+#try:
+#    cluster_file_path
+#except NameError:
+#    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
+
+
+cluster_file_path = os.path.join(c.processed_outpath, 'sb_all_clustered.clstr')
 
 #===============================================================================
 # Cluster Data 
@@ -96,7 +99,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=1)
 
 ## Display Summary
 #summary(clustered_file)
