@@ -6,8 +6,6 @@ Created on 10 Dec 2012
 import os 
 import sys 
 
-import numpy as np 
-import matplotlib.pyplot as plt
 import glob
 
 import socket
