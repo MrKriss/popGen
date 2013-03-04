@@ -75,7 +75,7 @@ c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 #    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
 
-cluster_file_path = os.path.join(c.processed_outpath, 'sb_all_clustered.clstr')
+cluster_file_path = os.path.join(c.processed_outpath, 'sb_allreads_preprocessed.fasta')
 
 #===============================================================================
 # Cluster Data 
