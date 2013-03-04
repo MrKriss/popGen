@@ -11,7 +11,7 @@ import glob
 
 import socket
 
-from preprocess import  Workflow, ConfigClass
+from preprocess import  Preprocessor, ConfigClass
 
       
 #==============================================================================
@@ -65,28 +65,28 @@ c.max_edit_dist = 2
 c.log_fails = True
        
 # Define Class
-Experiment = Workflow(c) 
+Preprocess = Preprocessor(c) 
 
 #===============================================================================
 # Setup and run filter
 #===============================================================================
-Experiment.filter_functions = [Experiment.make_propN_filter(0.1),
-                               Experiment.make_phred_filter(25),
-                               Experiment.make_cutsite_filter(max_edit_dist=2),
-                               Experiment.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
+Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
+                               Preprocess.make_phred_filter(25),
+                               Preprocess.make_cutsite_filter(max_edit_dist=2),
+                               Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 
-Experiment.filter_reads_pipeline()
+Preprocess.filter_reads_pipeline()
 
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
-Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
+Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 
 #===============================================================================
 # Cluster Data 
 #===============================================================================
 allreads_file = 'sb_' + 'allreads_preprocessed.fasta'
-Experiment.trim_reads(out_filename=allreads_file, n = 1)
+Preprocess.trim_reads(out_filename=allreads_file, n = 1)
 
 # default Vars for clustering 
 default_vars = { 'c_thresh' : 0.90,
@@ -128,7 +128,7 @@ for d in clustering_runs:
     path2outfile  = os.path.join(path, outfile)
     inputs_dict['log_filename'] = os.path.join(path, 'report.log')
 
-    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+    Preprocess.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
               **inputs_dict)
 
 

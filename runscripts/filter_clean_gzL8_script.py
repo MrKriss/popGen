@@ -10,7 +10,7 @@ import glob
 
 import socket
 
-from preprocess import  Workflow, ConfigClass
+from preprocess import  Preprocessor, ConfigClass
 
       
 #==============================================================================
@@ -41,8 +41,8 @@ elif socket.gethostname() == 'gg-pc6':
 # Set paths 
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
-c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
-c.processed_outpath = os.path.join(prefix,'gazelles-zebras/filtered_data')
+c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
 c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
 # Setup input files and barcodes
@@ -69,38 +69,38 @@ c.max_edit_dist = 2
 c.log_fails = True
        
 # Define Class
-Experiment = Workflow(c) 
+Preprocess = Preprocessor(c) 
 
 #===============================================================================
 # Setup and run filter
 #===============================================================================
-Experiment.filter_functions = [Experiment.make_propN_filter(0.1),
-                               Experiment.make_phred_filter(25),
-                               Experiment.make_cutsite_filter(max_edit_dist=2),
-                               Experiment.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
+Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
+                               Preprocess.make_phred_filter(25),
+                               Preprocess.make_cutsite_filter(max_edit_dist=2),
+                               Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 
-Experiment.filter_reads_pipeline()
+Preprocess.filter_reads_pipeline()
 
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
-Experiment.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
+Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
+
+cluster_file_path = Preprocess.trim_reads(n = 1)
 
 #===============================================================================
 # Cluster Data 
 #===============================================================================
-allreads_file = experiment_name + '_allreads_preprocessed.fasta'
-Experiment.trim_reads(out_filename=allreads_file, n = 1)
 
 # default Vars for clustering 
-default_vars = { 'c_thresh' : 0.90,
-                 'n_filter' : 8,
-                 'threads' : 10,
-                 'mem' : 0,
-                 'maskN' : False}
+#default_vars = { 'c_thresh' : 0.90,
+#                 'n_filter' : 8,
+#                 'threads' : 1,
+#                 'mem' : 0,
+#                 'maskN' : False}
 
 # Variations to run
-clustering_runs = [ { 'c_thresh' : 0.95},
+batch_parameters = [ { 'c_thresh' : 0.95},
                     { 'c_thresh' : 0.95, 'maskN' : True},
                     { 'c_thresh' : 0.90},
                     { 'c_thresh' : 0.90, 'maskN' : True},
@@ -108,30 +108,9 @@ clustering_runs = [ { 'c_thresh' : 0.95},
                     { 'c_thresh' : 0.85, 'maskN' : True},
                    ]
                    
-for d in clustering_runs:
-    
-    inputs_dict = {}
-    inputs_dict.update(default_vars)
-    inputs_dict.update(d)
-    
-    dirname = experiment_name + '_clustered_reads'
-    outfile = experiment_name + '_clustered_reads'
-    if 'c_thresh' in d:
-        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
-        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
-    if 'maskN' in d:
-        dirname = dirname + '-maskN'
-        outfile = outfile + '-maskN'
-    
-    path = os.path.join(c.clusters_outpath, dirname)        
-    if not os.path.exists(path):
-        os.makedirs(path)
-        
-    path2outfile  = os.path.join(path, outfile)
-    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
+Clusterer = Clustering(c, cluster_file_path) 
 
-    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
-              **inputs_dict)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
 
 ## Display Summary
 #summary(clustered_file)

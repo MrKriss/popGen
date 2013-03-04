@@ -15,12 +15,11 @@ class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
     
-    def __init__(self, preprocessor):
+    def __init__(self, config, file2cluster):
 
-        self.c = preprocessor.c
-        self.next_inputs = preprocessor.next_input_files
-        self.next_path = preprocessor.next_input_path
-        
+        self.c = config
+        self.input_file = file2cluster
+             
         # default Vars for clustering 
         self.default_parameters = { 'c_thresh' : 0.90,
                                     'n_filter' : 8,
@@ -28,17 +27,14 @@ class Clustering(object):
                                     'mem' : 0,
                                     'maskN' : False}
         
-        
-        
-
     def run_single_cdhit_clustering(self, **kwargs):
         ''' Runs a single instance of cd-hit-est ''' 
 
         # Use defaults if no others were passed 
         if 'infile' not in kwargs:
-            kwargs['infile'] = os.path.join(self.next_input_path, self.next_input_files)
+            kwargs['infile'] = self.input_file
         if 'outfile' not in kwargs:
-            kwargs['outfile'] = 'all_reads'
+            kwargs['outfile'] = self.c.experiment_name + '_all_reads'
         if 'c_thresh' not in kwargs:
             kwargs['c_thresh'] = self.default_parameters['c_thresh']
         if 'n_filter' not in kwargs:
@@ -58,54 +54,37 @@ class Clustering(object):
         Elements of batch_parameters are dictionaries containing the parameters
         to be changed from the default values '''
 
-
         for d in batch_parameters:
     
             inputs_dict = {}
             inputs_dict.update(self.default_parameters)
             inputs_dict.update(d)
+            inputs_dict.update(kwargs)
     
-    dirname = experiment_name + '_clustered_reads'
-    outfile = experiment_name + '_clustered_reads'
-    if 'c_thresh' in d:
-        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
-        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
-    if 'maskN' in d:
-        dirname = dirname + '-maskN'
-        outfile = outfile + '-maskN'
-    
-    path = os.path.join(c.clusters_outpath, dirname)        
-    if not os.path.exists(path):
-        os.makedirs(path)
+            dirname = self.c.experiment_name + '_clustered_reads'
+            outfile = self.c.experiment_name + '_clustered_reads'
+
+            if 'c_thresh' in d:
+                dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+                outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+            if 'n_filter' in d:
+                dirname = dirname + '-n{}'.format(d['n_filter'])
+                outfile = outfile + '-n{}'.format(d['n_filter'])                
+            if 'maskN' in d:
+                dirname = dirname + '-maskN'
+                outfile = outfile + '-maskN'
+            
+            path = os.path.join(self.c.clusters_outpath, dirname)        
+            if not os.path.exists(path):
+                os.makedirs(path)
+                
+            inputs_dict['outfile'] = os.path.join(path, outfile)
+            inputs_dict['log_filename'] = os.path.join(path, 'report.log')
         
-    path2outfile  = os.path.join(path, outfile)
-    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
-
-    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
-              **inputs_dict)
-
-
-#
-#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            if 'infile' not in inputs_dict:
+                inputs_dict['infile'] = self.input_file
+            
+            cluster_cdhit(**inputs_dict)
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
                   mem=0, maskN=True, log_filename='cd-hit-report.log'):
@@ -145,11 +124,7 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
     
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
-    
-    
-    
-    
-    
+ 
     if maskN:
         cmd = ('cd-hit-para.pl -i {0} -o {1} -c {2} -n {3}'
               ' --L 1 --S 64 --P "cd-hit-est -mask N"').format(infile, outfile, 
@@ -160,7 +135,7 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
      
                                                   c_thresh, n_filter)
 
-    subprocess.call(shlex.split(cd_hit_path + cmd))
+    call(shlex.split(cd_hit_path + cmd))
 
 def summary(infile, data_inpath=None, cluster_sizes=None, seq_lengths=None):
     ''' Display summary of cluster sizes '''
@@ -189,13 +164,12 @@ def summary(infile, data_inpath=None, cluster_sizes=None, seq_lengths=None):
 
     cmd = shlex.split(cmd)  
     print 'Running\n' + cmd[0] 
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = Popen(cmd, stdout=PIPE)
     
     output = process.communicate()[0]
     print output 
     
     return output
 
-    
 if __name__ == '__main__':
     pass

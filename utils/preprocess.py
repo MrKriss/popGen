@@ -19,11 +19,12 @@ from general_utilities import set_trace
 
 from utils import smartopen, Cycler, make_MIDdict
 from cluster import cluster_cdhit
+from gen_synth_data import out_filename
 
 class ConfigClass(object):
     pass
 
-class Workflow(object):
+class Preprocessor(object):
     
     def __init__(self, c=None):
         
@@ -409,14 +410,16 @@ class Workflow(object):
         self.next_input_files = outnames
         self.next_input_path = outpath
 
-    def trim_reads(self, out_filename='out_filename.fasta', outpath = '', n = 1):
+    def trim_reads(self, out_filename=None, outpath = None, n = 1):
         ''' Trims off the MID tag of each read, as well as the last 'n' bases.
         Writes the trimed reads to one large fasta file for clustering'''
         
         c = self.c
         
-        if not outpath:
+        if outpath is None:
             outpath = c.processed_outpath
+        if out_filename is None:
+            out_filename = c.experiment_name + '_all_preprocessed.fasta'
         
         start_dir = os.getcwd() 
         
@@ -464,8 +467,12 @@ class Workflow(object):
             os.remove(f)   
         os.chdir(start_dir)
         
+        print '\nPreprocessing Complete.'
+        
         self.next_input_files = out_filename
         self.next_input_path = outpath
+        
+        return os.path.join(self.next_input_path, self.next_input_files)
 
     def make_illumina_filter(self):
         ''' Returns filtering function based on illumina machine filter         
