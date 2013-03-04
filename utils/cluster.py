@@ -42,53 +42,52 @@ class Clustering(object):
 
 
 
-
-
-# default Vars for clustering 
-default_vars = { 'c_thresh' : 0.90,
-                 'n_filter' : 8,
-                 'threads' : 1,
-                 'mem' : 0,
-                 'maskN' : False}
-
-# Variations to run
-clustering_runs = [ { 'c_thresh' : 0.95},
-                    { 'c_thresh' : 0.95, 'maskN' : True},
-                    { 'c_thresh' : 0.90},
-                    { 'c_thresh' : 0.90, 'maskN' : True},
-                    { 'c_thresh' : 0.85},
-                    { 'c_thresh' : 0.85, 'maskN' : True},
-                   ]
-                   
-for d in clustering_runs:
-    
-    inputs_dict = {}
-    inputs_dict.update(default_vars)
-    inputs_dict.update(d)
-    
-    dirname = experiment_name + '_clustered_reads'
-    outfile = experiment_name + '_clustered_reads'
-    if 'c_thresh' in d:
-        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
-        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
-    if 'maskN' in d:
-        dirname = dirname + '-maskN'
-        outfile = outfile + '-maskN'
-    
-    path = os.path.join(c.clusters_outpath, dirname)        
-    if not os.path.exists(path):
-        os.makedirs(path)
-        
-    path2outfile  = os.path.join(path, outfile)
-    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
-
-    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
-              **inputs_dict)
-
-
-
-
-
+#
+#
+## default Vars for clustering 
+#default_vars = { 'c_thresh' : 0.90,
+#                 'n_filter' : 8,
+#                 'threads' : 1,
+#                 'mem' : 0,
+#                 'maskN' : False}
+#
+## Variations to run
+#clustering_runs = [ { 'c_thresh' : 0.95},
+#                    { 'c_thresh' : 0.95, 'maskN' : True},
+#                    { 'c_thresh' : 0.90},
+#                    { 'c_thresh' : 0.90, 'maskN' : True},
+#                    { 'c_thresh' : 0.85},
+#                    { 'c_thresh' : 0.85, 'maskN' : True},
+#                   ]
+#                   
+#for d in clustering_runs:
+#    
+#    inputs_dict = {}
+#    inputs_dict.update(default_vars)
+#    inputs_dict.update(d)
+#    
+#    dirname = experiment_name + '_clustered_reads'
+#    outfile = experiment_name + '_clustered_reads'
+#    if 'c_thresh' in d:
+#        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+#        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+#    if 'maskN' in d:
+#        dirname = dirname + '-maskN'
+#        outfile = outfile + '-maskN'
+#    
+#    path = os.path.join(c.clusters_outpath, dirname)        
+#    if not os.path.exists(path):
+#        os.makedirs(path)
+#        
+#    path2outfile  = os.path.join(path, outfile)
+#    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
+#
+#    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+#              **inputs_dict)
+#
+#
+#
+#
 
 
 
