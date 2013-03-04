@@ -97,7 +97,7 @@ Experiment.trim_reads(out_filename=allreads_file, n = 1)
 # default Vars for clustering 
 default_vars = { 'c_thresh' : 0.90,
                  'n_filter' : 8,
-                 'threads' : 1,
+                 'threads' : 10,
                  'mem' : 0,
                  'maskN' : False}
 
