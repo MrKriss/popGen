@@ -31,61 +31,60 @@ class Clustering(object):
         
         
 
-    def run_cdhit_clustering(self, **kwargs): 
+    def run_single_cdhit_clustering(self, **kwargs):
+        ''' Runs a single instance of cd-hit-est ''' 
 
+        # Use defaults if no others were passed 
         if 'infile' not in kwargs:
             kwargs['infile'] = os.path.join(self.next_input_path, self.next_input_files)
         if 'outfile' not in kwargs:
             kwargs['outfile'] = 'all_reads'
+        if 'c_thresh' not in kwargs:
+            kwargs['c_thresh'] = self.default_parameters['c_thresh']
+        if 'n_filter' not in kwargs:
+            kwargs['n_filter'] = self.default_parameters['n_filter']
+        if 'threads' not in kwargs:
+            kwargs['threads'] = self.default_parameters['threads']
+        if 'mem' not in kwargs:
+            kwargs['mem'] = self.default_parameters['mem']
+        if 'maskN' not in kwargs:
+            kwargs['maskN'] = self.default_parameters['maskN']
             
         cluster_cdhit(**kwargs)
 
+    def run_batch_cdhit_clustering(self, batch_parameters, **kwargs):
+        ''' Runs cdhit in serial for each entry in batch_parameters.
+        
+        Elements of batch_parameters are dictionaries containing the parameters
+        to be changed from the default values '''
 
 
-#
-#
-## default Vars for clustering 
-#default_vars = { 'c_thresh' : 0.90,
-#                 'n_filter' : 8,
-#                 'threads' : 1,
-#                 'mem' : 0,
-#                 'maskN' : False}
-#
-## Variations to run
-#clustering_runs = [ { 'c_thresh' : 0.95},
-#                    { 'c_thresh' : 0.95, 'maskN' : True},
-#                    { 'c_thresh' : 0.90},
-#                    { 'c_thresh' : 0.90, 'maskN' : True},
-#                    { 'c_thresh' : 0.85},
-#                    { 'c_thresh' : 0.85, 'maskN' : True},
-#                   ]
-#                   
-#for d in clustering_runs:
-#    
-#    inputs_dict = {}
-#    inputs_dict.update(default_vars)
-#    inputs_dict.update(d)
-#    
-#    dirname = experiment_name + '_clustered_reads'
-#    outfile = experiment_name + '_clustered_reads'
-#    if 'c_thresh' in d:
-#        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
-#        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
-#    if 'maskN' in d:
-#        dirname = dirname + '-maskN'
-#        outfile = outfile + '-maskN'
-#    
-#    path = os.path.join(c.clusters_outpath, dirname)        
-#    if not os.path.exists(path):
-#        os.makedirs(path)
-#        
-#    path2outfile  = os.path.join(path, outfile)
-#    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
-#
-#    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
-#              **inputs_dict)
-#
-#
+        for d in batch_parameters:
+    
+            inputs_dict = {}
+            inputs_dict.update(self.default_parameters)
+            inputs_dict.update(d)
+    
+    dirname = experiment_name + '_clustered_reads'
+    outfile = experiment_name + '_clustered_reads'
+    if 'c_thresh' in d:
+        dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
+        outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+    if 'maskN' in d:
+        dirname = dirname + '-maskN'
+        outfile = outfile + '-maskN'
+    
+    path = os.path.join(c.clusters_outpath, dirname)        
+    if not os.path.exists(path):
+        os.makedirs(path)
+        
+    path2outfile  = os.path.join(path, outfile)
+    inputs_dict['log_filename'] = os.path.join(path, 'report.log')
+
+    Experiment.run_cdhit_clustering(infile=allreads_file, outfile=path2outfile,
+              **inputs_dict)
+
+
 #
 #
 
