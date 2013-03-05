@@ -15,11 +15,9 @@ import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
 
-from general_utilities import set_trace
+#from general_utilities import set_trace
 
 from utils import smartopen, Cycler, make_MIDdict
-from cluster import cluster_cdhit
-from gen_synth_data import out_filename
 
 class ConfigClass(object):
     pass
@@ -455,8 +453,6 @@ class Preprocessor(object):
         if outpath:
             os.chdir(outpath)
         cmd = ['cat'] + outfile_part_list 
-        
-        os.path.join(outpath, out_filename)
         
         with open(os.path.join(outpath, out_filename), 'wb') as f:
             print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
@@ -1170,9 +1166,12 @@ def file2fasta(filename):
     print 'Converted {0} records to file\n{1}'.format(count, out_filename)
 
 def trim_reads(infiles=None, filepattern=False, data_inpath='', 
-                out_filename='out_filename.fasta', outpath = '', n = 1):
+                out_filename='out_filename.fasta', outpath='', m=12, n=1):
     ''' Trims off the MID tag of each read, as well as the last 'n' bases.
-    Writes the trimed reads to one large fasta file for clustering'''
+    Writes the trimed reads to one large fasta file for clustering
+    
+    m = length of MID tag plus cutsite used
+    '''
     
     start_dir = os.getcwd() 
     
@@ -1187,7 +1186,7 @@ def trim_reads(infiles=None, filepattern=False, data_inpath='',
     # Generator to trim off MID tag and end of read.
     for seqfilegen in RecCycler.seqfilegen:
         
-        read_gen = (rec[12:-n] for rec in seqfilegen)
+        read_gen = (rec[m:-n] for rec in seqfilegen)
         # File name 
         outfile_part = 'output_part' + str(count) + '.fasta'
         outfile_part_list.append(outfile_part)
@@ -1197,16 +1196,21 @@ def trim_reads(infiles=None, filepattern=False, data_inpath='',
             print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
     
     # Combine output parts into one big file
-    os.chdir(outpath)
+    if outpath:
+        os.chdir(outpath)
     cmd = ['cat'] + outfile_part_list 
     with open(os.path.join(outpath, out_filename), 'wb') as f:
         print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
         call(cmd, stdout=f) 
     
     print 'Done, cleaning up temp files ....'
-    call('rm output*', shell=True)    
+    for f in outfile_part_list:
+        os.remove(f)   
     os.chdir(start_dir)
 
+    print '\nPreprocessing Complete.'
+    
+    
 if __name__ == '__main__':
     
 #==============================================================================
