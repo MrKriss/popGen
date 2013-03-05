@@ -55,6 +55,8 @@ class Clustering(object):
         Elements of batch_parameters are dictionaries containing the parameters
         to be changed from the default values '''
 
+        outfiles_list = [] 
+
         for d in batch_parameters:
     
             inputs_dict = {}
@@ -80,12 +82,15 @@ class Clustering(object):
                 os.makedirs(path)
                 
             inputs_dict['outfile'] = os.path.join(path, outfile)
+            outfiles_list.append(inputs_dict['outfile'])
             inputs_dict['log_filename'] = os.path.join(path, 'report.log')
         
             if 'infile' not in inputs_dict:
                 inputs_dict['infile'] = self.input_file
             
             cluster_cdhit(**inputs_dict)
+            
+        return outfiles_list
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
                   mem=0, maskN=True, log_filename='cd-hit-report.log'):

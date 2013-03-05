@@ -100,17 +100,17 @@ cluster_file_path = Preprocess.trim_reads(n = 1)
 #                 'maskN' : False}
 
 # Variations to run
-batch_parameters = [ { 'c_thresh' : 0.95},
-                    { 'c_thresh' : 0.95, 'maskN' : True},
-                    { 'c_thresh' : 0.90},
-                    { 'c_thresh' : 0.90, 'maskN' : True},
-                    { 'c_thresh' : 0.85},
-                    { 'c_thresh' : 0.85, 'maskN' : True},
-                   ]
-                   
-Clusterer = Clustering(c, cluster_file_path) 
-
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+#batch_parameters = [ { 'c_thresh' : 0.95},
+#                    { 'c_thresh' : 0.95, 'maskN' : True},
+#                    { 'c_thresh' : 0.90},
+#                    { 'c_thresh' : 0.90, 'maskN' : True},
+#                    { 'c_thresh' : 0.85},
+#                    { 'c_thresh' : 0.85, 'maskN' : True},
+#                   ]
+#                   
+#Clusterer = Clustering(c, cluster_file_path) 
+#
+#Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
 
 ## Display Summary
 #summary(clustered_file)
