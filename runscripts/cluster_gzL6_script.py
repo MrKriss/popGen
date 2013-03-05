@@ -15,12 +15,12 @@ from preprocess import  Preprocessor, ConfigClass
 from cluster import Clustering
 
 #==============================================================================
-''' Clusrter gzL8'''
+''' Clusrter gzL6'''
 #===============================================================================
 
-""" FOR LANE 8 """
+""" FOR LANE 6 """
 
-LANE =  '8'
+LANE =  '6'
 
 #===============================================================================
 # Setup Configuration
@@ -29,7 +29,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'gzL8'
+c.experiment_name = 'gzL6'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':

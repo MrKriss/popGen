@@ -9,7 +9,8 @@ import sys
 import numpy as np 
 from subprocess import call, Popen, STDOUT, PIPE
 import shlex
-
+import re
+import string
 
 class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
@@ -99,6 +100,9 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
     
     '''
     
+    pattern1 = re.compile('^\.')
+    pattern2 = re.compile('%$')
+    
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
     cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
@@ -108,15 +112,22 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
   
     proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE)
     
+    # Write progress to console and a summary to a log file
     with open(log_filename, 'wb') as logfile:
         while True:
             out = proc.stdout.readline()
-            if out == '' and proc.poll() != None:
+            if pattern1.match(out) or pattern2.match(out):
+                sys.stdout.write(out)
+                sys.stdout.flush()
+                continue
+            out.translate(string.maketrans("\r","\n"))
+            if not out and proc.poll() != None:
                 break
-            if out != '':
+            else:
                 sys.stdout.write(out)
                 sys.stdout.flush()
                 logfile.write(out)
+                logfile.flush()
     
 
 def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
