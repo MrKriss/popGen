@@ -44,7 +44,7 @@ elif socket.gethostname() == 'gg-pc6':
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
 c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
-c.processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.tag_processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
 c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
 # Setup input files glob
@@ -77,10 +77,10 @@ c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 #try:
 #    cluster_file_path
 #except NameError:
-#    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
+#    cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
 
-cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_allreads_preprocessed.fasta')
+cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_allreads_preprocessed.fasta')
 
 #===============================================================================
 # Cluster Data 

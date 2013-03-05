@@ -37,7 +37,7 @@ elif socket.gethostname() == 'luca':
 c.data_inpath =  os.path.join(prefix,'sticklebacks') 
 c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
 c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
-c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.tag_processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
 c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 
 # Setup input files and barcodes

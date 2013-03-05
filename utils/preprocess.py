@@ -260,14 +260,14 @@ class Preprocessor(object):
                            filepattern=False, data_inpath=self.next_input_path)
                 
         # Make ouput directory if required
-        if not os.path.exists(c.processed_outpath):
-            os.makedirs(c.processed_outpath) 
+        if not os.path.exists(c.tag_processed_outpath):
+            os.makedirs(c.tag_processed_outpath) 
             
-        outpath = c.processed_outpath
+        outpath = c.tag_processed_outpath
       
         class Read_Corrector_Class():
         
-            def __init__(self, tags,cutsite):
+            def __init__(self, tags, cutsite):
                 ''' Class for a Generator to yield reads that pass a quality check or are corrected 
                 
                 Keeps track of number of skipped and corrected reads as class attributes.
@@ -415,7 +415,7 @@ class Preprocessor(object):
         c = self.c
         
         if outpath is None:
-            outpath = c.processed_outpath
+            outpath = c.tag_processed_outpath
         if out_filename is None:
             out_filename = c.experiment_name + '_all_preprocessed.fasta'
         
@@ -430,6 +430,9 @@ class Preprocessor(object):
                ' fasta format').format(RecCycler.numfiles)
     
         if c.barcode_files_setup == 'global':
+            
+            #TODO:
+            # this is worong for Rasmuses data, FIXME
             read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
              
         # Generator to trim off MID tag and end of read.
@@ -469,6 +472,25 @@ class Preprocessor(object):
         self.next_input_path = outpath
         
         return os.path.join(self.next_input_path, self.next_input_files)
+
+    def cleanup(self):
+        ''' Remove intermediate files that are not needed '''
+        
+        # Choices of 'filtered', 'tag_processed', 'all'
+        # Raw inputs are always unchanged, and output .fasta is always kept
+        
+        if 'all' not in self.c.intermediate_files_kept:
+            if 'filtered' not in self.c.intermediate_files_kept:
+                pattern = os.path.join(self.c.filtered_outpath, 
+                                       '*' + self.c.filtered_files_postfix) 
+                files2remove = glob.glob(pattern)
+            elif 'tag_processed' not in self.c.intermediate_files_kept:
+                pattern = os.path.join(self.c.tag_processed_outpath, 
+                                       '*' + self.c.tag_processed_files_postfix) 
+                files2remove = glob.glob(pattern)
+        
+            for f in files2remove:
+                os.remove(f)      
 
     def make_illumina_filter(self):
         ''' Returns filtering function based on illumina machine filter         

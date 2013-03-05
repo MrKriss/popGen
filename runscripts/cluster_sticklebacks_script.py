@@ -39,7 +39,7 @@ elif socket.gethostname() == 'gg-pc6':
 c.data_inpath =  os.path.join(prefix,'sticklebacks') 
 c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
 c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
-c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
+c.tag_processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
 c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 
 # Setup input files glob
@@ -72,10 +72,10 @@ c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
 #try:
 #    cluster_file_path
 #except NameError:
-#    cluster_file_path = os.path.join(c.processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
+#    cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
 
-cluster_file_path = os.path.join(c.processed_outpath, 'sb_allreads_preprocessed.fasta')
+cluster_file_path = os.path.join(c.tag_processed_outpath, 'sb_allreads_preprocessed.fasta')
 
 #===============================================================================
 # Cluster Data 

@@ -11,17 +11,16 @@ import glob
 import socket
 
 from preprocess import  Preprocessor, ConfigClass
-
+from cluster import Clustering
       
 #==============================================================================
-''' RUN SCRIPT FOR ALLL READS IN stickleback RAD data '''
+''' Filter/Clean/Cluster SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD data Lane 8'''
 #===============================================================================
 
-""" FOR LANE 6 """
+""" FOR LANE 8 """
 
-LANE =  '6'
-
-experiment_name = 'gzL6'
+LANE =  '8'
+experiment_name = 'gzL%s' % LANE
 
 #===============================================================================
 # Setup Configuration
@@ -29,6 +28,8 @@ experiment_name = 'gzL6'
 starting_dir = os.getcwd()
 
 c = ConfigClass()
+
+c.experiment_name = experiment_name
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -42,7 +43,7 @@ elif socket.gethostname() == 'gg-pc6':
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
 c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
-c.processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.tag_processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
 c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
 # Setup input files and barcodes
@@ -59,6 +60,14 @@ os.chdir(starting_dir)
 
 # Set barcode file mode  
 c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
+
+# Set interim files mode
+c.filtered_files_postfix = '-pass'
+c.tag_processed_files_postfix = '-clean'
+c.intermediate_files_kept = [] # List of intermediate files to keep, else they are overwritten by 
+# subsequent fitering/preprocessing steps. 
+# Choices of 'filtered', 'tag_processed', 'all'
+# Raw inputs are always unchanged, and output .fasta is always kept
 
 # MIDtags
 c.cutsite = 'TGCAGG'
@@ -88,16 +97,18 @@ Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 
 cluster_file_path = Preprocess.trim_reads(n = 1)
 
+Preprocess.cleanup() # Remove intermediate files 
+
 #===============================================================================
 # Cluster Data 
 #===============================================================================
 
 # default Vars for clustering 
-#default_vars = { 'c_thresh' : 0.90,
-#                 'n_filter' : 8,
-#                 'threads' : 1,
-#                 'mem' : 0,
-#                 'maskN' : False}
+default_vars = { 'c_thresh' : 0.90,
+                 'n_filter' : 8,
+                 'threads' : 1,
+                 'mem' : 0,
+                 'maskN' : False}
 
 # Variations to run
 batch_parameters = [ { 'c_thresh' : 0.95},

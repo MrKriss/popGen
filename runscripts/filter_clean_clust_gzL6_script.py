@@ -6,18 +6,21 @@ Created on 10 Dec 2012
 import os 
 import sys 
 
-import numpy as np 
 import glob
 
 import socket
 
 from preprocess import  Preprocessor, ConfigClass
 from cluster import Clustering
-
       
 #==============================================================================
-''' EXPERIMENT NAME'''
+''' Filter/Clean/Cluster SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD data Lane 6'''
 #===============================================================================
+
+""" FOR LANE 6 """
+
+LANE =  '6'
+experiment_name = 'gzL%s' % LANE
 
 #===============================================================================
 # Setup Configuration
@@ -26,7 +29,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'my_experiment'
+c.experiment_name = experiment_name
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -36,28 +39,35 @@ elif socket.gethostname() == 'luca':
 elif socket.gethostname() == 'gg-pc6':
     prefix = '/home/musselle/data'
 
-# Set paths for IO
-c.data_inpath =  os.path.join(prefix,'sticklebacks') 
-c.barcode_inpath = os.path.join(prefix,'sticklebacks/barcodes')
-c.filtered_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
-c.processed_outpath = os.path.join(prefix,'sticklebacks/filtered_data')
-c.clusters_outpath = os.path.join(prefix,'sticklebacks/clusters')
+# Set paths 
+c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
+c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
+c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.tag_processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
-# Setup input files glob
+# Setup input files and barcodes
 os.chdir(c.data_inpath)
 raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files.sort()
 c.raw_input_files = raw_files 
 
-# Setup barcode files glob
 os.chdir(c.barcode_inpath)
-barcodes = glob.glob('*[0-9].txt')
+barcodes = glob.glob('*%s.txt' % (LANE))
 barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
 
 # Set barcode file mode  
-c.barcode_files_setup = 'individual' # Each reads file has an associated barcode file 
+c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
+
+# Set interim files mode
+c.filtered_files_postfix = '-pass'
+c.tag_processed_files_postfix = '-clean'
+c.intermediate_files_kept = [] # List of intermediate files to keep, else they are overwritten by 
+# subsequent fitering/preprocessing steps. 
+# Choices of 'filtered', 'tag_processed', 'all'
+# Raw inputs are always unchanged, and output .fasta is always kept
 
 # MIDtags
 c.cutsite = 'TGCAGG'
@@ -67,7 +77,7 @@ c.max_edit_dist = 2
 # Whether to log reads that fail the filtering         
 c.log_fails = True
        
-# Define Classes
+# Define Class
 Preprocess = Preprocessor(c) 
 
 #===============================================================================
