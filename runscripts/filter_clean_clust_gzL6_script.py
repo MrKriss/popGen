@@ -89,16 +89,15 @@ Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
                                Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 
 Preprocess.filter_reads_pipeline()
-
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
 
 Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
+Preprocess.cleanup('filtered') # Remove intermediate files 
 
 cluster_file_path = Preprocess.trim_reads(n = 1)
-
-Preprocess.cleanup() # Remove intermediate files 
+Preprocess.cleanup('tag_processed') # Remove intermediate files 
 
 #===============================================================================
 # Cluster Data 
