@@ -473,24 +473,31 @@ class Preprocessor(object):
         
         return os.path.join(self.next_input_path, self.next_input_files)
 
-    def cleanup(self):
+    def cleanup_files(self, *args):
         ''' Remove intermediate files that are not needed '''
         
         # Choices of 'filtered', 'tag_processed', 'all'
         # Raw inputs are always unchanged, and output .fasta is always kept
         
-        if 'all' not in self.c.intermediate_files_kept:
-            if 'filtered' not in self.c.intermediate_files_kept:
+        if not args:
+            args = self.c.intermediate_files_kept
+        
+        
+        if 'all' not in args:
+            if 'filtered' not in args:
                 pattern = os.path.join(self.c.filtered_outpath, 
                                        '*' + self.c.filtered_files_postfix) 
                 files2remove = glob.glob(pattern)
-            elif 'tag_processed' not in self.c.intermediate_files_kept:
+            elif 'tag_processed' not in args:
                 pattern = os.path.join(self.c.tag_processed_outpath, 
                                        '*' + self.c.tag_processed_files_postfix) 
                 files2remove = glob.glob(pattern)
         
             for f in files2remove:
-                os.remove(f)      
+                try:
+                    os.remove(f)   
+                except OSError:
+                    pass   
 
     def make_illumina_filter(self):
         ''' Returns filtering function based on illumina machine filter         

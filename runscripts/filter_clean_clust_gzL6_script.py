@@ -93,9 +93,12 @@ Preprocess.filter_reads_pipeline()
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
+
 Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 
 cluster_file_path = Preprocess.trim_reads(n = 1)
+
+Preprocess.cleanup() # Remove intermediate files 
 
 #===============================================================================
 # Cluster Data 
