@@ -104,7 +104,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=5)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
 
 ## Display Summary
 #summary(clustered_file)
