@@ -38,6 +38,43 @@ def f():
         '''   '''
         pass
 
+
+# Simple test for indels and error rates on CD-HIT clustering
+
+# Number of randomly generated reads (num cutsites x 2) (25,000 * 2)
+# Poisson Depth of coverage
+
+
+
+# Option to Diplodise and add alleles 
+
+# Number of individuals 
+# number of sites covered per in
+
+
+
+
+
+
+
+# Stacks methodology
+#-------------------
+# Get reference sequence
+# Extract reads in both directions from each cut site (CCTGCA^GG)
+# Re-diplodise the genome by creating alleles (2 copies of each read)
+# Introduce SNPs in these alleles at a rate of 0.5%
+# 'Sequence' to a mean depth determined by drawing from a poisson distribution with means of (10, 20, 30)
+# Simulated Sequencing error rates which increased linearly along the illumina read (means of 0.5%, 1%, and 3%)
+# Each run on simulated data involved 10 replicates
+
+
+ 
+
+
+
+
+
+
 # Example
 simple_seq = Seq("GATC")
 simple_seq_r = SeqRecord(simple_seq, id="AC12345")
