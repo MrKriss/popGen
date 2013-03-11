@@ -67,8 +67,36 @@ def f():
 # Simulated Sequencing error rates which increased linearly along the illumina read (means of 0.5%, 1%, and 3%)
 # Each run on simulated data involved 10 replicates
 
-
+filepath = '/space/musselle/reference-genomes/Sticklebacks/Gasterosteus_aculeatus.BROADS1.56.dna.toplevel.fa'
  
+def synthdata_fromgenome(genome_file, cutsite = 'CCTGCAGG'):
+    ''' Generate synthetic 'Reads' from a reference genome ''''
+    
+    # Sort reference genome in order 
+    
+    D = SeqIO.index(genome_file, 'fasta')
+    .keys
+    
+    # Find all cut sites in the reference genome
+    
+    # Cycle through all scaffolds
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
