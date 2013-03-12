@@ -98,7 +98,7 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
     
     Other flags used:
     -d 0   --> No limit on description written to cluster file (goes to first space in seq ID). 
-    -r 0   --> Do only +/+ alignment comparisons
+    -r 1   --> DO BOTH +/+ and -/+ alignment comparisons as reads are done in both directions. 
     -s 0.8 --> If shorter sequence is less than 80% of the representative sequence, dont cluster. 
     
     Writes stdout to console and saves to log file in real time. 

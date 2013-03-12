@@ -12,7 +12,8 @@ from Bio.Seq import Seq
 from Bio import SeqIO
 
 import random
-import string 
+import string
+import re 
 
 # Random ID generator
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -69,15 +70,43 @@ def f():
 
 filepath = '/space/musselle/reference-genomes/Sticklebacks/Gasterosteus_aculeatus.BROADS1.56.dna.toplevel.fa'
  
-def synthdata_fromgenome(genome_file, cutsite = 'CCTGCAGG'):
-    ''' Generate synthetic 'Reads' from a reference genome ''''
+def synthdata_fromgenome(genome_file, cutsite = 'CCTGCAGG', read_length = 100):
+    ''' Generate synthetic 'Reads' from a reference genome '''
     
-    # Sort reference genome in order 
     
+    cutsite_pattern = re.compile()
+    
+    ## Three options ##
+    
+    # >> Run through all genomic information: mDNA cDNA and contigs yet to be incorperated into genome
+    # Just use cDNA
+    # Just use cDNA and mDNA
+        
+    # Run through genome 
     D = SeqIO.index(genome_file, 'fasta')
-    .keys
+    Dk = D.keys().sort()
     
-    # Find all cut sites in the reference genome
+    # Add filtering if necessary 
+    
+    # Find all cut sites in the reference genome and write reads to file 
+    
+    with open('reads.fasta', 'wb') as readsfile:
+        
+        for fasta_rec in Dk:
+            
+            seq = D[fasta_rec].seq.tostring()
+            matches = cutsite_pattern.finditer(seq)
+    
+            for match in matches:
+                
+                # Check to see if reads can be taken from both ends, or just one
+                if match.start() > 
+                
+                
+                 
+    
+    
+    
     
     # Cycle through all scaffolds
 

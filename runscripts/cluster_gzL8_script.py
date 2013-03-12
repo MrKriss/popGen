@@ -29,7 +29,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'gzL8'
+c.experiment_name = 'gzL8_r1'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -104,7 +104,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=5)
 
 ## Display Summary
 #summary(clustered_file)

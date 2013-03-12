@@ -29,7 +29,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'gzL6'
+c.experiment_name = 'gzL6_r1'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':
@@ -57,7 +57,8 @@ c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 #os.chdir(c.barcode_inpath)
 #barcodes = glob.glob('*[0-9].txt')
 #barcodes.sort()
-#c.barcode_files = barcodes
+#c.barcode_files = bar
+codes
 #os.chdir(starting_dir)
 
 # Set barcode file mode  
@@ -104,7 +105,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=5)
 
 ## Display Summary
 #summary(clustered_file)
