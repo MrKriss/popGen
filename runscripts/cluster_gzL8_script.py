@@ -29,7 +29,7 @@ starting_dir = os.getcwd()
 
 c = ConfigClass()
 
-c.experiment_name = 'gzL8_r1'
+c.experiment_name = 'gzL8'
 
 # Work out where data is stored
 if socket.gethostname() == 'yildun':

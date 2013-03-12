@@ -65,7 +65,7 @@ class Clustering(object):
             inputs_dict.update(kwargs)
     
             dirname = self.c.experiment_name + '_clustered_reads'
-            outfile = self.c.experiment_name + '_clustered_reads'
+            outfile = self.c.experiment_name + '_clustered_reads-r1'
 
             if 'c_thresh' in d:
                 dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
