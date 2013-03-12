@@ -80,7 +80,7 @@ c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 #    cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
 
-cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_allreads_preprocessed.fasta')
+cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_all_preprocessed.fasta')
 
 #===============================================================================
 # Cluster Data 
