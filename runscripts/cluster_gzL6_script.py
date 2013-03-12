@@ -57,8 +57,7 @@ c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 #os.chdir(c.barcode_inpath)
 #barcodes = glob.glob('*[0-9].txt')
 #barcodes.sort()
-#c.barcode_files = bar
-codes
+#c.barcode_files = barcodes
 #os.chdir(starting_dir)
 
 # Set barcode file mode  
