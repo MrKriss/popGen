@@ -51,7 +51,7 @@ class Clustering(object):
             
         cluster_cdhit(**kwargs)
 
-    def run_batch_cdhit_clustering(self, batch_parameters, **kwargs):
+    def run_batch_cdhit_clustering(self, batch_parameters, postfix= '', **kwargs):
         ''' Runs cdhit in serial for each entry in batch_parameters.
         
         Elements of batch_parameters are dictionaries containing the parameters
@@ -86,8 +86,8 @@ class Clustering(object):
             if not os.path.exists(path):
                 os.makedirs(path)
             
-            if 'postfix' in inputs_dict:    
-                inputs_dict['outfile'] = os.path.join(path, outfile + inputs_dict['postfix'])
+            if 'postfix':    
+                inputs_dict['outfile'] = os.path.join(path, outfile + postfix)
             else:
                 inputs_dict['outfile'] = os.path.join(path, outfile)
                 
