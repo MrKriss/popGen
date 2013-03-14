@@ -110,7 +110,7 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
     
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
-    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
+    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 1 -s 0.8 -M {4} '
             '-T {5}').format(infile, outfile, c_thresh, n_filter, mem, threads)   
     if maskN:
         cmd = cmd + ' -mask N'
