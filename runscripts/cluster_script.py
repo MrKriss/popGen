@@ -51,8 +51,8 @@ cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_
 #===============================================================================
 
 # Variations to run
-batch_parameters = [ { 'c_thresh' : 0.95, 'all-v-all' : True},
-                    { 'c_thresh' : 0.90, 'all-v-all' : True},
+batch_parameters = [ { 'c_thresh' : 0.95, 'allvall' : True},
+                    { 'c_thresh' : 0.90, 'allvall' : True},
                    ]
                    
 Clusterer = Clustering(c, cluster_file_path) 
