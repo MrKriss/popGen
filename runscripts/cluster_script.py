@@ -51,14 +51,13 @@ cluster_file_path = os.path.join(c.tag_processed_outpath, c.experiment_name + '_
 #===============================================================================
 
 # Variations to run
-batch_parameters = [ { 'c_thresh' : 0.95},
-                    { 'c_thresh' : 0.90},
-                    {'all-v-all' : True }
+batch_parameters = [ { 'c_thresh' : 0.95, 'all-v-all' : True},
+                    { 'c_thresh' : 0.90, 'all-v-all' : True},
                    ]
                    
 Clusterer = Clustering(c, cluster_file_path) 
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=5)
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=20, postfix='_allvall')
 
 ## Display Summary
 #summary(clustered_file)

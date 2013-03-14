@@ -67,7 +67,7 @@ class Clustering(object):
             inputs_dict.update(kwargs)
     
             dirname = self.c.experiment_name + '_clustered_reads'
-            outfile = self.c.experiment_name + '_clustered_reads-r1'
+            outfile = self.c.experiment_name + '_clustered_reads'
 
             if 'c_thresh' in d:
                 dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
@@ -78,12 +78,20 @@ class Clustering(object):
             if 'maskN' in d:
                 dirname = dirname + '-maskN'
                 outfile = outfile + '-maskN'
-            
+            if 'allvall' in d:
+                dirname = dirname + '-g1'
+                outfile = outfile + '-g1'
+                
             path = os.path.join(self.c.clusters_outpath, dirname)        
             if not os.path.exists(path):
                 os.makedirs(path)
+            
+            if 'postfix' in inputs_dict:    
+                inputs_dict['outfile'] = os.path.join(path, outfile + inputs_dict['postfix'])
+            else:
+                inputs_dict['outfile'] = os.path.join(path, outfile)
                 
-            inputs_dict['outfile'] = os.path.join(path, outfile)
+            
             outfiles_list.append(inputs_dict['outfile'])
             inputs_dict['log_filename'] = os.path.join(path, 'report.log')
         
@@ -95,7 +103,8 @@ class Clustering(object):
         return outfiles_list
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
-                  mem=0, maskN=True, log_filename='cd-hit-report.log', allvall = False):
+                  mem=0, maskN=True, log_filename='cd-hit-report.log', 
+                  allvall = False):
     ''' Run CD-HIT in parallel on one large fasta file
     
     Other flags used:
