@@ -11,6 +11,8 @@ from subprocess import call, Popen, STDOUT, PIPE
 import shlex
 import re
 import string
+from threading  import Thread
+from Queue import Queue, Empty
 
 class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
@@ -93,12 +95,12 @@ class Clustering(object):
         return outfiles_list
 
 def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
-                  mem=0, maskN=True, log_filename='cd-hit-report.log'):
+                  mem=0, maskN=True, log_filename='cd-hit-report.log', allvall = False):
     ''' Run CD-HIT in parallel on one large fasta file
     
     Other flags used:
     -d 0   --> No limit on description written to cluster file (goes to first space in seq ID). 
-    -r 1   --> DO BOTH +/+ and -/+ alignment comparisons as reads are done in both directions. 
+    -r 0   --> DO Only +/+ and not -/+ alignment comparisons as reads are done in both directions but on different strands. 
     -s 0.8 --> If shorter sequence is less than 80% of the representative sequence, dont cluster. 
     
     Writes stdout to console and saves to log file in real time. 
@@ -107,32 +109,53 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
     
     pattern1 = re.compile('^\.')
     pattern2 = re.compile('%$')
+    pattern3 = re.compile('^#')
     
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
-    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 1 -s 0.8 -M {4} '
+    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
             '-T {5}').format(infile, outfile, c_thresh, n_filter, mem, threads)   
     if maskN:
         cmd = cmd + ' -mask N'
-  
-    proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE)
+    if allvall:
+        cmd = cmd + ' -g 1'
+        
+    # Wish to write progress to console and also capture summary in a log file
     
-    # Write progress to console and a summary to a log file
+    # function to thread
+    def enqueue_output(out, queue):
+        for line in iter(out.readline, b''):
+            queue.put(line)
+        out.close()
+    
+    # Process to run CD-HIT
+    proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE, bufsize=1)
+    
+    # Setup queue and threading 
+    q = Queue()
+    t = Thread(target=enqueue_output, args=(proc.stdout, q))
+    t.daemon = True # thread dies with the program
+    t.start()
+
     with open(log_filename, 'wb') as logfile:
         while True:
-            out = proc.stdout.readline()
-            if pattern1.match(out) or pattern2.match(out):
-                sys.stdout.write(out)
-                sys.stdout.flush()
-                continue
-            out.translate(string.maketrans("\r","\n"))
-            if not out and proc.poll() != None:
-                break
-            else:
-                sys.stdout.write(out)
-                sys.stdout.flush()
-                logfile.write(out)
-                logfile.flush()
+            # read line without blocking
+            try:  line = q.get_nowait() # or q.get(timeout=.1)
+            except Empty:
+                if proc.poll() != None:
+                    break
+            else: # got line
+                if (pattern1.match(line) or pattern2.match(line) 
+                  or pattern3.match(line)):
+                    sys.stdout.write(line)
+                    sys.stdout.flush()
+                    continue
+                else:
+                    line.translate(string.maketrans("\r","\n"))
+                    sys.stdout.write(line)
+                    sys.stdout.flush()
+                    logfile.write(line)
+                    logfile.flush()
     
 
 def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
@@ -140,7 +163,6 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
     
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
- 
     if maskN:
         cmd = ('cd-hit-para.pl -i {0} -o {1} -c {2} -n {3}'
               ' --L 1 --S 64 --P "cd-hit-est -mask N"').format(infile, outfile, 
