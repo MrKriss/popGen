@@ -10,9 +10,10 @@ import glob
 
 import socket
 
+from utils import get_data_prefix
 from preprocess import  Preprocessor, ConfigClass
 from cluster import Clustering
-      
+
 #==============================================================================
 ''' Filter/Clean/Cluster SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD data Lane 6'''
 #===============================================================================
@@ -31,19 +32,15 @@ c = ConfigClass()
 
 c.experiment_name = experiment_name
 
-# Work out where data is stored
-if socket.gethostname() == 'yildun':
-    prefix = '/space/musselle/datasets'
-elif socket.gethostname() == 'luca':
-    prefix = '/home/musselle/san/data'
-elif socket.gethostname() == 'gg-pc6':
-    prefix = '/home/musselle/data'
+# Work out where data is stored on this machine
+prefix = get_data_prefix()
 
 # Set paths 
 c.data_inpath =  os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE)) 
 c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
 c.filtered_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
 c.tag_processed_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data')
+c.tag_split_outpath = os.path.join(prefix,'gazelles-zebras/lane%s' % (LANE), 'filtered_data', 'individuals')
 c.clusters_outpath = os.path.join(prefix,'gazelles-zebras/clusters')
 
 # Setup input files and barcodes
@@ -61,13 +58,9 @@ os.chdir(starting_dir)
 # Set barcode file mode  
 c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
 
-# Set interim files mode
+# Set interim file suffixes
 c.filtered_files_postfix = '-pass'
 c.tag_processed_files_postfix = '-clean'
-c.intermediate_files_kept = [] # List of intermediate files to keep, else they are overwritten by 
-# subsequent fitering/preprocessing steps. 
-# Choices of 'filtered', 'tag_processed', 'all'
-# Raw inputs are always unchanged, and output .fasta is always kept
 
 # MIDtags
 c.cutsite = 'TGCAGG'
@@ -89,15 +82,27 @@ Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
                                Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 
 Preprocess.filter_reads_pipeline()
+
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
 
 Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
-Preprocess.cleanup('filtered') # Remove intermediate files 
+Preprocess.cleanup('filtered') # Remove filtered intermediate files 
 
-cluster_file_path = Preprocess.trim_reads(n = 1)
-Preprocess.cleanup('tag_processed') # Remove intermediate files 
+out = Preprocess.trim_reads(n = 1)
+Preprocess.cleanup('tag_processed') # Remove MID tag processed intermediate files 
+
+#===============================================================================
+# Split Data into individuals based on MID tag 
+#===============================================================================
+
+
+
+
+
+
+
 
 #===============================================================================
 # Cluster Data 
@@ -119,7 +124,7 @@ batch_parameters = [ { 'c_thresh' : 0.95},
                     { 'c_thresh' : 0.85, 'maskN' : True},
                    ]
                    
-Clusterer = Clustering(c, cluster_file_path) 
+Clusterer = Clustering(c, infiles=out[0], inpath=[1]) 
 
 Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
 

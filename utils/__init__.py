@@ -16,6 +16,9 @@ from Bio import SeqIO
 # TODO: Write function to sumarise fails.log files
 
 
+
+
+
 class Cycler(object):
     ''' Object to hold generators that yield Sequence record objects or
     generators for all sequences records from the given file list
@@ -142,7 +145,22 @@ class Cycler(object):
                 for record in rec_file:
                     yield record
 
+
+def get_data_prefix():
+    '''Return directory prefix where data is stored'''    
+    import socket
+
+    if socket.gethostname() == 'yildun':
+        prefix = '/space/musselle/datasets'
+    elif socket.gethostname() == 'luca':
+        prefix = '/home/musselle/san/data'
+    elif socket.gethostname() == 'gg-pc6':
+        prefix = '/home/musselle/data'
+
+    return prefix
+
 import string
+
 def search_file(filename, search_path, pathsep=os.pathsep):
     """ Given a search path, find file with requested name """
     for path in string.split(search_path, pathsep):
@@ -150,13 +168,6 @@ def search_file(filename, search_path, pathsep=os.pathsep):
         if os.path.exists(candidate): return os.path.abspath(candidate)
     return None
 
-#if _ _name_ _ == '_ _ _main_ _':
-#    search_path = '/bin' + os.pathsep + '/usr/bin'  # ; on Windows, : on Unix
-#    find_file = search_file('ls',search_path)
-#    if find_file:
-#        print "File found at %s" % find_file
-#    else:
-#        print "File not found"
 
 def pklsave(obj, filename):
     ''' Pickle the given object '''
@@ -211,33 +222,6 @@ def find_numrec(filename):
     process = Popen(cmd, stdout=PIPE, shell=True)
 
     return int(process.communicate()[0].strip())
-
-def make_MIDdict(infiles=None, filepattern=False, data_inpath=''):
-    ''' Function to load in MIDs from a list of files into a dictionary '''
-
-    # Handle multiple types of input for infiles
-    assert infiles is not None, 'No files listed or file pattern specified.'         
-    if filepattern:
-        # Fetch files by file types using glob
-        import glob 
-        st_dir = os.getcwd()
-        os.chdir(data_inpath)
-        infiles = glob.glob(infiles)
-        os.chdir(st_dir)
-    elif type(infiles) == str:
-        # Convert to list
-        infiles = [infiles]
-
-    # Run through files and store barcodes in a Dictionary object.
-    # keys are starting tags (MID (6 BP) + cutsite (6BP))
-    tags = {}
-    
-    for filename in infiles:
-        with open(os.path.join(data_inpath,filename), 'rb') as f:
-            for line in f:
-                elem = line.split()
-                tags[elem[0]] = elem[1] 
-    return tags
 
 if __name__ == '__main__':
     

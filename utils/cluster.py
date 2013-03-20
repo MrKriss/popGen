@@ -18,7 +18,7 @@ class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
     
-    def __init__(self, config, file2cluster):
+    def __init__(self, config, infiles, inpath):
 
         self.c = config
         self.input_file = file2cluster
