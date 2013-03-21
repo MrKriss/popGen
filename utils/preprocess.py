@@ -502,143 +502,144 @@ class Preprocessor(object):
         
         return (out_filename, outpath)
 
-    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
-                      report=True, savecounter=True):
-        ''' Split the file into separate files based on MID tags '''
-        
-        c = self.c
-        
-        if outpath is None:
-            outpath = c.tag_processed_outpath
-        if out_filename is None:
-            out_filename = c.experiment_name
-             
-        start_dir = os.getcwd() 
-
-        # Setup Record Cycler        
-        if infiles is None:
-            infiles = self.next_input_files
-        if inpath is None:
-            inpath = self.next_input_path
-        
-        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-        
-        tag_counter = Counter
-        outfile_files_list = []
-    
-        if c.barcode_files_setup == 'individual':
-            # Process each file with its own list of barcodes
-            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
-            
-        
-            for seqfilegen in RecCycler.seqfilegen:
-                
-                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-                lenMIDs = len(c.MIDtags[fname].keys()[0])
-                read_start_idx = len(c.cutsite) + lenMIDs
-                
-                
-        
-        
-        
-        
-        
-        
-        
-        elif c.barcode_files_setup == 'global':
-            # Process each file with reference to a global list of barcodes
-            # global_tags = {'MIDtag' : 'individual' }
-            
-            MID_length = len(c.MIDtags.keys()[0])
-            
-            print ('Spliting {0} files into a total of {1} files bases on MID tags'
-               '').format(RecCycler.numfiles, len(c.MIDtags))
-            
-            # Open Files for Writing for each tag  
-            for tag, individual in c.MIDtags.iteritems():
-                
-                fname = '-'.join(out_filename, tag, individual)
-                outfile_files_list.append(fname)
-                fvarname = 'f-' + tag
-                vars()[fvarname] = open(os.path.join(outpath, fname), 'w')
-    
-            for rec in RecCycler.recgen:
-        
-                tag = rec.seq[:MID_length].tostring()
-                
-                if tag not in c.MIDtags:
-                    raise Exception('MID tag not found in barcode library')
-                else:                   
-                    fvarname = 'f-' + tag                 
-                    SeqIO.write(rec, vars()[fvarname], 'fastq');
-                    tag_counter[tag] += 1
-
-            # Flush and Close Files for each tag  
-            for tag, individual in c.MIDtags.iterkeys():
-
-                fvarname = 'f-' + tag
-                vars()[fvarname].flush()
-                vars()[fvarname].close()
-
-            
-            print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
-                
-                    
-                    
-                    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-                read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
-    
-    
-    
-    
-    
-    
-
-    
-    
-        if c.barcode_files_setup == 'global':
-            
-            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
-             
-        # Generator to trim off MID tag and end of read.
-        for seqfilegen in RecCycler.seqfilegen:
-                       
-            if c.barcode_files_setup == 'individual':
-                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-                lenMIDs = len(c.MIDtags[fname].keys()[0])
-                read_start_idx = len(c.cutsite) + lenMIDs  
-    
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-       
-            
+#    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
+#                      report=True, savecounter=True):
+#        ''' Split the file into separate files based on MID tags '''
+#        
+#        c = self.c
+#        
+#        if outpath is None:
+#            outpath = c.tag_processed_outpath
+#        i
+#            print 'Database found with matching file name.'f out_filename is None:
+#            out_filename = c.experiment_name
+#             
+#        start_dir = os.getcwd() 
+#
+#        # Setup Record Cycler        
+#        if infiles is None:
+#            infiles = self.next_input_files
+#        if inpath is None:
+#            inpath = self.next_input_path
+#        
+#        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
+#        
+#        tag_counter = Counter
+#        outfile_files_list = []
+#    
+#        if c.barcode_files_setup == 'individual':
+#            # Process each file with its own list of barcodes
+#            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
+#            
+#        
+#            for seqfilegen in RecCycler.seqfilegen:
+#                
+#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
+#                lenMIDs = len(c.MIDtags[fname].keys()[0])
+#                read_start_idx = len(c.cutsite) + lenMIDs
+#                
+#                
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        elif c.barcode_files_setup == 'global':
+#            # Process each file with reference to a global list of barcodes
+#            # global_tags = {'MIDtag' : 'individual' }
+#            
+#            MID_length = len(c.MIDtags.keys()[0])
+#            
+#            print ('Spliting {0} files into a total of {1} files bases on MID tags'
+#               '').format(RecCycler.numfiles, len(c.MIDtags))
+#            
+#            # Open Files for Writing for each tag  
+#            for tag, individual in c.MIDtags.iteritems():
+#                
+#                fname = '-'.join(out_filename, tag, individual)
+#                outfile_files_list.append(fname)
+#                fvarname = 'f-' + tag
+#                vars()[fvarname] = open(os.path.join(outpath, fname), 'w')
+#    
+#            for rec in RecCycler.recgen:
+#        
+#                tag = rec.seq[:MID_length].tostring()
+#                
+#                if tag not in c.MIDtags:
+#                    raise Exception('MID tag not found in barcode library')
+#                else:                   
+#                    fvarname = 'f-' + tag                 
+#                    SeqIO.write(rec, vars()[fvarname], 'fastq');
+#                    tag_counter[tag] += 1
+#
+#            # Flush and Close Files for each tag  
+#            for tag, individual in c.MIDtags.iterkeys():
+#
+#                fvarname = 'f-' + tag
+#                vars()[fvarname].flush()
+#                vars()[fvarname].close()
+#
+#            
+#            print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
+#                
+#                    
+#                    
+#                    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#    
+#                read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
+#    
+#    
+#    
+#    
+#    
+#    
+#
+#    
+#    
+#        if c.barcode_files_setup == 'global':
+#            
+#            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
+#             
+#        # Generator to trim off MID tag and end of read.
+#        for seqfilegen in RecCycler.seqfilegen:
+#                       
+#            if c.barcode_files_setup == 'individual':
+#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
+#                lenMIDs = len(c.MIDtags[fname].keys()[0])
+#                read_start_idx = len(c.cutsite) + lenMIDs  
+#    
+#
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#        
+#       
+#            
 
 
 
