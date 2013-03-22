@@ -36,7 +36,8 @@ c.experiment_name = experiment_name
 prefix = get_data_prefix()
 
 # Set paths 
-c.data_inpath =  joinp(prefix,'gazelles-zebras') 
+#c.data_inpath =  joinp(prefix,'gazelles-zebras') 
+c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset') 
 c.barcode_inpath = joinp(prefix,'gazelles-zebras', 'barcodes')
 c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'filtered_data')
 c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'filtered_data')
@@ -45,7 +46,8 @@ c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
-raw_files = glob.glob('*[0-9].fastq.bgzf')
+#raw_files = glob.glob('*[0-9].fastq.bgzf')
+raw_files = glob.glob('testset_1percent.fastq.bgzf')
 raw_files.sort()
 c.raw_input_files = raw_files 
 
@@ -80,11 +82,13 @@ db.overwrite_table('samples', ('''MIDtag TEXT, description TEXT, raw_datafile TE
 
 L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
 L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
-        
+
+raw_datafile = 'testset_1percent.fastq.bgzf'
+
 for f in L6_barcode_files:
-    db.add_barcodes(f, raw_datafile='lane6*.bgzf') 
+    db.add_barcodes(f, raw_datafile=raw_datafile) 
 for f in L8_barcode_files:
-    db.add_barcodes(f, raw_datafile='lane8*.bgzf')
+    db.add_barcodes(f, raw_datafile=raw_datafile)
 
 # Define Preprocessing Class
 Preprocess = Preprocessor(c, db) 

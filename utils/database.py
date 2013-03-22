@@ -28,10 +28,12 @@ class Database(object):
         
         database_already_exists = os.path.exists(db_file)    
         
-        self.db = sqlite3.connect(db_file)
+        # Stored Vars
+        self.con = sqlite3.connect(db_file)
+        self.tables = []
         
-        if recbyname:
-            self.db.row_factory =  sqlite3.Row
+        if recbyname: 
+            self.con.row_factory = sqlite3.Row
         
         if database_already_exists:
             print 'Database found with matching file name.'
@@ -44,31 +46,38 @@ class Database(object):
     def new_table(self, name, headers):
         """ Create a table with specified headers """
         
-        cur = self.db.cursor()
+        self.tables.append(name)
+        
+        cur = self.con.cursor()
+        
         try:
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
         except sqlite3.Error as e:                        
             print "Error %s:" % e.args[0]
         finally:
-            self.db.commit()
+            self.con.commit()
             cur.close()    
         
     def overwrite_table(self, name, headers):
         """ Create or overwrite a table if it already exists with specified headers """
         
-        cur = self.db.cursor()
+        if name not in self.tables: 
+            self.tables.append(name)
+        
+        cur = self.con.cursor()
         try:
             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))       
         except sqlite3.Error as e:                        
             print "Error %s:" % e.args[0]
         finally:
-            self.db.commit()
+            self.con.commit()
             cur.close()    
         
     def select(self,cmd):
         """ select records from the database returned as tuple of tuples. """
-        cur = self.db.cursor()  
+        cur = self.con.cursor()  
+        # SELECT column_name(s) FROM table_name
         cur.execute("SELECT " + cmd)
         records = cur.fetchall()
         cur.close()
@@ -78,18 +87,15 @@ class Database(object):
         """ Print out the records returned from the database querry 
         
         num = max number to display. default 0 is all records returned.
-        """
-    
-        cur = self.db.cursor()  
-        cur.execute("SELECT " + cmd)
-        
-        if num:
+        """    
+        cur = self.con.cursor()  
+        cur.execute("SELECT " + cmd)       
+        if num: 
             records = cur.fetchmany(num)
-        else:
+        else:  
             records = cur.fetchall()      
-        cur.close()
-    
-        if self.db.row_factory == sqlite3.Row:
+        cur.close()   
+        if self.con.row_factory == sqlite3.Row:
             row_names = records[0].keys()
             print '  '.join(row_names)
             for row in records:
@@ -101,34 +107,62 @@ class Database(object):
     def insert(self,cmd):
         """ insert a new record to database and return the new primary key """
         newID = 0
-        cur = self.db.cursor()            
+        cur = self.con.cursor()            
         cur.execute("INSERT " + cmd)
         newID = cur.lastrowid
-        self.db.commit()
+        self.con.commit()
         cur.close()
         return newID
         
+    def update(self, cmd,*args):
+        """ Set values in a table """        
+        cur = self.con.cursor()            
+        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+        cur.execute("UPDATE " + cmd, *args)
+        self.con.commit()
+        cur.close()    
+    
+    def add_binary(self, obj, col, id, table=None):
+        """ Store a binary object to the database """
+        
+        if table is None: 
+            table=self.tables[0]       
+        cur = self.con.cursor()
+        b = sqlite3.Binary(pkl.dumps(obj))             
+        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+        cur.execute('UPDATE {0} SET {1}=? WHERE id=?'.format(table, col), (b,id))
+        self.con.commit()
+        cur.close()  
+        
+    def get_binary(self, col, id, table):
+        """ Retrieve binary object in the database """
+        
+        if table is None: 
+            table=self.tables[0]
+        cur = self.con.cursor()
+        cur.execute('SELECT {0} FROM {1} WHERE id=?'.format(col, table), (id,))        
+        pickled_data = str(cur.fetchone()[0])
+        data = pkl.loads(pickled_data)
+        cur.close()
+        return data   
+        
     def execute(self,sql, *args):
         """ execute any SQL statement but no return value given """
-        cur = self.db.cursor()  
+        cur = self.con.cursor()  
         cur.execute(sql, *args)
         records = cur.fetchall()
-        self.db.commit()
+        self.con.commit()
         cur.close()
         return records
 
     def executescript(self,sql, *args):
         """ execute any SQL statement but no return value given """
-        cur = self.db.cursor()  
+        cur = self.con.cursor()  
         cur.executescript(sql, *args)
-        self.db.commit()
+        self.con.commit()
         cur.close()
         
         
-        
-        
-        
-#        
 #pdata = cPickle.dumps(data, cPickle.HIGHEST_PROTOCOL)
 #curr.execute("insert into table (data) values (:data)", sqlite3.Binary(pdata))
 #        
@@ -137,11 +171,8 @@ class Database(object):
 #for row in curr:
 #  data = cPickle.loads(str(row['data']))     
 #        
-#        
-#        
-        
-        
-        
+            
+               
 #    def register_pickler(self, obj):
 #        """ Registers an adapter function and converter function that used 
 #        pickle.dumps to store the passed object """
@@ -163,7 +194,7 @@ class Database(object):
 #        sqlite3.register_converter(str(obj), converter_func)
                 
   
-class Sample_DB(Database):  
+class PopGen_DB(Database):  
    
     def __init__(self, db_file="sample.db", table_name=None, column_headers=None, recbyname=True):
        
@@ -172,9 +203,8 @@ class Sample_DB(Database):
        
         Database.__init__(self, db_file, table_name, table_headers, recbyname) 
     
-    def add_barcodes(self, barcode_file, raw_datafile):
-    
-        curs = self.db.cursor()
+    def add_barcodes(self, barcode_file, raw_datafile):   
+        curs = self.con.cursor()
     
         with open(barcode_file, 'r') as f: 
             for line in f:
@@ -184,19 +214,8 @@ class Sample_DB(Database):
 
                 curs.execute('''INSERT INTO samples (MIDtag, description, raw_datafile)
                                 VALUES(?,?,?)''', (MIDtag, description, raw_datafile)) 
-        self.db.commit()
-        curs.close()
-               
-    def add_binary(self, obj, id=0):
-        """ Store a binary object to the database """
-        
-        b = sqlite3.Binary(pickle.dumps(obj))
-              
-        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-        
-        db.execute('UPDATE samples SET array=? WHERE id=?', (b,id))
-        
-        
+        self.con.commit()
+        curs.close()                   
         
                                
 if __name__ == '__main__':
@@ -211,9 +230,9 @@ if __name__ == '__main__':
         prefix = get_data_prefix()
         c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
         
-        db = Sample_DB('gz_samples.db', recbyname=True)
+        db = PopGen_DB('gz_samples.db', recbyname=True)
         
-        db.overwrite_table('samples', ('MIDtag TEXT, description TEXT, raw_datafile TEXT, count INTEGER, readsfile TEXT, array BLOB'))
+        db.overwrite_table('samples', ('MIDtag TEXT, description TEXT, raw_datafile TEXT, counts INTEGER, readsfile TEXT, counter BLOB'))
         
         L6_barcode_files = glob.glob(os.path.join(c.barcode_inpath, '*[6].txt')) 
         L8_barcode_files = glob.glob(os.path.join(c.barcode_inpath, '*[8].txt')) 
@@ -229,14 +248,19 @@ if __name__ == '__main__':
         
         bin_array = sqlite3.Binary(pikled_str_array)
               
-        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-        
-        db.execute('UPDATE samples SET array=? WHERE id=1', (bin_array,))
+        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value 
+        db.execute('UPDATE samples SET counter=? WHERE id=1', (bin_array,))
             
         data = db.select('* FROM samples') 
 
-
-
+        # Test getting and setting binary 
+        path = '/space/musselle/data/RAD-seq/gazelles-zebras/stats/L6PrimerTagsCounter.pkl'
+        obj = pkl.load(open(path, 'r'))
+        db.add_binary(obj, 'counter', id=1)
+        got_obj = db.get_binary('counter', id=1, table='samples')
+        
+        assert obj == got_obj
+        
 
 ''' Useful for when I come to load in images'''
 

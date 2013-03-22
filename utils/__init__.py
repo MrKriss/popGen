@@ -151,7 +151,7 @@ def get_data_prefix():
     import socket
 
     if socket.gethostname() == 'yildun':
-        prefix = '/space/musselle/datasets'
+        prefix = '/space/musselle/data/RAD-seq'
     elif socket.gethostname() == 'luca':
         prefix = '/home/musselle/san/data'
     elif socket.gethostname() == 'gg-pc6':

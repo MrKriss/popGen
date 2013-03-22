@@ -10,6 +10,7 @@ import gzip
 from subprocess import call
 from collections import Counter
 import glob
+import re
 
 import numpy as np
 from Bio import SeqIO, bgzf
@@ -36,9 +37,8 @@ class Preprocessor(object):
     Other option is to use the workflow function to chain the outputs of function together
     
     
-    '''
-    
-    def __init__(self, c=None):
+    '''   
+    def __init__(self, c=None, db=None):
         
         # Setup config file
         if c:
@@ -49,50 +49,68 @@ class Preprocessor(object):
             self.filter_functions = None 
             self.c.barcode_files_setup = None   
         
+        if db:
+            self.db = db
+        
         # Set raw files for next input 
         self.next_input_files = c.raw_input_files
-        self.next_input_path = c.data_inpath
+        self.next_input_path = c.data_inpath     
+        
+        
         
         # Input checks
-        if c.barcode_files_setup == 'individual':
-            # One barcode file per input file with matching names
-            barnames = [b.split('.')[0] for b in c.barcode_files]
-            filenames = [f.split('.')[0] for f in c.raw_input_files]
-            for fname in filenames:
-                if fname not in barnames:
-                    raise Exception('Set to individual barcode files, yet at least one input'
-                    'file name does not match the given barcode file names')
-                               
-        # Define MID tag Dictionary
-        if c.barcode_files_setup == 'individual':
-            # Process each file with its own list of barcodes
-            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
-            tags_per_filename = {}
-            
-            for input_filename in c.raw_input_files:
-                name = input_filename.split('.')[0]
-                tags_per_filename[name] = {}
-                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
-                    for line in f:
-                        elem = line.split()
-                        tags_per_filename[name][elem[0]] = elem[1]
-            c.MIDtags = tags_per_filename 
-        elif c.barcode_files_setup == 'global':
-            # Process each file with reference to a global list of barcodes
-            # global_tags = {'MIDtag' : 'individual' }
-            global_tags = {}
-            
-            for bar_filename in c.barcode_files:
-                name = bar_filename.split('.')[0]
-                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
-                    for line in f:
-                        elem = line.split()
-                        global_tags[elem[0]] = elem[1]
-            c.MIDtags = global_tags 
-        else:
-            raise Exception('Barcode file usage not specified.'
-            'Set c.barcode_files_setup to "individual" or "global"')
+#        if c.barcode_files_setup == 'individual':
+#            # One barcode file per input file with matching names
+#            barnames = [b.split('.')[0] for b in c.barcode_files]
+#            filenames = [f.split('.')[0] for f in c.raw_input_files]
+#            for fname in filenames:
+#                if fname not in barnames:
+#                    raise Exception('Set to individual barcode files, yet at least one input'
+#                    'file name does not match the given barcode file names')
+#                               
+#        # Define MID tag Dictionary
+#        if c.barcode_files_setup == 'individual':
+#            # Process each file with its own list of barcodes
+#            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
+#            tags_per_filename = {}
+#            
+#            for input_filename in c.raw_input_files:
+#                name = input_filename.split('.')[0]
+#                tags_per_filename[name] = {}
+#                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
+#                    for line in f:
+#                        elem = line.split()
+#                        tags_per_filename[name][elem[0]] = elem[1]
+#            c.MIDtags = tags_per_filename 
+#        elif c.barcode_files_setup == 'global':
+#            # Process each file with reference to a global list of barcodes
+#            # global_tags = {'MIDtag' : 'individual' }
+#            global_tags = {}
+#            
+#            for bar_filename in c.barcode_files:
+#                name = bar_filename.split('.')[0]
+#                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
+#                    for line in f:
+#                        elem = line.split()
+#                        global_tags[elem[0]] = elem[1]
+#            c.MIDtags = global_tags 
+#        else:
+#            raise Exception('Barcode file usage not specified.'
+#            'Set c.barcode_files_setup to "individual" or "global"')
                            
+    def get_MIDtags(self, current_file):
+        ''' Return a List of MIDtags present for the given file '''
+        
+        MIDtags = []
+        # Extract tags that match raw_datafile
+        data = self.db.execute('SELECT MIDtag, raw_datafile FROM samples')
+        for row in data:
+            pattern = row['raw_datafile']
+            if re.match(pattern, current_file):
+                # include this MIDtag
+                MIDtags.append(row['MIDtag']) 
+        return MIDtags
+
     def set_input_files(self, infiles, file_pattern, data_inpath):
         
         starting_dir = os.getcwd()
@@ -298,8 +316,7 @@ class Preprocessor(object):
                 self.skipped_count = 0
                 self.corrected_count = 0
                 
-                self.barMIDs = tags.keys()
-                self.barMIDs.sort()
+                self.barMIDs = sorted(tags)
                 
                 self.cutsite = cutsite
                 
@@ -382,14 +399,16 @@ class Preprocessor(object):
         cum_t = 0
         outnames = []
         
-        if c.barcode_files_setup == 'global':
-            tags = c.MIDtags 
-        
+#        if c.barcode_files_setup == 'global':
+#            tags = c.MIDtags 
+#        
         for seqfile in RecCycler.seqfilegen:
-                                    
-            if c.barcode_files_setup == 'individual':
-                current_filename = RecCycler.curfilename.split('.')[0]                
-                tags = c.MIDtags[current_filename.split('-')[0]]
+                             
+            tags = self.get_MIDtags(RecCycler.curfilename)
+                             
+#            if c.barcode_files_setup == 'individual':
+#                current_filename = RecCycler.curfilename.split('.')[0]                
+#                tags = c.MIDtags[current_filename.split('-')[0]]
                   
             # Make reads class for generator
             ReadCorrector = Read_Corrector_Class(tags,c.cutsite)
@@ -460,18 +479,22 @@ class Preprocessor(object):
         print ('Removing MID tags, triming reads and converting {0} files to'
                ' fasta format').format(RecCycler.numfiles)
     
-        if c.barcode_files_setup == 'global':
-            
-            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
-             
+#        if c.barcode_files_setup == 'global':
+#            
+#            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
+#             
         # Generator to trim off MID tag and end of read.
         for seqfilegen in RecCycler.seqfilegen:
                        
-            if c.barcode_files_setup == 'individual':
-                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-                lenMIDs = len(c.MIDtags[fname].keys()[0])
-                read_start_idx = len(c.cutsite) + lenMIDs  
-    
+#            if c.barcode_files_setup == 'individual':
+#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
+#                lenMIDs = len(c.MIDtags[fname].keys()[0])
+#                read_start_idx = len(c.cutsite) + lenMIDs  
+
+            tags = self.get_MIDtags(RecCycler.curfilename)
+            lenMIDs = len(tags[0])
+            read_start_idx = len(c.cutsite) + lenMIDs  
+
             read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
             # File name 
             outfile_part = 'output_part' + str(count) + '.fasta'
@@ -721,21 +744,28 @@ class Preprocessor(object):
     
         # Define filterfunc
         def f(rec):
-            ''' Filter function for cutsite'''
+            ''' Filter function for cutsite '''
+            
+            fname = self.current_file.split('.')[0].split('-')[0]
+            
+            if f.target_file is None or f.target_file != fname:
+                f.target_file = fname
+                tags = self.get_MIDtags(fname)
+                f.MIDlength =  len(tags[0])
             
             # Must calculate MIDlength, but this may vary between files
-            if self.c.barcode_files_setup == 'individual':
-                
-                fname = self.current_file.split('.')[0].split('-')[0]
-                
-                if f.target_file is None or f.target_file != fname:
-                    f.target_file = fname
-                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
-                
-            if self.c.barcode_files_setup == 'global':
-                if f.MIDlength is None: 
-                    f.MIDlength = len(self.c.MIDtags.keys()[0])
-                
+#            if self.c.barcode_files_setup == 'individual':
+#                
+#                fname = self.current_file.split('.')[0].split('-')[0]
+#                
+#                if f.target_file is None or f.target_file != fname:
+#                    f.target_file = fname
+#                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
+#                
+#            if self.c.barcode_files_setup == 'global':
+#                if f.MIDlength is None: 
+#                    f.MIDlength = len(self.c.MIDtags.keys()[0])
+            
             cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
             cutsite_dist = ed.distance(target_cutsite, cutsite)
             
@@ -769,17 +799,24 @@ class Preprocessor(object):
             ''' Filter function for cutsite'''
             
             # Must calculate MIDlength, but this may vary between files
-            if self.c.barcode_files_setup == 'individual':
-                
-                fname = self.current_file.split('.')[0].split('-')[0]
-                
-                if f.target_file is None or f.target_file != fname:
-                    f.target_file = fname
-                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
-                
-            if self.c.barcode_files_setup == 'global':
-                if f.MIDlength is None: 
-                    f.MIDlength = len(self.c.MIDtags.keys()[0])
+            fname = self.current_file.split('.')[0].split('-')[0]
+            
+            if f.target_file is None or f.target_file != fname:
+                f.target_file = fname
+                tags = self.get_MIDtags(fname)
+                f.MIDlength =  len(tags[0])
+            
+#            if self.c.barcode_files_setup == 'individual':
+#                
+#                fname = self.current_file.split('.')[0].split('-')[0]
+#                
+#                if f.target_file is None or f.target_file != fname:
+#                    f.target_file = fname
+#                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
+#                
+#            if self.c.barcode_files_setup == 'global':
+#                if f.MIDlength is None: 
+#                    f.MIDlength = len(self.c.MIDtags.keys()[0])
             
 
             cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
