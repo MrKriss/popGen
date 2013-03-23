@@ -41,7 +41,7 @@ class Database(object):
         else:
             print 'Creating new Database file: {0}'.format(db_file) 
             if column_headers:
-                self.create_table(table_name, column_headers)
+                self.new_table(table_name, column_headers)
         
     def new_table(self, name, headers):
         """ Create a table with specified headers """

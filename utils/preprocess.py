@@ -101,6 +101,19 @@ class Preprocessor(object):
     def get_MIDtags(self, current_file):
         ''' Return a List of MIDtags present for the given file '''
         
+        
+        if current_file not in self.c.raw_input_files:
+            # Remove file name postfixes to convert given file, 
+            # to original raw read file name
+            temp = current_file.split('.')
+            fname = [temp[0].split('-')[0]]
+            fname.extend(temp[1:])
+            fname = '.'.join(fname)
+            assert fname in self.c.raw_input_files, (
+                '''File {0} not found in list of original reads after 
+                being converted from {1}''').format(fname, current_file)
+            current_file = fname    
+        
         MIDtags = []
         # Extract tags that match raw_datafile
         data = self.db.execute('SELECT MIDtag, raw_datafile FROM samples')
@@ -110,6 +123,8 @@ class Preprocessor(object):
                 # include this MIDtag
                 MIDtags.append(row['MIDtag']) 
         return MIDtags
+    
+    
 
     def set_input_files(self, infiles, file_pattern, data_inpath):
         
@@ -403,6 +418,9 @@ class Preprocessor(object):
 #            tags = c.MIDtags 
 #        
         for seqfile in RecCycler.seqfilegen:
+            
+            
+            
                              
             tags = self.get_MIDtags(RecCycler.curfilename)
                              
@@ -525,58 +543,44 @@ class Preprocessor(object):
         
         return (out_filename, outpath)
 
-#    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
-#                      report=True, savecounter=True):
-#        ''' Split the file into separate files based on MID tags '''
-#        
-#        c = self.c
-#        
-#        if outpath is None:
-#            outpath = c.tag_processed_outpath
-#        i
-#            print 'Database found with matching file name.'f out_filename is None:
+    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
+                      report=True, savecounter=True):
+        ''' Split the file into separate files based on MID tags '''
+        
+        c = self.c
+        start_dir = os.getcwd() 
+        
+        if outpath is None:
+            outpath = c.tag_processed_outpath
+        
+#        if out_filename is None:
 #            out_filename = c.experiment_name
 #             
-#        start_dir = os.getcwd() 
-#
-#        # Setup Record Cycler        
-#        if infiles is None:
-#            infiles = self.next_input_files
-#        if inpath is None:
-#            inpath = self.next_input_path
-#        
-#        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-#        
-#        tag_counter = Counter
-#        outfile_files_list = []
-#    
-#        if c.barcode_files_setup == 'individual':
-#            # Process each file with its own list of barcodes
-#            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
+        # Setup Record Cycler        
+        if infiles is None:
+            infiles = self.next_input_files
+        if inpath is None:
+            inpath = self.next_input_path
+        
+        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
+         
+        print ('Spliting {0} files bases on MID tags'
+               '').format(RecCycler.numfiles)
+        
+        
+        
+        
+        tag_counter = Counter
+        outfile_files_list = []
+        for seqfilegen in RecCycler.seqfilegen:
+            
+            tags = self.get_MIDtags(RecCycler.curfilename)
+            lenMIDs = len(tags[0])
+            read_start_idx = len(c.cutsite) + lenMIDs  
+            
+            
 #            
-#        
-#            for seqfilegen in RecCycler.seqfilegen:
-#                
-#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-#                lenMIDs = len(c.MIDtags[fname].keys()[0])
-#                read_start_idx = len(c.cutsite) + lenMIDs
-#                
-#                
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        elif c.barcode_files_setup == 'global':
-#            # Process each file with reference to a global list of barcodes
-#            # global_tags = {'MIDtag' : 'individual' }
 #            
-#            MID_length = len(c.MIDtags.keys()[0])
-#            
-#            print ('Spliting {0} files into a total of {1} files bases on MID tags'
-#               '').format(RecCycler.numfiles, len(c.MIDtags))
 #            
 #            # Open Files for Writing for each tag  
 #            for tag, individual in c.MIDtags.iteritems():
@@ -608,36 +612,13 @@ class Preprocessor(object):
 #            print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
 #                
 #                    
-#                    
-#                    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#    
-#                read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
-#    
-#    
-#    
-#    
-#    
-#    
 #
-#    
-#    
-#        if c.barcode_files_setup == 'global':
-#            
+#            read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
+    
+#
+##    
+##        if c.barcode_files_setup == 'global':
+##            
 #            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
 #             
 #        # Generator to trim off MID tag and end of read.
@@ -648,21 +629,7 @@ class Preprocessor(object):
 #                lenMIDs = len(c.MIDtags[fname].keys()[0])
 #                read_start_idx = len(c.cutsite) + lenMIDs  
 #    
-#
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
 #       
-#            
 
 
 
@@ -746,7 +713,7 @@ class Preprocessor(object):
         def f(rec):
             ''' Filter function for cutsite '''
             
-            fname = self.current_file.split('.')[0].split('-')[0]
+            fname = self.current_file
             
             if f.target_file is None or f.target_file != fname:
                 f.target_file = fname
@@ -799,7 +766,8 @@ class Preprocessor(object):
             ''' Filter function for cutsite'''
             
             # Must calculate MIDlength, but this may vary between files
-            fname = self.current_file.split('.')[0].split('-')[0]
+            fname = self.current_file
+#            fname = self.current_file.split('.')[0].split('-')[0]
             
             if f.target_file is None or f.target_file != fname:
                 f.target_file = fname

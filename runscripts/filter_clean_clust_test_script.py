@@ -4,7 +4,7 @@ Created on 10 Dec 2012
 @author: musselle
 '''
 import os 
-import os.path.join as joinp
+from os.path import join as joinp
 import sys 
 
 import glob
@@ -39,15 +39,17 @@ prefix = get_data_prefix()
 #c.data_inpath =  joinp(prefix,'gazelles-zebras') 
 c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset') 
 c.barcode_inpath = joinp(prefix,'gazelles-zebras', 'barcodes')
-c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'filtered_data')
-c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'filtered_data')
-c.tag_split_outpath = joinp(prefix,'gazelles-zebras', 'filtered_data', 'individuals')
+c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
+c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
+c.tag_split_outpath = joinp(prefix,'gazelles-zebras', 'processed-data', 'per-individual')
 c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
+os.chdir(c.data_inpath)
 #raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files = glob.glob('testset_1percent.fastq.bgzf')
+assert raw_files
 raw_files.sort()
 c.raw_input_files = raw_files 
 
