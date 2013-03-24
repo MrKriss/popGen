@@ -21,42 +21,40 @@ from utils import get_data_prefix
 
 class Database(object):
     """ Class to handle all python communication with a sqlite database file """
-    def __init__(self, db_file="default.db", table_name=None, column_headers=None, recbyname=True):
+    def __init__(self, dbfile="default.db", recbyname=True):
         """ 
         recbyname - sets returned records by select to be callable by column names 
         """
         
-        database_already_exists = os.path.exists(db_file)    
+        database_already_exists = os.path.exists(dbfile)    
         
         # Stored Vars
-        self.con = sqlite3.connect(db_file)
+        self.con = sqlite3.connect(dbfile)
         self.tables = []
-        
-        if recbyname: 
-            self.con.row_factory = sqlite3.Row
         
         if database_already_exists:
             print 'Database found with matching file name.'
-            print 'Connected to database {0}'.format(db_file)
+            print 'Connected to database {0}'.format(dbfile)
         else:
-            print 'Creating new Database file: {0}'.format(db_file) 
-            if column_headers:
-                self.new_table(table_name, column_headers)
+            print 'Creating new Database file: {0}'.format(dbfile) 
+                
+        if recbyname: 
+            self.con.row_factory = sqlite3.Row
+            print 'Setting Row_factory to named Rows' 
+
+        self.dbname = dbfile
+        self.con.close()
         
     def new_table(self, name, headers):
         """ Create a table with specified headers """
         
         self.tables.append(name)
         
-        cur = self.con.cursor()
+        con = sqlite3.connect(self.dbfile) 
         
-        try:
+        with con:        
+            cur = con.cursor()
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
-        except sqlite3.Error as e:                        
-            print "Error %s:" % e.args[0]
-        finally:
-            self.con.commit()
-            cur.close()    
         
     def overwrite_table(self, name, headers):
         """ Create or overwrite a table if it already exists with specified headers """
@@ -215,8 +213,87 @@ class PopGen_DB(Database):
                 curs.execute('''INSERT INTO samples (MIDtag, description, raw_datafile)
                                 VALUES(?,?,?)''', (MIDtag, description, raw_datafile)) 
         self.con.commit()
-        curs.close()                   
+        curs.close()   
+
+    def add_barcodes_datafiles(self, barcodefiles, datafiles):
+        ''' Creates samples table, datafile table and mappings table given a list of barcodefiles 
+        and a list of datafiles.'''
+           
+        # Not sure if i need this 
+        self.conn.execute('pragma foreign_keys=ON')
         
+        curs = self.con.cursor()
+        
+        # Create Tables
+        curs.execute(''' CREATE TABLE samples (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        MIDtag TEXT, 
+        description TEXT, 
+        raw_datafiles INTEGER, 
+        FOREIGN KEY(raw_datafiles) REFERENCES datafiles(Id) )''')
+        
+        curs.execute(''' CREATE TABLE datafiles (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        filename TEXT  )''')
+        
+        curs.execute(''' CREATE TABLE samples_datafiles (
+        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        sampleId INTEGER, 
+        datafileId INTEGER, 
+        FOREIGN KEY(sampleId) REFERENCES samples(Id)  
+        FOREIGN KEY(datafileId) REFERENCES datafiles(Id) )''')
+        
+        for datafile in datafiles:
+
+            curs.execute('''INSERT INTO datafiles(filename)
+                                    VALUES(?)''', (datafile,))
+                
+            last_datafile = curs.lastrowid
+    
+            for barcode in barcode_files:
+        
+                with open(barcode, 'r') as f: 
+                    for line in f:
+                        line = line.strip().split()
+                        MIDtag = line[0] 
+                        description = line[1]
+        
+                        curs.execute('''INSERT INTO samples(MIDtag, description)
+                                        VALUES(?,?)''', (MIDtag, description))
+                        last_sample = curs.lastrowid
+                
+                        curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
+                                        VALUES(?,?)''', (last_sample, last_datafile))
+                
+                self.con.commit()
+                curs.close()   
+            
+    def add_link_table(self):
+        
+        self.db.execute(''' CREATE TABLE samples_datafiles
+        
+        ''')                
+        
+        
+        INSERT INTO child VALUES(NULL, 'bobby');
+SELECT last_insert_rowid(); -- gives the id of bobby, assume 2 for this example
+INSERT INTO dog VALUES(NULL, 'spot');
+SELECT last_insert_rowid(); -- gives the id of spot, assume 4 for this example
+INSERT INTO child_dog VALUES(2, 4);
+        
+                             
+                             
+# Querry would be something like 
+c.execute(''.join([
+            'SELECT MIDtags ',
+            'FROM samples ',
+            'WHERE variable.id=var_func.variable_id ', 
+            'AND function.id=var_func.function_id ',
+            'AND variable.name="wert" ',
+            'AND var_func.type="input" ',
+            ]))                             
+                             
+                             
                                
 if __name__ == '__main__':
     
