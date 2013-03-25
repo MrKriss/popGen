@@ -116,10 +116,13 @@ class Preprocessor(object):
         
         MIDtags = []
         # Extract tags that match raw_datafile
-        data = self.db.get_samples4datafile(filename, fileds=fields)
+        data = self.db.get_samples4datafile(filename, fields=fields)
+        
+        assert data and  len(data) > 0, 'No data returned from filename querry'  
         
         for row in data:
             MIDtags.append(tuple(row)) 
+            
         return MIDtags
 
     def set_input_files(self, infiles, file_pattern, data_inpath):
@@ -411,7 +414,7 @@ class Preprocessor(object):
         
         for seqfile in RecCycler.seqfilegen:
             
-            tags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag'])
+            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
             # tags is returned as a list of tuples for each record            
             tags = zip(*tags)[0]
             # tags is now a tuple of all the first elements in each record  
@@ -497,7 +500,7 @@ class Preprocessor(object):
 #                lenMIDs = len(c.MIDtags[fname].keys()[0])
 #                read_start_idx = len(c.cutsite) + lenMIDs  
 
-            tags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag'])
+            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
             # tags is returned as a list of tuples for each record            
             tags = zip(*tags)[0]
             # tags is now a tuple of all the first elements in each record              
@@ -558,11 +561,13 @@ class Preprocessor(object):
         print ('Spliting {0} files bases on MID tags'
                '').format(RecCycler.numfiles)
         
-        tag_counter = Counter
         outfile_files_list = []
         for seqfilegen in RecCycler.seqfilegen:
             
-            dbtags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag', 'description'])
+            # Set / reset Counter
+            tag_counter = Counter()
+            
+            dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
             # tags is returned as a list of tuples for each record            
 #            tags = zip(*tags)
 #             tags is now a tuple of all the first elements in each record, followed by a tuple of all the second ...  
@@ -589,15 +594,17 @@ class Preprocessor(object):
                     SeqIO.write(rec, vars()[fvarname], 'fastq');
                     tag_counter[tag] += 1
 
-
             # Flush and Close Files for each tag  
             for tag, individual in c.MIDtags.iterkeys():
                 fvarname = 'f-' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
 
+
             print 'Finished Spliting files for input file: {0}'.format(RecCycler.curfilename)
             
+#            self.db.execute('''  ''' )
+
             #TODO:
             # Need to store the counter somewhere/ update the count field for the sample.
             
@@ -694,8 +701,8 @@ class Preprocessor(object):
             
             if f.target_file is None or f.target_file != fname:
                 f.target_file = fname
-                tags = self.get_MIDtags(fname)
-                f.MIDlength =  len(tags[0])
+                tags = self.get_data4file(fname, fields=['MIDtag'])
+                f.MIDlength =  len(tags[0][0])
             
             # Must calculate MIDlength, but this may vary between files
 #            if self.c.barcode_files_setup == 'individual':
@@ -748,8 +755,8 @@ class Preprocessor(object):
             
             if f.target_file is None or f.target_file != fname:
                 f.target_file = fname
-                tags = self.get_MIDtags(fname)
-                f.MIDlength =  len(tags[0])
+                tags = self.get_data4file(fname, fields=['MIDtag'])
+                f.MIDlength =  len(tags[0][0])
             
 #            if self.c.barcode_files_setup == 'individual':
 #                

@@ -8,8 +8,8 @@ from os.path import join as joinp
 import sys 
 
 import glob
-
 import socket
+import re
 
 from utils import get_data_prefix
 from preprocess import  Preprocessor, ConfigClass
@@ -46,7 +46,6 @@ c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
-os.chdir(c.data_inpath)
 #raw_files = glob.glob('*[0-9].fastq.bgzf')
 raw_files = glob.glob('testset_1percent.fastq.bgzf')
 assert raw_files
@@ -77,20 +76,33 @@ c.log_fails = True
 #===============================================================================
 # Make Database for samples
 #===============================================================================
-db_path = joinp(prefix,'gazelles-zebras') 
-db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True)        
-db.overwrite_table('samples', ('''MIDtag TEXT, description TEXT, raw_datafile TEXT,
- counts INTEGER, readsfile TEXT, counter BLOB, clusters BLOB'''))
 
+db_path = joinp(prefix,'gazelles-zebras') 
+db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True)
+        
 L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
 L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
 
-raw_datafile = 'testset_1percent.fastq.bgzf'
+#r1 = re.compile('lane6*.bgzf')
+#r2 = re.compile('lane8*.bgzf')
 
-for f in L6_barcode_files:
-    db.add_barcodes(f, raw_datafile=raw_datafile) 
-for f in L8_barcode_files:
-    db.add_barcodes(f, raw_datafile=raw_datafile)
+
+#L6_datafiles = filter(r1.match, c.raw_input_files)
+#L8_datafiles = filter(r2.match, c.raw_input_files)
+
+
+# Associate subsets of the data files list to their respective barcode files.   
+#db.add_barcodes_datafiles(L6_barcode_files, L6_datafiles)
+#db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles)
+
+# Testing 
+r3 = re.compile('testset_1percent.fastq.bgzf')
+datafiles = filter(r3.match, c.raw_input_files)
+db.add_barcodes_datafiles(L8_barcode_files, datafiles)
+db.add_barcodes_datafiles(L6_barcode_files, datafiles)
+
+
+
 
 # Define Preprocessing Class
 Preprocess = Preprocessor(c, db) 
@@ -110,45 +122,46 @@ Preprocess.filter_reads_pipeline()
 #===============================================================================
 
 Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
-Preprocess.cleanup('filtered') # Remove filtered intermediate files 
-
-out = Preprocess.trim_reads(n = 1)
-Preprocess.cleanup('tag_processed') # Remove MID tag processed intermediate files 
+Preprocess.cleanup_files('filtered') # Remove filtered intermediate files 
 
 #===============================================================================
 # Split Data into individuals based on MID tag 
 #===============================================================================
-
-
-
-
-
-
-
+Preprocess.split_by_tags()
 
 #===============================================================================
-# Cluster Data 
+# Prepare for Clustering 
 #===============================================================================
 
-# default Vars for clustering 
-#default_vars = { 'c_thresh' : 0.90,
-#                 'n_filter' : 8,
-#                 'threads' : 1,
-#                 'mem' : 0,
-#                 'maskN' : False}
-
-# Variations to run
-batch_parameters = [ { 'c_thresh' : 0.95},
-                    { 'c_thresh' : 0.95, 'maskN' : True},
-                    { 'c_thresh' : 0.90},
-                    { 'c_thresh' : 0.90, 'maskN' : True},
-                    { 'c_thresh' : 0.85},
-                    { 'c_thresh' : 0.85, 'maskN' : True},
-                   ]
-                   
-Clusterer = Clustering(c, infiles=out[0], inpath=[1]) 
-
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
-
-## Display Summary
-#summary(clustered_file)
+#
+#
+#
+#out = Preprocess.trim_reads(n = 1)
+#
+#Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
+##===============================================================================
+## Cluster Data 
+##===============================================================================
+#
+## default Vars for clustering 
+##default_vars = { 'c_thresh' : 0.90,
+##                 'n_filter' : 8,
+##                 'threads' : 1,
+##                 'mem' : 0,
+##                 'maskN' : False}
+#
+## Variations to run
+#batch_parameters = [ { 'c_thresh' : 0.95},
+#                    { 'c_thresh' : 0.95, 'maskN' : True},
+#                    { 'c_thresh' : 0.90},
+#                    { 'c_thresh' : 0.90, 'maskN' : True},
+#                    { 'c_thresh' : 0.85},
+#                    { 'c_thresh' : 0.85, 'maskN' : True},
+#                   ]
+#                   
+#Clusterer = Clustering(c, infiles=out[0], inpath=[1]) 
+#
+#Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
+#
+### Display Summary
+##summary(clustered_file)

@@ -203,7 +203,8 @@ class PopGen_DB(Database):
             curs.execute(''' CREATE TABLE samples (
             sampleId INTEGER PRIMARY KEY AUTOINCREMENT, 
             MIDtag TEXT, 
-            description TEXT) ''')
+            description TEXT, 
+            Total_Count, INTEGER) ''')
             
             curs.execute('DROP TABLE IF EXISTS datafiles ')
             curs.execute(''' CREATE TABLE datafiles (
@@ -287,6 +288,10 @@ if __name__ == '__main__':
         db = PopGen_DB('gz_samples.db', recbyname=True)
         
 #        db.overwrite_table('samples', ('MIDtag TEXT, description TEXT, raw_datafile TEXT, counts INTEGER, readsfile TEXT, counter BLOB'))
+        
+#        db.overwrite_table('samples', ('''MIDtag TEXT, description TEXT, raw_datafile TEXT,
+# counts INTEGER, readsfile TEXT, counter BLOB, clusters BLOB'''))
+
         
         L6_barcode_files = glob.glob(os.path.join(c.barcode_inpath, '*[6].txt')) 
         
