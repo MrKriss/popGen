@@ -98,33 +98,29 @@ class Preprocessor(object):
 #            raise Exception('Barcode file usage not specified.'
 #            'Set c.barcode_files_setup to "individual" or "global"')
                            
-    def get_MIDtags(self, current_file):
-        ''' Return a List of MIDtags present for the given file '''
+    def get_data4file(self, filename, fields=['MIDtag']):
+        ''' Return a list of records for the given filename with specified fields. 
+        Each record is a tuple. '''
         
-        
-        if current_file not in self.c.raw_input_files:
+        if filename not in self.c.raw_input_files:
             # Remove file name postfixes to convert given file, 
             # to original raw read file name
-            temp = current_file.split('.')
+            temp = filename.split('.')
             fname = [temp[0].split('-')[0]]
             fname.extend(temp[1:])
             fname = '.'.join(fname)
             assert fname in self.c.raw_input_files, (
                 '''File {0} not found in list of original reads after 
-                being converted from {1}''').format(fname, current_file)
-            current_file = fname    
+                being converted from {1}''').format(fname, filename)
+            filename = fname    
         
         MIDtags = []
         # Extract tags that match raw_datafile
-        data = self.db.execute('SELECT MIDtag, raw_datafile FROM samples')
+        data = self.db.get_samples4datafile(filename, fileds=fields)
+        
         for row in data:
-            pattern = row['raw_datafile']
-            if re.match(pattern, current_file):
-                # include this MIDtag
-                MIDtags.append(row['MIDtag']) 
+            MIDtags.append(tuple(row)) 
         return MIDtags
-    
-    
 
     def set_input_files(self, infiles, file_pattern, data_inpath):
         
@@ -331,8 +327,7 @@ class Preprocessor(object):
                 self.skipped_count = 0
                 self.corrected_count = 0
                 
-                self.barMIDs = sorted(tags)
-                
+                self.barMIDs = tags
                 self.cutsite = cutsite
                 
                 # Check length of MIDs
@@ -414,20 +409,13 @@ class Preprocessor(object):
         cum_t = 0
         outnames = []
         
-#        if c.barcode_files_setup == 'global':
-#            tags = c.MIDtags 
-#        
         for seqfile in RecCycler.seqfilegen:
             
+            tags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag'])
+            # tags is returned as a list of tuples for each record            
+            tags = zip(*tags)[0]
+            # tags is now a tuple of all the first elements in each record  
             
-            
-                             
-            tags = self.get_MIDtags(RecCycler.curfilename)
-                             
-#            if c.barcode_files_setup == 'individual':
-#                current_filename = RecCycler.curfilename.split('.')[0]                
-#                tags = c.MIDtags[current_filename.split('-')[0]]
-                  
             # Make reads class for generator
             ReadCorrector = Read_Corrector_Class(tags,c.cutsite)
 
@@ -509,7 +497,10 @@ class Preprocessor(object):
 #                lenMIDs = len(c.MIDtags[fname].keys()[0])
 #                read_start_idx = len(c.cutsite) + lenMIDs  
 
-            tags = self.get_MIDtags(RecCycler.curfilename)
+            tags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag'])
+            # tags is returned as a list of tuples for each record            
+            tags = zip(*tags)[0]
+            # tags is now a tuple of all the first elements in each record              
             lenMIDs = len(tags[0])
             read_start_idx = len(c.cutsite) + lenMIDs  
 
@@ -553,9 +544,9 @@ class Preprocessor(object):
         if outpath is None:
             outpath = c.tag_processed_outpath
         
-#        if out_filename is None:
-#            out_filename = c.experiment_name
-#             
+        if out_filename is None:
+            out_filename = c.experiment_name
+             
         # Setup Record Cycler        
         if infiles is None:
             infiles = self.next_input_files
@@ -567,73 +558,59 @@ class Preprocessor(object):
         print ('Spliting {0} files bases on MID tags'
                '').format(RecCycler.numfiles)
         
-        
-        
-        
         tag_counter = Counter
         outfile_files_list = []
         for seqfilegen in RecCycler.seqfilegen:
             
-            tags = self.get_MIDtags(RecCycler.curfilename)
-            lenMIDs = len(tags[0])
-            read_start_idx = len(c.cutsite) + lenMIDs  
+            dbtags = self.get_MIDtags(RecCycler.curfilename, fields=['MIDtag', 'description'])
+            # tags is returned as a list of tuples for each record            
+#            tags = zip(*tags)
+#             tags is now a tuple of all the first elements in each record, followed by a tuple of all the second ...  
             
+            MID_length = len(dbtags[0][0])
+            read_start_idx = len(c.cutsite) + MID_length  
             
-#            
-#            
-#            
-#            # Open Files for Writing for each tag  
-#            for tag, individual in c.MIDtags.iteritems():
-#                
-#                fname = '-'.join(out_filename, tag, individual)
-#                outfile_files_list.append(fname)
-#                fvarname = 'f-' + tag
-#                vars()[fvarname] = open(os.path.join(outpath, fname), 'w')
-#    
-#            for rec in RecCycler.recgen:
-#        
-#                tag = rec.seq[:MID_length].tostring()
-#                
-#                if tag not in c.MIDtags:
-#                    raise Exception('MID tag not found in barcode library')
-#                else:                   
-#                    fvarname = 'f-' + tag                 
-#                    SeqIO.write(rec, vars()[fvarname], 'fastq');
-#                    tag_counter[tag] += 1
-#
-#            # Flush and Close Files for each tag  
-#            for tag, individual in c.MIDtags.iterkeys():
-#
-#                fvarname = 'f-' + tag
-#                vars()[fvarname].flush()
-#                vars()[fvarname].close()
-#
-#            
-#            print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
-#                
-#                    
-#
-#            read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
+            # Open Files for Writing for each tag  
+            for tag, individual in dbtags.iteritems():
+                
+                fname = '-'.join(out_filename, tag, individual)
+                outfile_files_list.append(fname)
+                fvarname = 'f-' + tag
+                vars()[fvarname] = open(os.path.join(outpath, fname), 'a')
     
-#
-##    
-##        if c.barcode_files_setup == 'global':
-##            
-#            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
-#             
-#        # Generator to trim off MID tag and end of read.
-#        for seqfilegen in RecCycler.seqfilegen:
-#                       
-#            if c.barcode_files_setup == 'individual':
-#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-#                lenMIDs = len(c.MIDtags[fname].keys()[0])
-#                read_start_idx = len(c.cutsite) + lenMIDs  
-#    
-#       
+            for rec in RecCycler.recgen:
+        
+                recMIDtag = rec.seq[:MID_length].tostring()
+                
+                if recMIDtag not in dbtags:
+                    raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
+                else:                   
+                    fvarname = 'f-' + recMIDtag                
+                    SeqIO.write(rec, vars()[fvarname], 'fastq');
+                    tag_counter[tag] += 1
 
 
+            # Flush and Close Files for each tag  
+            for tag, individual in c.MIDtags.iterkeys():
+                fvarname = 'f-' + tag
+                vars()[fvarname].flush()
+                vars()[fvarname].close()
 
-
+            print 'Finished Spliting files for input file: {0}'.format(RecCycler.curfilename)
+            
+            #TODO:
+            # Need to store the counter somewhere/ update the count field for the sample.
+            
+            # get count field for each sample
+            
+            # Update count field for each sample
+            
+            # Store counter, is it useful?  
+            
+            # Currently a global counter i.e counts MIDtags for all files, may be overlapping MIDs, have to 
+            # reset for each file 
+            #------------------------------------------------------------------------------ 
+                
     def cleanup_files(self, *args):
         ''' Remove intermediate files that are not needed '''      
         # Choices of 'filtered', 'tag_processed', 'all'

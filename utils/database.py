@@ -17,7 +17,7 @@ import numpy as np
 from Bio import SeqIO
 
 import sqlite3
-from utils import get_data_prefix
+#from utils import get_data_prefix
 
 class Database(object):
     """ Class to handle all python communication with a sqlite database file """
@@ -26,23 +26,31 @@ class Database(object):
         recbyname - sets returned records by select to be callable by column names 
         """
         
-        database_already_exists = os.path.exists(dbfile)    
-        
-        # Stored Vars
-        self.con = sqlite3.connect(dbfile)
-        self.tables = []
-        
-        if database_already_exists:
+        if os.path.exists(dbfile):
             print 'Database found with matching file name.'
-            print 'Connected to database {0}'.format(dbfile)
+            print 'Connecting to database {0}'.format(dbfile)
         else:
             print 'Creating new Database file: {0}'.format(dbfile) 
                 
+        # Stored Vars
+        self.con = sqlite3.connect(dbfile)
+        self.dbfile = os.path.abspath(dbfile) 
+        self.recbyname = recbyname
+        self.tables = []
+
         if recbyname: 
             self.con.row_factory = sqlite3.Row
             print 'Setting Row_factory to named Rows' 
 
-        self.dbname = dbfile
+    def connect(self):
+        ''' Open connection to the database '''
+        self.con = sqlite3.connect(self.dbfile)
+        if self.recbyname: 
+            self.con.row_factory = sqlite3.Row
+            print 'Setting Row_factory to named Rows' 
+    
+    def close(self):
+        ''' Close connection to database'''
         self.con.close()
         
     def new_table(self, name, headers):
@@ -50,9 +58,7 @@ class Database(object):
         
         self.tables.append(name)
         
-        con = sqlite3.connect(self.dbfile) 
-        
-        with con:        
+        with self.con as con:        
             cur = con.cursor()
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
         
@@ -62,37 +68,37 @@ class Database(object):
         if name not in self.tables: 
             self.tables.append(name)
         
-        cur = self.con.cursor()
-        try:
+        with self.con as con:        
+            cur = con.cursor()
             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
-            cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))       
-        except sqlite3.Error as e:                        
-            print "Error %s:" % e.args[0]
-        finally:
-            self.con.commit()
-            cur.close()    
+            cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
         
     def select(self,cmd):
         """ select records from the database returned as tuple of tuples. """
-        cur = self.con.cursor()  
-        # SELECT column_name(s) FROM table_name
-        cur.execute("SELECT " + cmd)
-        records = cur.fetchall()
-        cur.close()
+        
+        with self.con as con:        
+            cur = con.cursor()
+            # SELECT column_name(s) FROM table_name
+            cur.execute("SELECT " + cmd)
+            records = cur.fetchall()
+        
         return records
-    
-    def display(self, cmd, num = 0):
+
+    def display(self, cmd, num=0, *args):
         """ Print out the records returned from the database querry 
         
         num = max number to display. default 0 is all records returned.
         """    
-        cur = self.con.cursor()  
-        cur.execute("SELECT " + cmd)       
-        if num: 
-            records = cur.fetchmany(num)
-        else:  
-            records = cur.fetchall()      
-        cur.close()   
+
+        with self.con as con:     
+            cur = con.cursor()
+            # SELECT column_name(s) FROM table_name
+            cur.execute("SELECT " + cmd, *args)
+            if num: 
+                records = cur.fetchmany(num)
+            else:  
+                records = cur.fetchall()      
+        
         if self.con.row_factory == sqlite3.Row:
             row_names = records[0].keys()
             print '  '.join(row_names)
@@ -102,198 +108,169 @@ class Database(object):
             for row in records:
                 print row
         
+    def to_tuples(self, cmd, *args):
+        ''' Convert to a list of tuples if using Row factory'''
+        tuples = []
+        with self.con as con:     
+            cur = con.cursor()
+            # SELECT column_name(s) FROM table_name
+            cur.execute("SELECT " + cmd, *args)
+            records = cur.fetchall()
+            for row in records:
+                tuples.append(row)
+        return tuples
+    
     def insert(self,cmd):
         """ insert a new record to database and return the new primary key """
+
         newID = 0
-        cur = self.con.cursor()            
-        cur.execute("INSERT " + cmd)
-        newID = cur.lastrowid
-        self.con.commit()
-        cur.close()
+        with self.con as con:        
+            cur = con.cursor()
+            cur.execute("INSERT " + cmd)
+            newID = cur.lastrowid
+        
         return newID
         
-    def update(self, cmd,*args):
+    def update(self, cmd, *args):
         """ Set values in a table """        
-        cur = self.con.cursor()            
-        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-        cur.execute("UPDATE " + cmd, *args)
-        self.con.commit()
-        cur.close()    
-    
+
+        with self.con as con:        
+            cur = con.cursor()
+            # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+            cur.execute("UPDATE " + cmd, *args)
+        
     def add_binary(self, obj, col, id, table=None):
         """ Store a binary object to the database """
-        
+
         if table is None: 
             table=self.tables[0]       
-        cur = self.con.cursor()
-        b = sqlite3.Binary(pkl.dumps(obj))             
-        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-        cur.execute('UPDATE {0} SET {1}=? WHERE id=?'.format(table, col), (b,id))
-        self.con.commit()
-        cur.close()  
+
+        with self.con as con:        
+            cur = con.cursor()
+            b = sqlite3.Binary(pkl.dumps(obj))             
+            # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+            cur.execute('UPDATE {0} SET {1}=? WHERE id=?'.format(table, col), (b,id))
         
     def get_binary(self, col, id, table):
         """ Retrieve binary object in the database """
         
         if table is None: 
             table=self.tables[0]
-        cur = self.con.cursor()
-        cur.execute('SELECT {0} FROM {1} WHERE id=?'.format(col, table), (id,))        
-        pickled_data = str(cur.fetchone()[0])
-        data = pkl.loads(pickled_data)
-        cur.close()
+
+        with self.con as con:        
+            cur = con.cursor()
+            cur.execute('SELECT {0} FROM {1} WHERE id=?'.format(col, table), (id,))        
+            pickled_data = str(cur.fetchone()[0])
+            data = pkl.loads(pickled_data)
+        
         return data   
         
     def execute(self,sql, *args):
         """ execute any SQL statement but no return value given """
-        cur = self.con.cursor()  
-        cur.execute(sql, *args)
-        records = cur.fetchall()
-        self.con.commit()
-        cur.close()
+        
+        with self.con as con:        
+            cur = con.cursor()
+            cur.execute(sql, *args)
+            records = cur.fetchall()
         return records
 
     def executescript(self,sql, *args):
         """ execute any SQL statement but no return value given """
-        cur = self.con.cursor()  
-        cur.executescript(sql, *args)
-        self.con.commit()
-        cur.close()
         
+        with self.con as con:        
+            cur = con.cursor()
+            cur.executescript(sql, *args)
         
-#pdata = cPickle.dumps(data, cPickle.HIGHEST_PROTOCOL)
-#curr.execute("insert into table (data) values (:data)", sqlite3.Binary(pdata))
-#        
-#        
-#curr.execute("select data from table limit 1")
-#for row in curr:
-#  data = cPickle.loads(str(row['data']))     
-#        
-            
-               
-#    def register_pickler(self, obj):
-#        """ Registers an adapter function and converter function that used 
-#        pickle.dumps to store the passed object """
-#        
-#        def adapter_func(obj):
-#            """Convert from in-memory to storage representation.
-#            """
-#            print 'adapter_func(%s)\n' % obj
-#            return pickle.dumps(obj)
-#        
-#        def converter_func(data):
-#            """Convert from storage to in-memory representation.
-#            """
-#            print 'converter_func(%r)\n' % data
-#            return pickle.loads(data)
-#
-#        # Register the functions for manipulating the type.
-#        sqlite3.register_adapter(obj, adapter_func)
-#        sqlite3.register_converter(str(obj), converter_func)
-                
-  
 class PopGen_DB(Database):  
    
-    def __init__(self, db_file="sample.db", table_name=None, column_headers=None, recbyname=True):
+    def __init__(self, db_file="sample.db", recbyname=True):
        
-        table_name = 'samples'
-        table_headers = 'MIDtag TEXT, description TEXT, raw_datafile TEXT, count INTEGER, readsfile TEXT' 
+        Database.__init__(self, db_file, recbyname) 
+    
+        self.create_tables()
        
-        Database.__init__(self, db_file, table_name, table_headers, recbyname) 
+    def create_tables(self):
     
-    def add_barcodes(self, barcode_file, raw_datafile):   
-        curs = self.con.cursor()
+        with self.con as con:
     
-        with open(barcode_file, 'r') as f: 
-            for line in f:
-                line = line.strip().split()
-                MIDtag = line[0] 
-                description = line[1]
+            # Not sure if i need this 
+            con.execute('pragma foreign_keys=OFF')
 
-                curs.execute('''INSERT INTO samples (MIDtag, description, raw_datafile)
-                                VALUES(?,?,?)''', (MIDtag, description, raw_datafile)) 
-        self.con.commit()
-        curs.close()   
-
+            curs = con.cursor()        
+    
+            # Create Tables
+            curs.execute('DROP TABLE IF EXISTS samples')
+            curs.execute(''' CREATE TABLE samples (
+            sampleId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            MIDtag TEXT, 
+            description TEXT) ''')
+            
+            curs.execute('DROP TABLE IF EXISTS datafiles ')
+            curs.execute(''' CREATE TABLE datafiles (
+            datafileId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            filename TEXT  )''')
+            
+            curs.execute('DROP TABLE IF EXISTS samples_datafiles')
+            curs.execute(''' CREATE TABLE samples_datafiles (
+            linkId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            sampleId INTEGER, 
+            datafileId INTEGER, 
+            FOREIGN KEY(sampleId) REFERENCES samples(Id)  
+            FOREIGN KEY(datafileId) REFERENCES datafiles(Id) )''')
+    
     def add_barcodes_datafiles(self, barcodefiles, datafiles):
         ''' Creates samples table, datafile table and mappings table given a list of barcodefiles 
         and a list of datafiles.'''
            
-        # Not sure if i need this 
-        self.conn.execute('pragma foreign_keys=ON')
-        
-        curs = self.con.cursor()
-        
-        # Create Tables
-        curs.execute(''' CREATE TABLE samples (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        MIDtag TEXT, 
-        description TEXT, 
-        raw_datafiles INTEGER, 
-        FOREIGN KEY(raw_datafiles) REFERENCES datafiles(Id) )''')
-        
-        curs.execute(''' CREATE TABLE datafiles (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        filename TEXT  )''')
-        
-        curs.execute(''' CREATE TABLE samples_datafiles (
-        Id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        sampleId INTEGER, 
-        datafileId INTEGER, 
-        FOREIGN KEY(sampleId) REFERENCES samples(Id)  
-        FOREIGN KEY(datafileId) REFERENCES datafiles(Id) )''')
-        
-        for datafile in datafiles:
+        with self.con as con:
+            curs = con.cursor()
 
-            curs.execute('''INSERT INTO datafiles(filename)
-                                    VALUES(?)''', (datafile,))
-                
-            last_datafile = curs.lastrowid
-    
-            for barcode in barcode_files:
+            for datafile in datafiles:
+                curs.execute('''INSERT INTO datafiles(filename)
+                                        VALUES(?)''', (datafile,))
+                last_datafile = curs.lastrowid
         
-                with open(barcode, 'r') as f: 
-                    for line in f:
-                        line = line.strip().split()
-                        MIDtag = line[0] 
-                        description = line[1]
-        
-                        curs.execute('''INSERT INTO samples(MIDtag, description)
-                                        VALUES(?,?)''', (MIDtag, description))
-                        last_sample = curs.lastrowid
-                
-                        curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
-                                        VALUES(?,?)''', (last_sample, last_datafile))
-                
-                self.con.commit()
-                curs.close()   
+                for barcode in barcodefiles:
+                    with open(barcode, 'r') as f: 
+                        for line in f:
+                            line = line.strip().split()
+                            MIDtag = line[0] 
+                            description = line[1]
             
-    def add_link_table(self):
+                            curs.execute('''INSERT INTO samples(MIDtag, description)
+                                            VALUES(?,?)''', (MIDtag, description))
+                            last_sample = curs.lastrowid
+                    
+                            curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
+                                            VALUES(?,?)''', (last_sample, last_datafile))
+            
+    def get_samples4datafile(self, filename, fields=['MIDtag']):
+        ''' Return samples that are present for a given filename.
         
-        self.db.execute(''' CREATE TABLE samples_datafiles
+        Fields is a list f columns to return for each row '''
         
-        ''')                
+        querry1 = '''SELECT {0} 
+                    FROM datafiles NATURAL JOIN samples_datafiles NATURAL JOIN samples 
+                    WHERE filename GLOB ? '''.format(', '.join(fields))
+    
+#        # Equivilant querries
+#        querry2 = '''SELECT {0} FROM datafiles d, samples_datafiles sd, samples s 
+#                    WHERE d.datafileId=sd.datafileId 
+#                    AND s.sampleId=sd.sampleId 
+#                    AND filename GLOB ? '''.format(', '.join(fields))
+#
+#        querry3 = '''SELECT {0} 
+#                    FROM datafiles AS d INNER JOIN samples_datafiles AS sd ON d.datafileId=sd.datafileId
+#                    INNER JOIN samples AS s ON sd.sampleId=s.sampleId
+#                    WHERE filename GLOB ? '''.format(', '.join(fields))
         
+        with self.con as con:
         
-        INSERT INTO child VALUES(NULL, 'bobby');
-SELECT last_insert_rowid(); -- gives the id of bobby, assume 2 for this example
-INSERT INTO dog VALUES(NULL, 'spot');
-SELECT last_insert_rowid(); -- gives the id of spot, assume 4 for this example
-INSERT INTO child_dog VALUES(2, 4);
-        
-                             
-                             
-# Querry would be something like 
-c.execute(''.join([
-            'SELECT MIDtags ',
-            'FROM samples ',
-            'WHERE variable.id=var_func.variable_id ', 
-            'AND function.id=var_func.function_id ',
-            'AND variable.name="wert" ',
-            'AND var_func.type="input" ',
-            ]))                             
-                             
-                             
+            curs = con.cursor()
+            curs.execute(querry1, (filename,))
+            records = curs.fetchall()
+
+        return records
                                
 if __name__ == '__main__':
     
@@ -304,40 +281,25 @@ if __name__ == '__main__':
         class Config(object):
             pass
         c = Config()
-        prefix = get_data_prefix()
-        c.barcode_inpath = os.path.join(prefix,'gazelles-zebras/barcodes')
+#        prefix = get_data_prefix()
+        c.barcode_inpath = '/Users/chris/Dropbox/work/code/popGen/testData/barcodes'
         
         db = PopGen_DB('gz_samples.db', recbyname=True)
         
-        db.overwrite_table('samples', ('MIDtag TEXT, description TEXT, raw_datafile TEXT, counts INTEGER, readsfile TEXT, counter BLOB'))
+#        db.overwrite_table('samples', ('MIDtag TEXT, description TEXT, raw_datafile TEXT, counts INTEGER, readsfile TEXT, counter BLOB'))
         
         L6_barcode_files = glob.glob(os.path.join(c.barcode_inpath, '*[6].txt')) 
+        
         L8_barcode_files = glob.glob(os.path.join(c.barcode_inpath, '*[8].txt')) 
         
-        for f in L6_barcode_files:
-            db.add_barcodes(f, 'lane6*.bgzf') 
-        for f in L8_barcode_files:
-            db.add_barcodes(f, 'lane8*.bgzf')
-            
-        myarray = np.ones([5,5]) * np.random.rand(5,5)
+        L6_datafiles = ['L6file1', 'L6file2', 'L6file3' ]
+        L8_datafiles = ['L8file1', 'L8file2', 'L8file3' ]
         
-        pikled_str_array = pickle.dumps(myarray) 
+        db.add_barcodes_datafiles(L6_barcode_files, L6_datafiles)
+        db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles)
         
-        bin_array = sqlite3.Binary(pikled_str_array)
-              
-        # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value 
-        db.execute('UPDATE samples SET counter=? WHERE id=1', (bin_array,))
-            
         data = db.select('* FROM samples') 
 
-        # Test getting and setting binary 
-        path = '/space/musselle/data/RAD-seq/gazelles-zebras/stats/L6PrimerTagsCounter.pkl'
-        obj = pkl.load(open(path, 'r'))
-        db.add_binary(obj, 'counter', id=1)
-        got_obj = db.get_binary('counter', id=1, table='samples')
-        
-        assert obj == got_obj
-        
 
 ''' Useful for when I come to load in images'''
 
