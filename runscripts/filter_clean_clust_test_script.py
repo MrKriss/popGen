@@ -101,9 +101,6 @@ datafiles = filter(r3.match, c.raw_input_files)
 db.add_barcodes_datafiles(L8_barcode_files, datafiles)
 db.add_barcodes_datafiles(L6_barcode_files, datafiles)
 
-
-
-
 # Define Preprocessing Class
 Preprocess = Preprocessor(c, db) 
 
@@ -114,13 +111,11 @@ Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
                                Preprocess.make_phred_filter(25),
                                Preprocess.make_cutsite_filter(max_edit_dist=2),
                                Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
-
 Preprocess.filter_reads_pipeline()
 
 #===============================================================================
 # Process and Correct MID tag 
 #===============================================================================
-
 Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 Preprocess.cleanup_files('filtered') # Remove filtered intermediate files 
 
@@ -128,40 +123,33 @@ Preprocess.cleanup_files('filtered') # Remove filtered intermediate files
 # Split Data into individuals based on MID tag 
 #===============================================================================
 Preprocess.split_by_tags()
+Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
 
 #===============================================================================
 # Prepare for Clustering 
 #===============================================================================
+files2cluster, path = Preprocess.trim_reads(mode='separate', n=1)
 
-#
-#
-#
-#out = Preprocess.trim_reads(n = 1)
-#
-#Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
-##===============================================================================
-## Cluster Data 
-##===============================================================================
-#
-## default Vars for clustering 
-##default_vars = { 'c_thresh' : 0.90,
-##                 'n_filter' : 8,
-##                 'threads' : 1,
-##                 'mem' : 0,
-##                 'maskN' : False}
-#
-## Variations to run
-#batch_parameters = [ { 'c_thresh' : 0.95},
-#                    { 'c_thresh' : 0.95, 'maskN' : True},
-#                    { 'c_thresh' : 0.90},
-#                    { 'c_thresh' : 0.90, 'maskN' : True},
-#                    { 'c_thresh' : 0.85},
-#                    { 'c_thresh' : 0.85, 'maskN' : True},
-#                   ]
-#                   
-#Clusterer = Clustering(c, infiles=out[0], inpath=[1]) 
-#
-#Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=10)
-#
-### Display Summary
-##summary(clustered_file)
+#===============================================================================
+# Cluster Data 
+#===============================================================================
+
+# default Vars for clustering 
+#default_vars = { 'c_thresh' : 0.90,
+#                 'n_filter' : 8,
+#                 'threads' : 1,
+#                 'mem' : 0,
+#                 'maskN' : False}
+
+# Variations to run
+batch_parameters = [ 
+                    { 'c_thresh' : 1.0},
+                    { 'c_thresh' : 0.90},
+                   ]
+                   
+Clusterer = Clustering(c, infiles=files2cluster, inpath=path) 
+
+Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=1)
+
+## Display Summary
+#summary(clustered_file)

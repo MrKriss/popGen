@@ -74,7 +74,7 @@ class Database(object):
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
         
     def select(self,cmd):
-        """ select records from the database returned as tuple of tuples. """
+        """ Select records from the database returned as tuple of Row Objects. """
         
         with self.con as con:        
             cur = con.cursor()
@@ -108,8 +108,8 @@ class Database(object):
             for row in records:
                 print row
         
-    def to_tuples(self, cmd, *args):
-        ''' Convert to a list of tuples if using Row factory'''
+    def select_as_tuples(self, cmd, *args):
+        ''' Select records from the database returned as tuple of tuples. '''
         tuples = []
         with self.con as con:     
             cur = con.cursor()
@@ -204,7 +204,8 @@ class PopGen_DB(Database):
             sampleId INTEGER PRIMARY KEY, 
             MIDtag TEXT, 
             description TEXT UNIQUE, 
-            Total_Count, INTEGER) ''')
+            read_count INTEGER,
+            read_file TEXT) ''')
             
             curs.execute('DROP TABLE IF EXISTS datafiles ')
             curs.execute(''' CREATE TABLE datafiles (

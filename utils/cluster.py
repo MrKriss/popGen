@@ -21,9 +21,10 @@ class Clustering(object):
     def __init__(self, config, infiles, inpath):
 
         self.c = config
-        self.input_file = file2cluster
+        self.input_files = infiles
+        self.inpath = inpath
              
-        # default Vars for clustering 
+        # Default Vars for clustering 
         self.default_parameters = { 'c_thresh' : 0.90,
                                     'n_filter' : 8,
                                     'threads' : 1,
@@ -33,31 +34,35 @@ class Clustering(object):
     def run_single_cdhit_clustering(self, **kwargs):
         ''' Runs a single instance of cd-hit-est ''' 
 
-        # Use defaults if no others were passed 
-        if 'infile' not in kwargs:
-            kwargs['infile'] = self.input_file
-        if 'outfile' not in kwargs:
-            kwargs['outfile'] = self.c.experiment_name + '_all_reads'
-        if 'c_thresh' not in kwargs:
-            kwargs['c_thresh'] = self.default_parameters['c_thresh']
-        if 'n_filter' not in kwargs:
-            kwargs['n_filter'] = self.default_parameters['n_filter']
-        if 'threads' not in kwargs:
-            kwargs['threads'] = self.default_parameters['threads']
-        if 'mem' not in kwargs:
-            kwargs['mem'] = self.default_parameters['mem']
-        if 'maskN' not in kwargs:
-            kwargs['maskN'] = self.default_parameters['maskN']
-            
-        cluster_cdhit(**kwargs)
+        inputs = {}
+        inputs.update(self.default_parameters)
+        inputs.update(kwargs)
 
-    def run_batch_cdhit_clustering(self, batch_parameters, postfix= '', **kwargs):
-        ''' Runs cdhit in serial for each entry in batch_parameters.
+        # Use defaults if no others were passed 
+        if 'infiles' not in inputs:
+            inputs['infile'] = self.input_files
+            
+        # (outfiles1, outfiles2, outpath, cmd) 
+        #    = cluster_cdhit(infiles, inpath=None, outpath=None, 
+        #                  outfile_postfix='-clustered', c_thresh=None, 
+        #                  n_filter=None, threads=1, mem=0, maskN=True, 
+        #                  allvall = False)
+        out = cluster_cdhit(**inputs)
+        
+        return out
+
+    def run_batch_cdhit_clustering(self, batch_parameters, **kwargs):
+        ''' Runs cdhit in serial for each entry in batch_parameters over all files passed in.
         
         Elements of batch_parameters are dictionaries containing the parameters
-        to be changed from the default values '''
-
-        outfiles_list = [] 
+        to be changed from the default value. 
+        
+        Output is a list of length (batch parameters) containing tuples of 
+        
+        (outfiles1, outfiles2, outpath, cmd) for each set of parameters
+        
+        '''
+        outputs_list = [] 
 
         for d in batch_parameters:
     
@@ -66,46 +71,43 @@ class Clustering(object):
             inputs_dict.update(d)
             inputs_dict.update(kwargs)
     
+            # Use defaults if no others were passed 
+            if 'infiles' not in inputs_dict:
+                inputs_dict['infile'] = self.input_files
+    
             dirname = self.c.experiment_name + '_clustered_reads'
-            outfile = self.c.experiment_name + '_clustered_reads'
+            outfile_postfix = '-clustered'
 
             if 'c_thresh' in d:
-                dirname = dirname + '-c{}'.format(int(d['c_thresh']*100))
-                outfile = outfile + '-c{}'.format(int(d['c_thresh']*100))
+                dirname = dirname + '_c{}'.format(int(d['c_thresh']*100))
+                outfile_postfix = outfile_postfix + '_c{}'.format(int(d['c_thresh']*100))
             if 'n_filter' in d:
-                dirname = dirname + '-n{}'.format(d['n_filter'])
-                outfile = outfile + '-n{}'.format(d['n_filter'])                
+                dirname = dirname + '_n{}'.format(d['n_filter'])
+                outfile_postfix = outfile_postfix + '_n{}'.format(d['n_filter'])                
             if 'maskN' in d:
-                dirname = dirname + '-maskN'
-                outfile = outfile + '-maskN'
+                dirname = dirname + '_maskN'
+                outfile_postfix = outfile_postfix + '-maskN'
             if 'allvall' in d:
-                dirname = dirname + '-g1'
-                outfile = outfile + '-g1'
+                dirname = dirname + '_g1'
+                outfile_postfix = outfile_postfix + '_g1'
                 
+            inputs_dict['outfile_postfix'] = outfile_postfix
+            
             path = os.path.join(self.c.clusters_outpath, dirname)        
             if not os.path.exists(path):
                 os.makedirs(path)
             
-            if 'postfix':    
-                inputs_dict['outfile'] = os.path.join(path, outfile + postfix)
-            else:
-                inputs_dict['outfile'] = os.path.join(path, outfile)
-                
+            inputs_dict['outpath'] = path
             
-            outfiles_list.append(inputs_dict['outfile'])
-            inputs_dict['log_filename'] = os.path.join(path, 'report.log')
-        
-            if 'infile' not in inputs_dict:
-                inputs_dict['infile'] = self.input_file
+            out = cluster_cdhit(**inputs_dict)
+            outputs_list.append(out)
             
-            cluster_cdhit(**inputs_dict)
-            
-        return outfiles_list
+        return outputs_list
 
-def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1, 
-                  mem=0, maskN=True, log_filename='cd-hit-report.log', 
+def cluster_cdhit(infiles, inpath=None, outpath=None, outfile_postfix='-clustered', 
+                  c_thresh=None, n_filter=None, threads=1, mem=0, maskN=True, 
                   allvall = False):
-    ''' Run CD-HIT in parallel on one large fasta file
+    ''' Run CD-HIT in parallel on list of fasta files. Each file is clustered seperately.
     
     Other flags used:
     -d 0   --> No limit on description written to cluster file (goes to first space in seq ID). 
@@ -115,56 +117,79 @@ def cluster_cdhit(infile, outfile, c_thresh, n_filter, threads=1,
     Writes stdout to console and saves to log file in real time. 
     
     '''
+    # input check
+    if infiles is not list: 
+        infiles = [infiles]
     
+    # Define re patterns 
     pattern1 = re.compile('^\.')
     pattern2 = re.compile('%$')
     pattern3 = re.compile('^#')
     
     cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
     
-    cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
-            '-T {5}').format(infile, outfile, c_thresh, n_filter, mem, threads)   
-    if maskN:
-        cmd = cmd + ' -mask N'
-    if allvall:
-        cmd = cmd + ' -g 1'
+    returned_outfiles_list1 = []
+    for f in infiles:
         
-    # Wish to write progress to console and also capture summary in a log file
+        out_filename = f.split('.')[0] + outfile_postfix
+        
+        returned_outfiles_list1.append(out_filename)
+        log_filename = f.split('.')[0] + '-report.log'
+        
+        infile_path = os.path.join(inpath, f)
+        outfile_path = os.path.join(outpath, out_filename)
+        logfile_path = os.path.join(outpath, log_filename)
     
-    # function to thread
-    def enqueue_output(out, queue):
-        for line in iter(out.readline, b''):
-            queue.put(line)
-        out.close()
+        cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
+            '-T {5}').format(infile_path, outfile_path, c_thresh, n_filter, mem, threads)   
     
-    # Process to run CD-HIT
-    proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE, bufsize=1)
+        if maskN:
+            cmd = cmd + ' -mask N'
+        if allvall:
+            cmd = cmd + ' -g 1'
+            
+        # Wish to write progress to console and also capture summary in a log file
+        
+        # function to thread
+        def enqueue_output(out, queue):
+            for line in iter(out.readline, b''):
+                queue.put(line)
+            out.close()
+        
+        # Process to run CD-HIT
+        proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE, bufsize=1)
+        
+        # Setup queue and threading 
+        q = Queue()
+        t = Thread(target=enqueue_output, args=(proc.stdout, q))
+        t.daemon = True # thread dies with the program
+        t.start()
     
-    # Setup queue and threading 
-    q = Queue()
-    t = Thread(target=enqueue_output, args=(proc.stdout, q))
-    t.daemon = True # thread dies with the program
-    t.start()
-
-    with open(log_filename, 'wb') as logfile:
-        while True:
-            # read line without blocking
-            try:  line = q.get_nowait() # or q.get(timeout=.1)
-            except Empty:
-                if proc.poll() != None:
-                    break
-            else: # got line
-                if (pattern1.match(line) or pattern2.match(line) 
-                  or pattern3.match(line)):
-                    sys.stdout.write(line)
-                    sys.stdout.flush()
-                    continue
-                else:
-                    line.translate(string.maketrans("\r","\n"))
-                    sys.stdout.write(line)
-                    sys.stdout.flush()
-                    logfile.write(line)
-                    logfile.flush()
+        with open(logfile_path, 'wb') as logfile:
+            while True:
+                # read line without blocking
+                try:  line = q.get_nowait() # or q.get(timeout=.1)
+                except Empty:
+                    if proc.poll() != None:
+                        break
+                else: # got line
+                    if (pattern1.match(line) or pattern2.match(line) 
+                      or pattern3.match(line)):
+                        sys.stdout.write(line)
+                        sys.stdout.flush()
+                        continue
+                    else:
+                        line.translate(string.maketrans("\r","\n"))
+                        sys.stdout.write(line)
+                        sys.stdout.flush()
+                        logfile.write(line)
+                        logfile.flush()
+       
+    returned_outfiles_list2 = [0]* len(returned_outfiles_list1)             
+    for i, f in enumerate(returned_outfiles_list1):
+        returned_outfiles_list2[i] = f + '.clstr'         
+    
+    return (returned_outfiles_list1, returned_outfiles_list2, outpath, cmd) 
     
 
 def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):

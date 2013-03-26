@@ -461,82 +461,6 @@ class Preprocessor(object):
         
         return (outnames, outpath)
 
-    def trim_reads(self, infiles=None, inpath=None, out_filename=None, outpath = None, n = 1):
-        ''' Trims off the MID tag of each read, as well as the last 'n' bases.
-        Writes the trimed reads to one large fasta file for clustering'''
-        
-        c = self.c
-        
-        if outpath is None:
-            outpath = c.tag_processed_outpath
-        if out_filename is None:
-            out_filename = c.experiment_name + '_all_preprocessed.fasta'
-        
-        start_dir = os.getcwd() 
-
-        # Setup Record Cycler        
-        if infiles is None:
-            infiles = self.next_input_files
-        if inpath is None:
-            inpath = self.next_input_path
-        
-        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-        
-        count = 0
-        outfile_part_list = []
-    
-        print ('Removing MID tags, triming reads and converting {0} files to'
-               ' fasta format').format(RecCycler.numfiles)
-    
-#        if c.barcode_files_setup == 'global':
-#            
-#            read_start_idx = len(c.cutsite) + len(c.MIDtags.keys()[0])
-#             
-        # Generator to trim off MID tag and end of read.
-        for seqfilegen in RecCycler.seqfilegen:
-                       
-#            if c.barcode_files_setup == 'individual':
-#                fname = RecCycler.curfilename.split('.')[0].split('-')[0]
-#                lenMIDs = len(c.MIDtags[fname].keys()[0])
-#                read_start_idx = len(c.cutsite) + lenMIDs  
-
-            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
-            # tags is returned as a list of tuples for each record            
-            tags = zip(*tags)[0]
-            # tags is now a tuple of all the first elements in each record              
-            lenMIDs = len(tags[0])
-            read_start_idx = len(c.cutsite) + lenMIDs  
-
-            read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
-            # File name 
-            outfile_part = 'output_part' + str(count) + '.fasta'
-            outfile_part_list.append(outfile_part)
-            count += 1
-            with open(os.path.join(outpath, outfile_part), 'wb') as f:
-                write_count = SeqIO.write(read_gen, f, 'fasta')
-                print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_part)
-        
-        # Combine output parts into one big file
-        if outpath:
-            os.chdir(outpath)
-        cmd = ['cat'] + outfile_part_list 
-        
-        with open(os.path.join(outpath, out_filename), 'wb') as f:
-            print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
-            call(cmd, stdout=f) 
-        
-        print 'Done, cleaning up temp files ....'
-        for f in outfile_part_list:
-            os.remove(f)   
-        os.chdir(start_dir)
-        
-        print '\nPreprocessing Complete.'
-        
-        self.next_input_files = out_filename
-        self.next_input_path = outpath
-        
-        return (out_filename, outpath)
-
     def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
                       report=True, savecounter=True):
         ''' Split the file into separate files based on MID tags '''
@@ -601,22 +525,118 @@ class Preprocessor(object):
                 vars()[fvarname].close()
 
 
-            print 'Finished Spliting files for input file: {0}'.format(RecCycler.curfilename)
+            print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
-#            self.db.execute('''  ''' )
+            # Update counts
+            for tag, desc in dbtags.iteritems(): 
+            
+                row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
+                current_value = row['read_count']
+                if current_value is None:
+                    current_value = 0
+                    
+                self.db.update('''samples SET read_count=? WHERE description=?''',
+                                ( current_value + tag_counter[tag], desc))
 
-            #TODO:
-            # Need to store the counter somewhere/ update the count field for the sample.
+        # Store file names 
+        for outfile in outfile_files_list:
+
+            # Find sample description            
+            fname = os.path.split(outfile)[1]
+            fname_parts = fname.split('-') 
+            desc = fname_parts[2]
             
-            # get count field for each sample
+            self.db.update('''samples SET read_file=? WHERE description=?''',
+                                (outfile, desc))
             
-            # Update count field for each sample
+        # Outputs return / update next inputs
+        self.next_input_path = outpath
+        self.next_input_files = outfile_files_list
+        
+        return (outfile_files_list, outpath)
+                        
+    def trim_reads(self, infiles=None, inpath=None, out_filename=None, outpath=None, n=1, mode='grouped'):
+        ''' Trims off the MID tag of each read, as well as the last 'n' bases.
+        
+        mode    = grouped
+                Writes all trimmed reads from the list of infiles to one large 
+                output fasta file for clustering. Returns one file.
+        
+                = separate
+                Writes all trimmed reads from the list of infiles to separate 
+                fasta files for clustering. Returns a list of files. 
+        '''
+        
+        c = self.c
+        
+        if outpath is None:
+            outpath = c.tag_processed_outpath
+        if out_filename is None:
+            out_filename = c.experiment_name + '_all_preprocessed.fasta'
+        
+        start_dir = os.getcwd() 
+
+        # Setup Record Cycler        
+        if infiles is None:
+            infiles = self.next_input_files
+        if inpath is None:
+            inpath = self.next_input_path
+        
+        # if separate
+        
+        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
+        
+        count = 0
+        outfile_list = []
+    
+        print ('Removing MID tags, trimming reads and converting {0} files to'
+               ' fasta format').format(RecCycler.numfiles)
+    
+        # Generator to trim off MID tag and end of read.
+        for seqfilegen in RecCycler.seqfilegen:
+                       
+            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
+            # tags is returned as a list of tuples for each record            
+            tags = zip(*tags)[0]
+            # tags is now a tuple of all the first elements in each record              
+            lenMIDs = len(tags[0])
+            read_start_idx = len(c.cutsite) + lenMIDs  
+
+            read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
+            # File name
             
-            # Store counter, is it useful?  
+            outfile_i = RecCycler.curfilename + '.fasta'
+            outfile_list.append(outfile_i)
+            count += 1
+
+            with open(os.path.join(outpath, outfile_i), 'wb') as f:
+                write_count = SeqIO.write(read_gen, f, 'fasta')
+                print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_i)
+
+        if mode == 'grouped':
+            # Combine output parts into one big file
+            if outpath:
+                os.chdir(outpath)
+            cmd = ['cat'] + outfile_list 
+            with open(os.path.join(outpath, out_filename), 'wb') as f:
+                print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
+                call(cmd, stdout=f) 
+            print 'Done, cleaning up temp files ....'
+            for f in outfile_list:
+                os.remove(f)   
+            os.chdir(start_dir)
+
+            print '\nPreprocessing Complete.'
+            self.next_input_files = out_filename
+            self.next_input_path = outpath
+            return (out_filename, outpath)
             
-            # Currently a global counter i.e counts MIDtags for all files, may be overlapping MIDs, have to 
-            # reset for each file 
-            #------------------------------------------------------------------------------ 
+        elif mode == 'separate':
+            
+            print '\nPreprocessing Complete.'
+            self.next_input_files = outfile_list
+            self.next_input_path = outpath
+            return (outfile_list, outpath)
                 
     def cleanup_files(self, *args):
         ''' Remove intermediate files that are not needed '''      
