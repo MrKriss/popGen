@@ -17,7 +17,7 @@ import numpy as np
 from Bio import SeqIO
 
 import sqlite3
-#from utils import get_data_prefix
+from utils import get_data_prefix
 
 class Database(object):
     """ Class to handle all python communication with a sqlite database file """
@@ -201,19 +201,19 @@ class PopGen_DB(Database):
             # Create Tables
             curs.execute('DROP TABLE IF EXISTS samples')
             curs.execute(''' CREATE TABLE samples (
-            sampleId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            sampleId INTEGER PRIMARY KEY, 
             MIDtag TEXT, 
-            description TEXT, 
+            description TEXT UNIQUE, 
             Total_Count, INTEGER) ''')
             
             curs.execute('DROP TABLE IF EXISTS datafiles ')
             curs.execute(''' CREATE TABLE datafiles (
-            datafileId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            datafileId INTEGER PRIMARY KEY, 
             filename TEXT  )''')
             
             curs.execute('DROP TABLE IF EXISTS samples_datafiles')
             curs.execute(''' CREATE TABLE samples_datafiles (
-            linkId INTEGER PRIMARY KEY AUTOINCREMENT, 
+            linkId INTEGER PRIMARY KEY, 
             sampleId INTEGER, 
             datafileId INTEGER, 
             FOREIGN KEY(sampleId) REFERENCES samples(Id)  
@@ -238,12 +238,15 @@ class PopGen_DB(Database):
                             MIDtag = line[0] 
                             description = line[1]
             
-                            curs.execute('''INSERT INTO samples(MIDtag, description)
+                            curs.execute('''INSERT OR IGNORE INTO samples(MIDtag, description)
                                             VALUES(?,?)''', (MIDtag, description))
-                            last_sample = curs.lastrowid
+                    
+                            # Find ID of last scanned Barcode                             
+                            curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (description,))
+                            row = curs.fetchone()
                     
                             curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
-                                            VALUES(?,?)''', (last_sample, last_datafile))
+                                            VALUES(?,?)''', (row['sampleId'], last_datafile))
             
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.
@@ -282,8 +285,9 @@ if __name__ == '__main__':
         class Config(object):
             pass
         c = Config()
-#        prefix = get_data_prefix()
-        c.barcode_inpath = '/Users/chris/Dropbox/work/code/popGen/testData/barcodes'
+        prefix = get_data_prefix()
+#        c.barcode_inpath = '/Users/chris/Dropbox/work/code/popGen/testData/barcodes'
+        c.barcode_inpath = os.path.join(prefix,'gazelles-zebras', 'barcodes')
         
         db = PopGen_DB('gz_samples.db', recbyname=True)
         
