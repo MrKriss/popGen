@@ -482,7 +482,7 @@ class Preprocessor(object):
         
         RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
          
-        print ('Spliting {0} files bases on MID tags'
+        print ('Spliting {0} file(s) based on MID tags'
                '').format(RecCycler.numfiles)
         
         outfile_files_list = []
@@ -500,9 +500,12 @@ class Preprocessor(object):
             read_start_idx = len(c.cutsite) + MID_length  
             
             # Open Files for Writing for each tag  
-            for tag, individual in dbtags.iteritems():
+            for elem in dbtags:
                 
-                fname = '-'.join(out_filename, tag, individual)
+                tag = elem[0]
+                desc = elem[1]
+                
+                fname = '-'.join(out_filename, tag, desc)
                 outfile_files_list.append(fname)
                 fvarname = 'f-' + tag
                 vars()[fvarname] = open(os.path.join(outpath, fname), 'a')
@@ -519,7 +522,9 @@ class Preprocessor(object):
                     tag_counter[tag] += 1
 
             # Flush and Close Files for each tag  
-            for tag, individual in c.MIDtags.iterkeys():
+            for elem in dbtags:
+                tag = elem[0]
+                
                 fvarname = 'f-' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
@@ -528,7 +533,10 @@ class Preprocessor(object):
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
             # Update counts
-            for tag, desc in dbtags.iteritems(): 
+            for elem in dbtags:
+                
+                tag = elem[0]
+                desc = elem[1]
             
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
                 current_value = row['read_count']
