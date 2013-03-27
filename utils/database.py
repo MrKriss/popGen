@@ -73,13 +73,13 @@ class Database(object):
             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
         
-    def select(self,cmd):
+    def select(self,cmd, *args):
         """ Select records from the database returned as tuple of Row Objects. """
         
         with self.con as con:        
             cur = con.cursor()
             # SELECT column_name(s) FROM table_name
-            cur.execute("SELECT " + cmd)
+            cur.execute("SELECT " + cmd, *args)
             records = cur.fetchall()
         
         return records
