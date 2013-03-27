@@ -16,7 +16,7 @@ import numpy as np
 from Bio import SeqIO, bgzf
 import editdist as ed
 
-#from general_utilities import set_trace
+from general_utilities import set_trace
 
 from utils import smartopen, Cycler
 
@@ -114,16 +114,21 @@ class Preprocessor(object):
                 being converted from {1}''').format(fname, filename)
             filename = fname    
         
-        MIDtags = []
+        recs = []
         # Extract tags that match raw_datafile
         data = self.db.get_samples4datafile(filename, fields=fields)
         
         assert data and  len(data) > 0, 'No data returned from filename querry'  
         
         for row in data:
-            MIDtags.append(tuple(row)) 
-            
-        return MIDtags
+            recs.append(tuple(row)) 
+        
+        # Check there are no repeats 
+        if fields[0] == 'MIDtag':
+            tags = zip(*recs)
+            assert len(tags[0]) == len(set(tags[0])), 'MIDtags are not unique for samples in file: {0}'.format(filename)
+        
+        return recs
 
     def set_input_files(self, infiles, file_pattern, data_inpath):
         
@@ -330,7 +335,7 @@ class Preprocessor(object):
                 self.skipped_count = 0
                 self.corrected_count = 0
                 
-                self.barMIDs = tags
+                self.barMIDs = sorted(tags)
                 self.cutsite = cutsite
                 
                 # Check length of MIDs
@@ -346,29 +351,31 @@ class Preprocessor(object):
                     # Analise MID tag section
                     #===============================================================
                     recMID = str(rec.seq[:self.MIDlength])
-                    
+
                     if recMID not in self.barMIDs:
                         # Sequencing error in the tag. Work out nearest candidate.
                         distvec = np.array([ed.distance(recMID, tag) for tag in self.barMIDs]) 
                         
-                        min_dist_candidates = []
                         distvec_min = distvec.min()
-                        for elem in distvec:
-                            if elem == distvec_min and elem <= max_edit_dist:
-                                min_dist_candidates.append(self.barMIDs[elem])
-    
-                        if len(min_dist_candidates) > 1:
+                        
+                        if distvec_min > max_edit_dist:
+                            self.skipped_count += 1
+                            continue
+                            
+                        min_dist_idxs = np.argwhere(distvec==distvec.min())
+                        if min_dist_idxs.size > 1:
                             # Muliple candidates. True MID is Ambiguous 
                             self.skipped_count += 1
                             continue
-                        elif len(min_dist_candidates) == 1:
+                    
+                        elif min_dist_idxs.size == 1:
                             # Correct the erroneous tag with the candidate.
                             # Letter annotations must be removed before editing rec.seq
                             temp_var = rec.letter_annotations
                             rec.letter_annotations = {}
                             # Change seq to mutableseq
                             rec.seq = rec.seq.tomutable()
-                            rec.seq[:self.MIDlength] = min_dist_candidates[0]
+                            rec.seq[:self.MIDlength] = self.barMIDs[min_dist_idxs[0]]
                             rec.seq = rec.seq.toseq()
                             rec.letter_annotations.update(temp_var)
                             self.corrected_count += 1
@@ -486,57 +493,47 @@ class Preprocessor(object):
                '').format(RecCycler.numfiles)
         
         outfile_files_list = []
-        for seqfilegen in RecCycler.seqfilegen:
+        for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
             tag_counter = Counter()
             
             dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
             # tags is returned as a list of tuples for each record            
-#            tags = zip(*tags)
-#             tags is now a tuple of all the first elements in each record, followed by a tuple of all the second ...  
-            
             MID_length = len(dbtags[0][0])
-            read_start_idx = len(c.cutsite) + MID_length  
+            # Convert to dictionary  {'MIDtag' : 'description' }
+            dbtags = dict(dbtags)
             
             # Open Files for Writing for each tag  
-            for elem in dbtags:
+            for tag, desc in dbtags.iteritems():
                 
-                tag = elem[0]
-                desc = elem[1]
-                
-                fname = '-'.join(out_filename, tag, desc)
+                fname = '-'.join([out_filename, tag, desc])
                 outfile_files_list.append(fname)
-                fvarname = 'f-' + tag
+                fvarname = 'f_' + tag
                 vars()[fvarname] = open(os.path.join(outpath, fname), 'a')
     
-            for rec in RecCycler.recgen:
+            for rec in recordgen:
         
                 recMIDtag = rec.seq[:MID_length].tostring()
                 
                 if recMIDtag not in dbtags:
                     raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
                 else:                   
-                    fvarname = 'f-' + recMIDtag                
+                    fvarname = 'f_' + recMIDtag                
                     SeqIO.write(rec, vars()[fvarname], 'fastq');
                     tag_counter[tag] += 1
 
             # Flush and Close Files for each tag  
-            for elem in dbtags:
-                tag = elem[0]
+            for tag in dbtags.iterkeys():
                 
-                fvarname = 'f-' + tag
+                fvarname = 'f_' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
-
 
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
             # Update counts
-            for elem in dbtags:
-                
-                tag = elem[0]
-                desc = elem[1]
+            for tag, desc in dbtags.iteritems():
             
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
                 current_value = row['read_count']

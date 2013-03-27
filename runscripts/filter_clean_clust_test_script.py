@@ -47,7 +47,7 @@ c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
 #raw_files = glob.glob('*[0-9].fastq.bgzf')
-raw_files = glob.glob('testset_1percent.fastq.bgzf')
+raw_files = glob.glob('testset_1000.fastq.bgzf')
 assert raw_files
 raw_files.sort()
 c.raw_input_files = raw_files 
@@ -71,7 +71,7 @@ c.max_edit_dist = 2
         
 # FILTERING
 # Whether to log reads that fail the filtering         
-c.log_fails = True
+c.log_fails = False
        
 #===============================================================================
 # Make Database for samples
@@ -80,7 +80,7 @@ c.log_fails = True
 db_path = joinp(prefix,'gazelles-zebras') 
 db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True)
         
-L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
+#L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
 L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
 
 #r1 = re.compile('lane6*.bgzf')
@@ -96,10 +96,10 @@ L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt'))
 #db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles)
 
 # Testing 
-r3 = re.compile('testset_1percent.fastq.bgzf')
+r3 = re.compile('testset_1000.fastq.bgzf')
 datafiles = filter(r3.match, c.raw_input_files)
 db.add_barcodes_datafiles(L8_barcode_files, datafiles)
-db.add_barcodes_datafiles(L6_barcode_files, datafiles)
+#db.add_barcodes_datafiles(L6_barcode_files, datafiles)
 
 # Define Preprocessing Class
 Preprocess = Preprocessor(c, db) 
@@ -138,7 +138,7 @@ files2cluster, path = Preprocess.trim_reads(mode='separate', n=1)
 #default_vars = { 'c_thresh' : 0.90,
 #                 'n_filter' : 8,
 #                 'threads' : 1,
-#                 'mem' : 0,
+#                 '
 #                 'maskN' : False}
 
 # Variations to run

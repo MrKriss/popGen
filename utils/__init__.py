@@ -145,7 +145,6 @@ class Cycler(object):
                 for record in rec_file:
                     yield record
 
-
 def get_data_prefix():
     '''Return directory prefix where data is stored'''    
     import socket

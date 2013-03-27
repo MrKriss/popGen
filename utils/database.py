@@ -210,7 +210,7 @@ class PopGen_DB(Database):
             curs.execute('DROP TABLE IF EXISTS datafiles ')
             curs.execute(''' CREATE TABLE datafiles (
             datafileId INTEGER PRIMARY KEY, 
-            filename TEXT  )''')
+            filename TEXT UNIQUE )''')
             
             curs.execute('DROP TABLE IF EXISTS samples_datafiles')
             curs.execute(''' CREATE TABLE samples_datafiles (
@@ -228,7 +228,7 @@ class PopGen_DB(Database):
             curs = con.cursor()
 
             for datafile in datafiles:
-                curs.execute('''INSERT INTO datafiles(filename)
+                curs.execute('''INSERT OR IGNORE INTO datafiles(filename)
                                         VALUES(?)''', (datafile,))
                 last_datafile = curs.lastrowid
         
@@ -244,10 +244,14 @@ class PopGen_DB(Database):
                     
                             # Find ID of last scanned Barcode                             
                             curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (description,))
-                            row = curs.fetchone()
+                            sample_id = curs.fetchone()['sampleId']
+                            
+                            # Find ID of last scanned datafile                             
+                            curs.execute('''SELECT datafileId FROM datafiles WHERE filename=?''', (datafile,))
+                            datafile_id = curs.fetchone()['datafileId']
                     
                             curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
-                                            VALUES(?,?)''', (row['sampleId'], last_datafile))
+                                            VALUES(?,?)''', (sample_id, datafile_id))
             
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.

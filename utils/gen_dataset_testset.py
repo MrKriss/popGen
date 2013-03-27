@@ -21,18 +21,20 @@ start_dir = os.getcwd()
 #lane8path = '/space/musselle/data/RAD-seq/gazelles-zebras/raw-data'
 path = '/space/musselle/data/RAD-seq/gazelles-zebras/raw-data'
 
-maxnumseq = 500
+maxnumseq = 1000
 
 #RecCyclerL6 = Cycler(filepattern='*[0-9].fastq.bgzf', data_inpath = lane6path, maxnumseq=maxnumseq)
 #RecCyclerL8 = Cycler(filepattern='*[0-9].fastq.bgzf', data_inpath = lane8path, maxnumseq=maxnumseq)
-RecCycler = Cycler(filepattern='*[0-9].fastq.bgzf', data_inpath = path, maxnumseq=maxnumseq)
 
-output_filename = 'testdata_500.fastq.bgzf'
+# Just from lane 8
+RecCycler = Cycler(filepattern='lane8*[0-9].fastq.bgzf', data_inpath = path, maxnumseq=maxnumseq)
+
+output_filename = 'testset_1000.fastq.bgzf'
 
 print '\nGenerating a dataset of the first {0} reads from each file.'.format(maxnumseq)
 
 # If file already exists, overwrite it.
-os.chdir('/space/musselle/datasets/gazellesAndZebras')
+os.chdir('/space/musselle/data/RAD-seq/gazelles-zebras/testset')
 if os.path.isfile(output_filename):
     f = open(output_filename, 'w')
     f.close()
@@ -43,13 +45,13 @@ total_numwritten = 0
 
 toc = time.time()
 
-numwritten = SeqIO.write(RecCyclerL6.recgen, output_filehdl , 'fastq')
+numwritten = SeqIO.write(RecCycler.recgen, output_filehdl , 'fastq')
 print '{0} records written'.format(numwritten)
 total_numwritten += numwritten
 
-numwritten = SeqIO.write(RecCyclerL8.recgen , output_filehdl , 'fastq')
-print '{0} records written'.format(numwritten)
-total_numwritten += numwritten
+#numwritten = SeqIO.write(RecCycler.recgen , output_filehdl , 'fastq')
+#print '{0} records written'.format(numwritten)
+#total_numwritten += numwritten
 
 output_filehdl.close()
 print 'Total of {0} Sequence reads written to file {1}'.format(total_numwritten, output_filename) 
