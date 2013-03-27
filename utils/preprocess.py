@@ -56,79 +56,43 @@ class Preprocessor(object):
         self.next_input_files = c.raw_input_files
         self.next_input_path = c.data_inpath     
         
-        
-        
-        # Input checks
-#        if c.barcode_files_setup == 'individual':
-#            # One barcode file per input file with matching names
-#            barnames = [b.split('.')[0] for b in c.barcode_files]
-#            filenames = [f.split('.')[0] for f in c.raw_input_files]
-#            for fname in filenames:
-#                if fname not in barnames:
-#                    raise Exception('Set to individual barcode files, yet at least one input'
-#                    'file name does not match the given barcode file names')
-#                               
-#        # Define MID tag Dictionary
-#        if c.barcode_files_setup == 'individual':
-#            # Process each file with its own list of barcodes
-#            # tags_per_filename = {'filename' :  {'MIDtag' : 'individual' }}
-#            tags_per_filename = {}
-#            
-#            for input_filename in c.raw_input_files:
-#                name = input_filename.split('.')[0]
-#                tags_per_filename[name] = {}
-#                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
-#                    for line in f:
-#                        elem = line.split()
-#                        tags_per_filename[name][elem[0]] = elem[1]
-#            c.MIDtags = tags_per_filename 
-#        elif c.barcode_files_setup == 'global':
-#            # Process each file with reference to a global list of barcodes
-#            # global_tags = {'MIDtag' : 'individual' }
-#            global_tags = {}
-#            
-#            for bar_filename in c.barcode_files:
-#                name = bar_filename.split('.')[0]
-#                with open(os.path.join(c.barcode_inpath,name) + '.txt', 'rb') as f:
-#                    for line in f:
-#                        elem = line.split()
-#                        global_tags[elem[0]] = elem[1]
-#            c.MIDtags = global_tags 
-#        else:
-#            raise Exception('Barcode file usage not specified.'
-#            'Set c.barcode_files_setup to "individual" or "global"')
                            
     def get_data4file(self, filename, fields=['MIDtag']):
         ''' Return a list of records for the given filename with specified fields. 
-        Each record is a tuple. '''
+        Each record is a tuple. 
         
-        if filename not in self.c.raw_input_files:
-            # Remove file name postfixes to convert given file, 
-            # to original raw read file name
-            temp = filename.split('.')
-            fname = [temp[0].split('-')[0]]
-            fname.extend(temp[1:])
-            fname = '.'.join(fname)
-            assert fname in self.c.raw_input_files, (
-                '''File {0} not found in list of original reads after 
-                being converted from {1}''').format(fname, filename)
-            filename = fname    
+        filename is a globed for without file extension.
         
-        recs = []
-        # Extract tags that match raw_datafile
-        data = self.db.get_samples4datafile(filename, fields=fields)
+        '''
+
+        # Remove filename postfixes if present         
+        filename_parts = filename.split('.')
+        if filename_parts[0].endswith('-clean'):
+            filename_parts[0] = filename_parts[0][:-6]
+        if filename_parts[0].endswith('-pass'):
+            filename_parts[0] = filename_parts[0][:-5]
         
-        assert data and  len(data) > 0, 'No data returned from filename querry'  
+        filename = '.'.join(filename_parts)
+         
+        # Extract tags that match filename of the datafile
+        rows = self.db.select('''filename FROM datafiles WHERE filename GLOB ? ''', (filename,))
+        assert rows and len(rows) > 0, 'No data files returned from filename querry'  
+        rows = [tuple(elem) for elem in rows]
         
-        for row in data:
-            recs.append(tuple(row)) 
+        # Check there are no repeats of filename glob
+        names = zip(*rows)[0]
+        assert len(names) == len(set(names)), 'Filenames in database are not unique'
         
-        # Check there are no repeats 
-        if fields[0] == 'MIDtag':
-            tags = zip(*recs)
-            assert len(tags[0]) == len(set(tags[0])), 'MIDtags are not unique for samples in file: {0}'.format(filename)
+        # Extract MIDtags that match datafiles for the globed filename
+        rows = self.db.get_samples4datafile(filename, fields=fields)
+        assert rows and len(rows) > 0, 'No MIDtags returned from filename querry'
+        rows = [tuple(elem) for elem in rows]
         
-        return recs
+        # Check there are no repeats of MIDtags
+        tags = zip(*rows)[0]
+        assert len(tags) == len(set(tags)), 'MIDtags are not unique for samples in files: {0}'.format(str(names))
+        
+        return rows
 
     def set_input_files(self, infiles, file_pattern, data_inpath):
         
@@ -507,10 +471,10 @@ class Preprocessor(object):
             # Open Files for Writing for each tag  
             for tag, desc in dbtags.iteritems():
                 
-                fname = '-'.join([out_filename, tag, desc])
+                fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
                 outfile_files_list.append(fname)
                 fvarname = 'f_' + tag
-                vars()[fvarname] = open(os.path.join(outpath, fname), 'a')
+                vars()[fvarname] = bgzf.open(os.path.join(outpath, fname), 'a')
     
             for rec in recordgen:
         
@@ -524,11 +488,16 @@ class Preprocessor(object):
                     tag_counter[tag] += 1
 
             # Flush and Close Files for each tag  
-            for tag in dbtags.iterkeys():
+            for tag, desc in dbtags.iteritems():
                 
                 fvarname = 'f_' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
+                
+                # Update datafiles in database
+                self.db.add_datafile(vars()[fvarname].name, [desc])
+                
+                
 
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
@@ -536,7 +505,7 @@ class Preprocessor(object):
             for tag, desc in dbtags.iteritems():
             
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
-                current_value = row['read_count']
+                current_value = row[0]['read_count']
                 if current_value is None:
                     current_value = 0
                     

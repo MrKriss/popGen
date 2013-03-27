@@ -221,7 +221,7 @@ class PopGen_DB(Database):
             FOREIGN KEY(datafileId) REFERENCES datafiles(Id) )''')
     
     def add_barcodes_datafiles(self, barcodefiles, datafiles):
-        ''' Creates samples table, datafile table and mappings table given a list of barcodefiles 
+        ''' Add entries to samples, datafiles and mappings table given a list of barcodefiles 
         and a list of datafiles.'''
            
         with self.con as con:
@@ -230,7 +230,6 @@ class PopGen_DB(Database):
             for datafile in datafiles:
                 curs.execute('''INSERT OR IGNORE INTO datafiles(filename)
                                         VALUES(?)''', (datafile,))
-                last_datafile = curs.lastrowid
         
                 for barcode in barcodefiles:
                     with open(barcode, 'r') as f: 
@@ -252,6 +251,29 @@ class PopGen_DB(Database):
                     
                             curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
                                             VALUES(?,?)''', (sample_id, datafile_id))
+            
+    def add_datafile(self, datafile, sample_desc_list):
+        ''' Add ONE new file to the datafile table along with appropriate entries into mappings table. '''
+        
+        with self.con as con:
+            curs = con.cursor()
+            
+            curs.execute('''INSERT OR IGNORE INTO datafiles(filename)
+                                        VALUES(?)''', (datafile,))
+            # Find ID of datafile                             
+            curs.execute('''SELECT datafileId FROM datafiles WHERE filename=?''', (datafile,))
+            datafile_id = curs.fetchone()['datafileId']
+        
+            for sample_desc in sample_desc_list:
+                
+                # Find ID of last scanned Barcode                             
+                curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (sample_desc,))
+                sample_id = curs.fetchone()['sampleId']
+                
+                # Update Mapping table
+                curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
+                                            VALUES(?,?)''', (sample_id, datafile_id))
+
             
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.
