@@ -456,7 +456,7 @@ class Preprocessor(object):
         print ('Spliting {0} file(s) based on MID tags'
                '').format(RecCycler.numfiles)
         
-        outfile_files_list = []
+        outfiles_dict = {}
         for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
@@ -472,9 +472,9 @@ class Preprocessor(object):
             for tag, desc in dbtags.iteritems():
                 
                 fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
-                outfile_files_list.append(fname)
                 fvarname = 'f_' + tag
                 vars()[fvarname] = bgzf.open(os.path.join(outpath, fname), 'a')
+                outfiles_dict[fvarname] = fname
     
             for rec in recordgen:
         
@@ -490,14 +490,14 @@ class Preprocessor(object):
             # Flush and Close Files for each tag  
             for tag, desc in dbtags.iteritems():
                 
+                
                 fvarname = 'f_' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
                 
                 # Update datafiles in database
-                self.db.add_datafile(vars()[fvarname].name, [desc])
-                
-                
+                filename = outfiles_dict[fvarname]
+                self.db.add_datafile(filename, [desc])
 
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
@@ -513,7 +513,7 @@ class Preprocessor(object):
                                 ( current_value + tag_counter[tag], desc))
 
         # Store file names 
-        for outfile in outfile_files_list:
+        for outfile in outfiles_dict.itervalues():
 
             # Find sample description            
             fname = os.path.split(outfile)[1]
@@ -525,9 +525,9 @@ class Preprocessor(object):
             
         # Outputs return / update next inputs
         self.next_input_path = outpath
-        self.next_input_files = outfile_files_list
+        self.next_input_files = outfiles_dict.values()
         
-        return (outfile_files_list, outpath)
+        return (outfiles_dict.values(), outpath)
                         
     def trim_reads(self, infiles=None, inpath=None, out_filename=None, outpath=None, n=1, mode='grouped'):
         ''' Trims off the MID tag of each read, as well as the last 'n' bases.
@@ -556,8 +556,6 @@ class Preprocessor(object):
         if inpath is None:
             inpath = self.next_input_path
         
-        # if separate
-        
         RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
         
         count = 0
@@ -579,7 +577,11 @@ class Preprocessor(object):
             read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
             # File name
             
-            outfile_i = RecCycler.curfilename + '.fasta'
+            fname = RecCycler.curfilename
+            if fname.endswith('.bgzf') or fname.endswith('.fastq') or fname.endswith('.fasta'):
+                outfile_i = '.'.join(RecCycler.curfilename.split('.')[:-1])
+                
+            outfile_i = outfile_i + '.fasta'
             outfile_list.append(outfile_i)
             count += 1
 

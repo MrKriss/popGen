@@ -73,7 +73,7 @@ class Clustering(object):
     
             # Use defaults if no others were passed 
             if 'infiles' not in inputs_dict:
-                inputs_dict['infile'] = self.input_files
+                inputs_dict['infiles'] = self.input_files
     
             dirname = self.c.experiment_name + '_clustered_reads'
             outfile_postfix = '-clustered'
