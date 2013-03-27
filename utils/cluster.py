@@ -34,20 +34,23 @@ class Clustering(object):
     def run_single_cdhit_clustering(self, **kwargs):
         ''' Runs a single instance of cd-hit-est ''' 
 
-        inputs = {}
-        inputs.update(self.default_parameters)
-        inputs.update(kwargs)
+        inputs_dict = {}
+        inputs_dict.update(self.default_parameters)
+        inputs_dict.update(kwargs)
 
         # Use defaults if no others were passed 
-        if 'infiles' not in inputs:
-            inputs['infile'] = self.input_files
+        if 'infiles' not in inputs_dict:
+            inputs_dict['infile'] = self.input_files
+            
+        if 'inpath' not in inputs_dict:
+            inputs_dict['inpath'] = self.inpath
             
         # (outfiles1, outfiles2, outpath, cmd) 
         #    = cluster_cdhit(infiles, inpath=None, outpath=None, 
         #                  outfile_postfix='-clustered', c_thresh=None, 
         #                  n_filter=None, threads=1, mem=0, maskN=True, 
         #                  allvall = False)
-        out = cluster_cdhit(**inputs)
+        out = cluster_cdhit(**inputs_dict)
         
         return out
 
@@ -74,7 +77,10 @@ class Clustering(object):
             # Use defaults if no others were passed 
             if 'infiles' not in inputs_dict:
                 inputs_dict['infiles'] = self.input_files
-    
+                
+            if 'inpath' not in inputs_dict:
+                inputs_dict['inpath'] = self.inpath
+        
             dirname = self.c.experiment_name + '_clustered_reads'
             outfile_postfix = '-clustered'
 
@@ -104,7 +110,7 @@ class Clustering(object):
             
         return outputs_list
 
-def cluster_cdhit(infiles, inpath=None, outpath=None, outfile_postfix='-clustered', 
+def cluster_cdhit(infiles, inpath='', outpath='', outfile_postfix='-clustered', 
                   c_thresh=None, n_filter=None, threads=1, mem=0, maskN=True, 
                   allvall = False):
     ''' Run CD-HIT in parallel on list of fasta files. Each file is clustered seperately.
@@ -118,9 +124,9 @@ def cluster_cdhit(infiles, inpath=None, outpath=None, outfile_postfix='-clustere
     
     '''
     # input check
-    if infiles is not list: 
+    if type(infiles) is not list: 
         infiles = [infiles]
-    
+          
     # Define re patterns 
     pattern1 = re.compile('^\.')
     pattern2 = re.compile('%$')

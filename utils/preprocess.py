@@ -424,7 +424,7 @@ class Preprocessor(object):
         print 'Total of {0} tags corrected.'.format(total_numcorrected)
                 
         total_t = time.time() - toc    
-        print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+        print 'Processed all files in {0}\n'.format(time.strftime('%H:%M:%S', 
                                                             time.gmtime(total_t)))
         # Update internal Variables
         self.next_input_files = outnames
@@ -453,7 +453,7 @@ class Preprocessor(object):
         
         RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
          
-        print ('Spliting {0} file(s) based on MID tags'
+        print ('\nSpliting {0} file(s) based on MID tags'
                '').format(RecCycler.numfiles)
         
         outfiles_dict = {}
@@ -485,12 +485,11 @@ class Preprocessor(object):
                 else:                   
                     fvarname = 'f_' + recMIDtag                
                     SeqIO.write(rec, vars()[fvarname], 'fastq');
-                    tag_counter[tag] += 1
+                    tag_counter[recMIDtag] += 1
 
             # Flush and Close Files for each tag  
             for tag, desc in dbtags.iteritems():
-                
-                
+
                 fvarname = 'f_' + tag
                 vars()[fvarname].flush()
                 vars()[fvarname].close()
@@ -503,6 +502,8 @@ class Preprocessor(object):
             
             # Update counts
             for tag, desc in dbtags.iteritems():
+            
+                set_trace()
             
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
                 current_value = row[0]['read_count']
@@ -561,8 +562,8 @@ class Preprocessor(object):
         count = 0
         outfile_list = []
     
-        print ('Removing MID tags, trimming reads and converting {0} files to'
-               ' fasta format').format(RecCycler.numfiles)
+        print ('\nRemoving MID tags, trimming reads and converting {0} files to'
+               ' fasta format\n').format(RecCycler.numfiles)
     
         # Generator to trim off MID tag and end of read.
         for seqfilegen in RecCycler.seqfilegen:
