@@ -21,7 +21,7 @@ start_dir = os.getcwd()
 #lane8path = '/space/musselle/data/RAD-seq/gazelles-zebras/raw-data'
 path = '/space/musselle/data/RAD-seq/gazelles-zebras/raw-data'
 
-maxnumseq = 100000
+maxnumseq = 1000000
 
 #RecCyclerL6 = Cycler(filepattern='*[0-9].fastq.bgzf', data_inpath = lane6path, maxnumseq=maxnumseq)
 #RecCyclerL8 = Cycler(filepattern='*[0-9].fastq.bgzf', data_inpath = lane8path, maxnumseq=maxnumseq)
@@ -29,7 +29,7 @@ maxnumseq = 100000
 # Just from lane 8
 RecCycler = Cycler(filepattern='lane8*[0-9].fastq.bgzf', data_inpath = path, maxnumseq=maxnumseq)
 
-output_filename = 'testset_1m.fastq.bgzf'
+output_filename = 'testset_10m.fastq.bgzf'
 
 print '\nGenerating a dataset of the first {0} reads from each file.'.format(maxnumseq)
 

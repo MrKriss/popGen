@@ -62,15 +62,14 @@ class Preprocessor(object):
         Each record is a tuple. 
         
         filename is a globed for without file extension.
-        
         '''
 
         # Remove filename postfixes if present         
         filename_parts = filename.split('.')
-        if filename_parts[0].endswith('-clean'):
-            filename_parts[0] = filename_parts[0][:-6]
-        if filename_parts[0].endswith('-pass'):
-            filename_parts[0] = filename_parts[0][:-5]
+        if filename_parts[0].endswith(self.c.tag_processed_files_postfix):
+            filename_parts[0] = filename_parts[0][:-len(self.c.tag_processed_files_postfix)]
+        if filename_parts[0].endswith(self.c.filtered_files_postfix):
+            filename_parts[0] = filename_parts[0][:-len(self.c.filtered_files_postfix)]
         
         filename = '.'.join(filename_parts)
          
@@ -440,7 +439,7 @@ class Preprocessor(object):
         start_dir = os.getcwd() 
         
         if outpath is None:
-            outpath = c.tag_processed_outpath
+            outpath = c.tag_split_outpath
         
         if out_filename is None:
             out_filename = c.experiment_name
@@ -456,10 +455,15 @@ class Preprocessor(object):
         print ('\nSpliting {0} file(s) based on MID tags'
                '').format(RecCycler.numfiles)
         
+        
         outfiles_dict = {}
+        
+        first_run = 1
+        
         for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
+            # This may be in the wrong place, or I may not be reseting the file I append too!!!
             tag_counter = Counter()
             
             dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
@@ -472,10 +476,20 @@ class Preprocessor(object):
             for tag, desc in dbtags.iteritems():
                 
                 fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
-                fvarname = 'f_' + tag
-                vars()[fvarname] = bgzf.open(os.path.join(outpath, fname), 'a')
-                outfiles_dict[fvarname] = fname
+                fnamevar = 'f_' + tag
+
+                # Check that files don't already exist
+                if first_run:
+                    # If file already exists, overwrite it.
+                    if os.path.isfile(os.path.join(outpath, fname)):
+                        f = open(os.path.join(outpath, fname), 'w')
+                        f.close()
+                    
+                vars()[fnamevar] = bgzf.open(os.path.join(outpath, fname), 'a')
+                outfiles_dict[fnamevar] = fname
     
+            first_run = 0
+            
             for rec in recordgen:
         
                 recMIDtag = rec.seq[:MID_length].tostring()
@@ -483,28 +497,26 @@ class Preprocessor(object):
                 if recMIDtag not in dbtags:
                     raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
                 else:                   
-                    fvarname = 'f_' + recMIDtag                
-                    SeqIO.write(rec, vars()[fvarname], 'fastq');
+                    fnamevar = 'f_' + recMIDtag                
+                    SeqIO.write(rec, vars()[fnamevar], 'fastq');
                     tag_counter[recMIDtag] += 1
 
             # Flush and Close Files for each tag  
             for tag, desc in dbtags.iteritems():
 
-                fvarname = 'f_' + tag
-                vars()[fvarname].flush()
-                vars()[fvarname].close()
+                fnamevar = 'f_' + tag
+                vars()[fnamevar].flush()
+                vars()[fnamevar].close()
                 
                 # Update datafiles in database
-                filename = outfiles_dict[fvarname]
+                filename = outfiles_dict[fnamevar]
                 self.db.add_datafile(filename, [desc])
 
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
             # Update counts
             for tag, desc in dbtags.iteritems():
-            
-                set_trace()
-            
+                  
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
                 current_value = row[0]['read_count']
                 if current_value is None:
@@ -701,19 +713,6 @@ class Preprocessor(object):
                 tags = self.get_data4file(fname, fields=['MIDtag'])
                 f.MIDlength =  len(tags[0][0])
             
-            # Must calculate MIDlength, but this may vary between files
-#            if self.c.barcode_files_setup == 'individual':
-#                
-#                fname = self.current_file.split('.')[0].split('-')[0]
-#                
-#                if f.target_file is None or f.target_file != fname:
-#                    f.target_file = fname
-#                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
-#                
-#            if self.c.barcode_files_setup == 'global':
-#                if f.MIDlength is None: 
-#                    f.MIDlength = len(self.c.MIDtags.keys()[0])
-            
             cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
             cutsite_dist = ed.distance(target_cutsite, cutsite)
             
@@ -755,19 +754,6 @@ class Preprocessor(object):
                 tags = self.get_data4file(fname, fields=['MIDtag'])
                 f.MIDlength =  len(tags[0][0])
             
-#            if self.c.barcode_files_setup == 'individual':
-#                
-#                fname = self.current_file.split('.')[0].split('-')[0]
-#                
-#                if f.target_file is None or f.target_file != fname:
-#                    f.target_file = fname
-#                    f.MIDlength =  len(self.c.MIDtags[f.target_file].keys()[0])
-#                
-#            if self.c.barcode_files_setup == 'global':
-#                if f.MIDlength is None: 
-#                    f.MIDlength = len(self.c.MIDtags.keys()[0])
-            
-
             cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
             if cutsite.endswith(overhang):
                 return True
