@@ -187,7 +187,8 @@ class PopGen_DB(Database):
        
         Database.__init__(self, db_file, recbyname) 
     
-        self.create_tables()
+        if not os.path.exists(db_file):
+            self.create_tables()
        
     def create_tables(self):
     
@@ -210,16 +211,44 @@ class PopGen_DB(Database):
             curs.execute('DROP TABLE IF EXISTS datafiles ')
             curs.execute(''' CREATE TABLE datafiles (
             datafileId INTEGER PRIMARY KEY, 
-            filename TEXT UNIQUE )''')
+            filename TEXT UNIQUE,
+            type TEXT )''')
             
             curs.execute('DROP TABLE IF EXISTS samples_datafiles')
             curs.execute(''' CREATE TABLE samples_datafiles (
             linkId INTEGER PRIMARY KEY, 
             sampleId INTEGER, 
             datafileId INTEGER, 
-            FOREIGN KEY(sampleId) REFERENCES samples(Id)  
-            FOREIGN KEY(datafileId) REFERENCES datafiles(Id) )''')
-    
+            FOREIGN KEY(sampleId) REFERENCES samples(sampleId)  
+            FOREIGN KEY(datafileId) REFERENCES datafiles(datafileId) )''')
+            
+            curs.execute('DROP TABLE IF EXISTS experiments ')
+            curs.execute(''' CREATE TABLE experiments (
+            experimentId INTEGER PRIMARY KEY, 
+            name TEXT UNIQUE,
+            type TEXT,
+            description TEXT, 
+            config BLOB )''')
+            
+            curs.execute('DROP TABLE IF EXISTS parameters ')
+            curs.execute(''' CREATE TABLE parameters (
+            parameterId INTEGER PRIMARY KEY, 
+            CD-HIT_parameters TEXT,
+            filtering_parameters INTEGER, 
+            experimentId INTEGER, 
+            FOREIGN KEY(experimentId) REFERENCES experiments(experimentId) )''')
+            
+            curs.execute('DROP TABLE IF EXISTS results ')
+            curs.execute(''' CREATE TABLE results (
+            resultId INTEGER PRIMARY KEY, 
+            sampleId INTEGER,
+            experimentId INTEGER )''')
+            
+            curs.execute('DROP TABLE IF EXISTS results_datafiles ')
+            curs.execute(''' CREATE TABLE results_datafiles (
+            resultId INTEGER PRIMARY KEY, 
+            datafileId INTEGER )''')
+            
     def add_barcodes_datafiles(self, barcodefiles, datafiles):
         ''' Add entries to samples, datafiles and mappings table given a list of barcodefiles 
         and a list of datafiles.'''
@@ -274,6 +303,46 @@ class PopGen_DB(Database):
                 curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
                                             VALUES(?,?)''', (sample_id, datafile_id))
 
+    def add_experiment_and_samples(self, c, barcodefiles):
+        ''' Add appropriate entries into mappings table for samples_experiments. '''
+
+        with self.con as con:
+            curs = con.cursor()
+
+            # Update experiments table            
+            curs.execute('''OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
+                            (c.experiment_name, 'clustering', c.experiment_description) )
+            expid = curs.lastid
+            self.add_binary(c, 'config', id=expid, table='experiments')
+            
+            for barcode in barcodefiles:
+                with open(barcode, 'r') as f: 
+                    for line in f:
+                        line = line.strip().split()
+                        MIDtag = line[0] 
+                        description = line[1]
+
+                        # Find ID of last scanned Barcode                             
+                        curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (description,))
+                        sample_id = curs.fetchone()['sampleId']
+                        
+                        curs.execute('''INSERT INTO results(sampleId, datafileId)
+                                        VALUES(?,?)''', (sample_id, expid))
+
+
+
+            
+#    def add_experiment(self, experiment_details_dict, type, ):
+#        ''' Add an experiment to the '''
+#            
+
+    def update_repalce_table(self, tablename, id = , column_values_dict):
+        ''' Updates values in tablename with values in the passed dictionary.
+        
+        If id is not given, a new row is inserted using INSERT OR REPLACE '''
+        
+            
+            
             
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.

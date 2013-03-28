@@ -47,7 +47,6 @@ class Preprocessor(object):
             self.c = ConfigClass()
             # Defaults for other parameters
             self.filter_functions = None 
-            self.c.barcode_files_setup = None   
         
         if db:
             self.db = db
@@ -773,45 +772,5 @@ class Preprocessor(object):
 
 
 if __name__ == '__main__':
-    
-#==============================================================================
-    ''' RUNS SCRIPT FOR SMALL TEST SET '''
-#===============================================================================
+    pass
 
-    starting_dir = os.getcwd()
-    
-    LANE = '6'
-    
-    # Path setup
-    data_inpath = '/home/pgrad/musselle/ubuntu/workspace/popGen/testdata'
-    barcode_inpath = '/space/musselle/datasets/gazellesAndZebras/barcodes'
-    raw_files = ['small_test_set.fastq']
-    
-    # Setup Filters
-    outdir = 'filtered_reads'
-    filter_functions = [setup_illumina_filter(), 
-                        setup_propN_filter(0.1),
-                        setup_phred_filter(25),
-                        setup_cutsite_filter('TCGAGG', 2),
-                        setup_overhang_filter('TCGAGG', 'GG', 0)]
-    
-    filter_reads_pipeline(infiles=raw_files, data_inpath=data_inpath, filterfuncs=filter_functions, 
-                              outdir=outdir, log_fails=True)
-    # Update names and path
-    filtered_files = []
-    for name in raw_files:
-        temp = name.split('.')
-        temp[0] = temp[0] + '-pass'
-        temp = '.'.join(temp) 
-        filtered_files.append(temp)
-    filtered_data_inpath = os.path.join(data_inpath, outdir)
-      
-    cleaned_file_postfix = '-clean' 
-    cleaned_outdir = '' # 'cleaned_data'
-    barcode_pattern = '*[' + LANE + '].txt'
-
-    process_MIDtag(infiles=filtered_files, barcodes =barcode_pattern,
-                   barcode_pattern=True, 
-                   data_inpath=filtered_data_inpath, barcode_path=barcode_inpath,
-                   outfile_postfix=cleaned_file_postfix, outdir=cleaned_outdir, 
-                   MIDtag_len = 6, max_edit_dist = 1, cutsite_len = 6)

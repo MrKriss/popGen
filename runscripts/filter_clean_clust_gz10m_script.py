@@ -17,27 +17,28 @@ from cluster import Clustering
 
 from database import PopGen_DB
 
+starting_dir = os.getcwd()
+c = ConfigClass()
+
 #==============================================================================
 ''' Filter/Clean/Cluster SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD data Lane 6'''
 #===============================================================================
 
-experiment_name = 'gz' 
+# These should be unique for each experiment, else results table is overwritten
+c.experiment_name = 'gz01'
+c.experiment_description = '''Clustering gazelles and zebras based on individual MIDtags'''
 
 #===============================================================================
 # Setup Configuration
 #===============================================================================
-starting_dir = os.getcwd()
-
-c = ConfigClass()
-
-c.experiment_name = experiment_name
 
 # Work out where data is stored on this machine
 prefix = get_data_prefix()
 
 # Set paths 
-#c.data_inpath =  joinp(prefix,'gazelles-zebras') 
-c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset') 
+#c.data_inpath =  joinp(prefix,'gazelles-zebras', 'raw-data') 
+c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset')
+ 
 c.barcode_inpath = joinp(prefix,'gazelles-zebras', 'barcodes')
 c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
 c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
@@ -58,9 +59,6 @@ barcodes.sort()
 c.barcode_files = barcodes
 os.chdir(starting_dir)
 
-# Set barcode file mode  
-c.barcode_files_setup = 'global' # one global file(s) for all barcodes used 
-
 # Set interim file suffixes
 c.filtered_files_postfix = '-pass'
 c.tag_processed_files_postfix = '-clean'
@@ -76,7 +74,6 @@ c.log_fails = False
 #===============================================================================
 # Make Database for samples
 #===============================================================================
-
 db_path = joinp(prefix,'gazelles-zebras') 
 db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True)
         
@@ -86,10 +83,8 @@ L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt'))
 #r1 = re.compile('lane6*.bgzf')
 #r2 = re.compile('lane8*.bgzf')
 
-
 #L6_datafiles = filter(r1.match, c.raw_input_files)
 #L8_datafiles = filter(r2.match, c.raw_input_files)
-
 
 # Associate subsets of the data files list to their respective barcode files.   
 #db.add_barcodes_datafiles(L6_barcode_files, L6_datafiles)
@@ -100,6 +95,11 @@ r3 = re.compile('testset_10m.fastq.bgzf')
 datafiles = filter(r3.match, c.raw_input_files)
 db.add_barcodes_datafiles(L8_barcode_files, datafiles)
 #db.add_barcodes_datafiles(L6_barcode_files, datafiles)
+
+# Add/Replace Experimental details and config object in database
+newid = db.insert('''OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
+                  (experiment_name, 'clustering', experiment_description) )
+db.add_binary(c, 'config', id=newid, table='experiments')
 
 # Define Preprocessing Class
 Preprocess = Preprocessor(c, db) 

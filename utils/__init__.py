@@ -152,9 +152,9 @@ def get_data_prefix():
     if socket.gethostname() == 'yildun':
         prefix = '/space/musselle/data/RAD-seq'
     elif socket.gethostname() == 'luca':
-        prefix = '/home/musselle/san/data'
+        prefix = '/home/musselle/san/data/RAD-seq'
     elif socket.gethostname() == 'gg-pc6':
-        prefix = '/home/musselle/data'
+        prefix = '/home/musselle/data/RAD-seq'
 
     return prefix
 

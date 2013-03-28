@@ -18,11 +18,12 @@ class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
     
-    def __init__(self, config, infiles, inpath):
+    def __init__(self, config, db, infiles, inpath):
 
         self.c = config
         self.input_files = infiles
         self.inpath = inpath
+        self.db = db
              
         # Default Vars for clustering 
         self.default_parameters = { 'c_thresh' : 0.90,
@@ -30,6 +31,7 @@ class Clustering(object):
                                     'threads' : 1,
                                     'mem' : 0,
                                     'maskN' : False}
+        
         
     def run_single_cdhit_clustering(self, **kwargs):
         ''' Runs a single instance of cd-hit-est ''' 
