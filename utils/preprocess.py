@@ -36,7 +36,6 @@ class Preprocessor(object):
     
     Other option is to use the workflow function to chain the outputs of function together
     
-    
     '''   
     def __init__(self, c=None, db=None):
         
@@ -453,7 +452,6 @@ class Preprocessor(object):
          
         print ('\nSpliting {0} file(s) based on MID tags'
                '').format(RecCycler.numfiles)
-        
         
         outfiles_dict = {}
         

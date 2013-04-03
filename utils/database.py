@@ -5,7 +5,6 @@ class to interface with a sqlite database
 
 @author: musselle
 '''
-
 import os
 import sys
 import cPickle as pkl
@@ -24,8 +23,7 @@ class Database(object):
     def __init__(self, dbfile="default.db", recbyname=True):
         """ 
         recbyname - sets returned records by select to be callable by column names 
-        """
-        
+        """        
         if os.path.exists(dbfile):
             print 'Database found with matching file name.'
             print 'Connecting to database {0}'.format(dbfile)
@@ -54,8 +52,7 @@ class Database(object):
         self.con.close()
         
     def new_table(self, name, headers):
-        """ Create a table with specified headers """
-        
+        """ Create a table with specified headers """       
         self.tables.append(name)
         
         with self.con as con:        
@@ -63,8 +60,7 @@ class Database(object):
             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
         
     def overwrite_table(self, name, headers):
-        """ Create or overwrite a table if it already exists with specified headers """
-        
+        """ Create or overwrite a table if it already exists with specified headers """       
         if name not in self.tables: 
             self.tables.append(name)
         
@@ -89,7 +85,6 @@ class Database(object):
         
         num = max number to display. default 0 is all records returned.
         """    
-
         with self.con as con:     
             cur = con.cursor()
             # SELECT column_name(s) FROM table_name
@@ -122,7 +117,6 @@ class Database(object):
     
     def insert(self,cmd):
         """ insert a new record to database and return the new primary key """
-
         newID = 0
         with self.con as con:        
             cur = con.cursor()
@@ -282,7 +276,8 @@ class PopGen_DB(Database):
                                             VALUES(?,?)''', (sample_id, datafile_id))
             
     def add_datafile(self, datafile, sample_desc_list):
-        ''' Add ONE new file to the datafile table along with appropriate entries into mappings table. '''
+        ''' Add ONE new file to the datafile table along with appropriate entries into 
+        samples_datafiles mappings table. '''
         
         with self.con as con:
             curs = con.cursor()
@@ -310,7 +305,7 @@ class PopGen_DB(Database):
             curs = con.cursor()
 
             # Update experiments table            
-            curs.execute('''OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
+            curs.execute('''INSERT OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
                             (c.experiment_name, 'clustering', c.experiment_description) )
             expid = curs.lastid
             self.add_binary(c, 'config', id=expid, table='experiments')
