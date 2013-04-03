@@ -14,16 +14,18 @@ import string
 from threading  import Thread
 from Queue import Queue, Empty
 
+from collections import Counter, defaultdict
+
 class Clustering(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
-    
     def __init__(self, config, db, infiles, inpath):
 
         self.c = config
         self.input_files = infiles
         self.inpath = inpath
         self.db = db
+        self.clusterd_postfix = 
              
         # Default Vars for clustering 
         self.default_parameters = { 'c_thresh' : 0.90,
@@ -34,7 +36,7 @@ class Clustering(object):
         
         
     def run_single_cdhit_clustering(self, **kwargs):
-        ''' Runs a single instance of cd-hit-est ''' 
+        ''' Runs cd-hit-est over the list of files given for a single set of parameters. ''' 
 
         inputs_dict = {}
         inputs_dict.update(self.default_parameters)
@@ -47,17 +49,29 @@ class Clustering(object):
         if 'inpath' not in inputs_dict:
             inputs_dict['inpath'] = self.inpath
             
-        # (outfiles1, outfiles2, outpath, cmd) 
+        # (outfiles, outfiles.clstr, outpath, cmd) 
         #    = cluster_cdhit(infiles, inpath=None, outpath=None, 
         #                  outfile_postfix='-clustered', c_thresh=None, 
         #                  n_filter=None, threads=1, mem=0, maskN=True, 
         #                  allvall = False)
         out = cluster_cdhit(**inputs_dict)
         
+        # Get cluster size summary counter 
+        counter = cluster_summary_counter(infile=out[0], mode='total', report=True)
+        
+        # Update database
+        self.db.add_results .....
+        
+            db.
+        
+        
+        
+        
         return out
 
     def run_batch_cdhit_clustering(self, batch_parameters, **kwargs):
-        ''' Runs cdhit in serial for each entry in batch_parameters over all files passed in.
+        ''' Runs cd-hit-est over the list of files given, for each setup listed in
+        batch_parameters.
         
         Elements of batch_parameters are dictionaries containing the parameters
         to be changed from the default value. 
@@ -198,8 +212,146 @@ def cluster_cdhit(infiles, inpath='', outpath='', outfile_postfix='-clustered',
         returned_outfiles_list2[i] = f + '.clstr'         
     
     return (returned_outfiles_list1, returned_outfiles_list2, outpath, cmd) 
+
+
+def cluster_summary_counter(infile, mode='by_seqlen', report=True):
+    ''' Takes cluster file output by CD-Hit and produces two Counter for the 
+    
+    modes:
+    counter_per_sequence_length = { 'sequence_length' : Counter(cluster_size) }
+    total = Counter(cluster_sizes_for _all_sequences)
+    
+    '''
+
+    if not infile.endswith('.clstr'):
+        infile = infile + '.clstr'
+    
+    # Data structure to store cluster size info is a DefaultDictionary of Counter dictionaries.
+    # ds = { 'seq_len' : Counter(cluster_size)  }
+    # empty keys of ds are initialised with a Counter dictionary. 
+    
+    ds = defaultdict(Counter)
+
+    # Helper vars
+    cluster_size_counter = Counter()
+    seq_length_counter = Counter()
+
+    seq_in_cluster = 0
+    rep_length = 0
+
+    print 'Generating cluster summary for  %s ...' % (infile)
+
+    try:
+        with open(infile, 'rb')  as cluster_file:   
+            
+            for line in cluster_file:              
+                line = line.strip()
+                
+                if line.startswith('>'):
+                    # This is start of new cluster
+                    if seq_in_cluster and rep_length:
+                        # This number is the size of last cluster
+                        # Store result
+                        ds[str(rep_length)][str(seq_in_cluster)] += 1
+                        seq_in_cluster = 0
+                        rep_length = 0
+                        
+                elif line.endswith('*'): 
+                    # This is the representative sequence for the cluster
+                    rep_length = int(line.split()[1].strip('nt,'))
+                    seq_in_cluster += 1
+                else:
+                    seq_in_cluster += 1
+            
+            # Got to end of file but still one more cluster to add
+            ds[str(rep_length)][str(seq_in_cluster)] += 1
+    
+    except IOError:
+        print "Error: can\'t find file or read data"
+    else:
+        print "Finished Scanning cluster file."
+    
+    # Construct total cluster size counter 
+    total_cluster_size_counter = Counter()
+    for v in ds.itervalues():
+        total_cluster_size_counter.update(v)
+        
+    # Construct representative sequence length counter 
+    seq_len_counter = Counter()
+    for k in ds.iterkeys():
+        seq_len_counter.update(int(k)) 
+    
+    if report:
+        print 'Top 5 Cluster Sizes: ', total_cluster_size_counter.most_common()[:5]
+        print 'Top 5 Sequence Lengths: ', seq_len_counter.most_common()[:5]
+    
+    # Decide what to output    
+    if mode == 'total':
+        return total_cluster_size_counter
+    elif mode == 'by_seqlen'
+        return ds
+    
+def hist_counter(counter, **kwargs):
+    ''' Construct a histogram from a Counter Dictionary '''
+    
+    data = np.array(list(counter.elements()), dtype = np.int)
+
+    plt.hist(data, histtype='step', **kwargs)
+    plt.title("Cluster Size Distribution")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+#    plt.legend()
+    plt.show()
     
 
+def plot_counter( bins,cluster_length_bins=None, mincutoff=10, bins=5000, report=True, plot_hist=True,):
+    
+    
+    # Process ds to extract needed data for histergrams
+    if cluster_length_bins is not None:
+        # Update counters for each bin in cluster_length_bins
+        for cluster_size, seq_len_c in ds.iteritems():
+
+            for tup in cluster_length_bins:   
+                name = 'Length-' + str(tup)
+                 
+                if len(tup) == 1:
+                    # single number bin
+                    target_key = str(tup[0])
+                    if seq_len_c.has_key(target_key):
+                        vars()[name][cluster_size] += seq_len_c[target_key]
+        
+                elif len(tup) == 2:
+                    # range bin
+                    for seq_length in seq_len_c.iterkeys():
+                        if int(seq_length) >= tup[0] and int(seq_length) <= tup[1]:
+                            vars()[name][cluster_size] += seq_len_c[seq_length]
+    
+    #===============================================================================
+    # Plot results
+    #===============================================================================
+    
+    # TODO Add a level of input checking so if Counter is empty, an empty histogram is plotted
+    
+    if plot_hist:
+    
+        plt.figure()
+        if cluster_length_bins is not None:   
+            for tup in cluster_length_bins:   
+                name = 'Length-' + str(tup)
+                
+                hist_counter(vars()[name], bins=bins, label=name, range=(mincutoff, 10000))
+         
+        hist_counter(cluster_size_counter, bins=bins, label='All Seq Lengths', range=(mincutoff, 10000))   
+        plt.title("Cluster Size Distribution")
+        plt.xlabel("Value")
+        plt.ylabel("Frequency")
+        plt.legend()
+        plt.show()
+    
+    
+    
+# Deprecated
 def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
     ''' Run CD-HIT in parallel on one large fasta file'''
     
@@ -217,6 +369,7 @@ def cluster_cdhit_para(infile, outfile, c_thresh, n_filter, maskN=True):
 
     call(shlex.split(cd_hit_path + cmd))
 
+# Depricated
 def summary(infile, data_inpath=None, cluster_sizes=None, seq_lengths=None):
     ''' Display summary of cluster sizes '''
      

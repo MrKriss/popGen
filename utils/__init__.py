@@ -15,10 +15,6 @@ from Bio import SeqIO
 
 # TODO: Write function to sumarise fails.log files
 
-
-
-
-
 class Cycler(object):
     ''' Object to hold generators that yield Sequence record objects or
     generators for all sequences records from the given file list

@@ -228,20 +228,22 @@ class PopGen_DB(Database):
             curs.execute(''' CREATE TABLE parameters (
             parameterId INTEGER PRIMARY KEY, 
             CD-HIT_parameters TEXT,
-            filtering_parameters INTEGER, 
+            filtering_parameters TEXT, 
             experimentId INTEGER, 
             FOREIGN KEY(experimentId) REFERENCES experiments(experimentId) )''')
             
-            curs.execute('DROP TABLE IF EXISTS results ')
-            curs.execute(''' CREATE TABLE results (
-            resultId INTEGER PRIMARY KEY, 
+            curs.execute('DROP TABLE IF EXISTS clust_results')
+            curs.execute(''' CREATE TABLE clust_results (
+            resultsId INTEGER PRIMARY KEY, 
             sampleId INTEGER,
-            experimentId INTEGER )''')
+            parameterId INTEGER,
+            experimentId INTEGER, 
+            cluster_counter BLOB )''')
             
-            curs.execute('DROP TABLE IF EXISTS results_datafiles ')
-            curs.execute(''' CREATE TABLE results_datafiles (
-            resultId INTEGER PRIMARY KEY, 
-            datafileId INTEGER )''')
+#            curs.execute('DROP TABLE IF EXISTS results_datafiles ')
+#            curs.execute(''' CREATE TABLE results_datafiles (
+#            resultId INTEGER PRIMARY KEY, 
+#            datafileId INTEGER )''')
             
     def add_barcodes_datafiles(self, barcodefiles, datafiles):
         ''' Add entries to samples, datafiles and mappings table given a list of barcodefiles 
@@ -298,17 +300,32 @@ class PopGen_DB(Database):
                 curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
                                             VALUES(?,?)''', (sample_id, datafile_id))
 
-    def add_experiment_and_samples(self, c, barcodefiles):
+    def add_experiment(self, name=None, exp_type='', description=None, config):
         ''' Add appropriate entries into mappings table for samples_experiments. '''
+
+        if name == None:
+            name = config.experiment_name
+        if description == None:
+            description = config.experiment_description
 
         with self.con as con:
             curs = con.cursor()
 
             # Update experiments table            
-            curs.execute('''INSERT OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
-                            (c.experiment_name, 'clustering', c.experiment_description) )
+            curs.execute('''INSERT OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)'''.format(),
+                            (config.experiment_name, exp_type, config.experiment_description) )
             expid = curs.lastid
             self.add_binary(c, 'config', id=expid, table='experiments')
+            
+    def add_samples_paramtered(self):
+            
+            
+            
+            
+            
+            
+            
+            
             
             for barcode in barcodefiles:
                 with open(barcode, 'r') as f: 
@@ -321,9 +338,11 @@ class PopGen_DB(Database):
                         curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (description,))
                         sample_id = curs.fetchone()['sampleId']
                         
-                        curs.execute('''INSERT INTO results(sampleId, datafileId)
+                        curs.execute('''INSERT INTO results(sampleId, experimentId)
                                         VALUES(?,?)''', (sample_id, expid))
 
+
+    def add_parameters(self, c, ):
 
 
             
