@@ -17,6 +17,7 @@ from Bio import SeqIO
 
 import sqlite3
 from utils import get_data_prefix
+from general_utilities import set_trace
 
 class Database(object):
     """ Class to handle all python communication with a sqlite database file """
@@ -139,11 +140,14 @@ class Database(object):
         if table is None: 
             table=self.tables[0]       
 
+        if table.endswith('s'):
+            tablename = table[:-1]
+
         with self.con as con:        
             cur = con.cursor()
             b = sqlite3.Binary(pkl.dumps(obj))             
             # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-            cur.execute('UPDATE {0} SET {1}=? WHERE id=?'.format(table, col), (b,id))
+            cur.execute('UPDATE {0} SET {1}=? WHERE {2}=?'.format(table, col, tablename+'Id'), (b,id))
         
     def get_binary(self, col, id, table):
         """ Retrieve binary object in the database """
@@ -177,11 +181,15 @@ class Database(object):
         
 class PopGen_DB(Database):  
    
-    def __init__(self, db_file="sample.db", recbyname=True):
+    def __init__(self, db_file="sample.db", recbyname=True, new=False):
        
+        create_tables = 0
+        if not os.path.exists(db_file) or new:
+            create_tables = 1
+
         Database.__init__(self, db_file, recbyname) 
     
-        if not os.path.exists(db_file):
+        if create_tables:
             self.create_tables()
        
     def create_tables(self):
@@ -201,12 +209,14 @@ class PopGen_DB(Database):
             description TEXT UNIQUE, 
             read_count INTEGER,
             read_file TEXT) ''')
+            self.tables.append('samples')
             
-            curs.execute('DROP TABLE IF EXISTS datafiles ')
+            curs.execute('DROP TABLE IF EXISTS datafiles')
             curs.execute(''' CREATE TABLE datafiles (
             datafileId INTEGER PRIMARY KEY, 
             filename TEXT UNIQUE,
             type TEXT )''')
+            self.tables.append('datafiles')
             
             curs.execute('DROP TABLE IF EXISTS samples_datafiles')
             curs.execute(''' CREATE TABLE samples_datafiles (
@@ -215,37 +225,46 @@ class PopGen_DB(Database):
             datafileId INTEGER, 
             FOREIGN KEY(sampleId) REFERENCES samples(sampleId)  
             FOREIGN KEY(datafileId) REFERENCES datafiles(datafileId) )''')
+            self.tables.append('samples_datafiles')
             
             curs.execute('DROP TABLE IF EXISTS experiments ')
             curs.execute(''' CREATE TABLE experiments (
             experimentId INTEGER PRIMARY KEY, 
             name TEXT UNIQUE,
             type TEXT,
-            description TEXT, 
+            description TEXT,
             config BLOB )''')
+            self.tables.append('experiments')
             
             curs.execute('DROP TABLE IF EXISTS parameters ')
             curs.execute(''' CREATE TABLE parameters (
             parameterId INTEGER PRIMARY KEY, 
-            CD-HIT_parameters TEXT,
+            CDHIT_parameters TEXT,
             filtering_parameters TEXT, 
+            UNIQUE(CDHIT_parameters, filtering_parameters) ON CONFLICT IGNORE )''')
+            self.tables.append('parameters')
+            
+            curs.execute('DROP TABLE IF EXISTS experiments_parameters')
+            curs.execute(''' CREATE TABLE experiments_parameters (
+            linkId INTEGER PRIMARY KEY, 
             experimentId INTEGER, 
-            FOREIGN KEY(experimentId) REFERENCES experiments(experimentId) )''')
+            parameterId INTEGER, 
+            FOREIGN KEY(experimentId) REFERENCES experiments(experimentId)  
+            FOREIGN KEY(parameterId) REFERENCES parameters(parameterId) )''')
+            self.tables.append('experiments_parameters')
             
             curs.execute('DROP TABLE IF EXISTS clust_results')
             curs.execute(''' CREATE TABLE clust_results (
-            resultsId INTEGER PRIMARY KEY, 
-            sampleId INTEGER,
+            clust_resultId INTEGER PRIMARY KEY, 
             parameterId INTEGER,
-            experimentId INTEGER, 
+            experimentId INTEGER,
+            datafileId INTEGER, 
             cluster_counter BLOB )''')
+            self.tables.append('clust_results')
             
-#            curs.execute('DROP TABLE IF EXISTS results_datafiles ')
-#            curs.execute(''' CREATE TABLE results_datafiles (
-#            resultId INTEGER PRIMARY KEY, 
-#            datafileId INTEGER )''')
+
             
-    def add_barcodes_datafiles(self, barcodefiles, datafiles):
+    def add_barcodes_datafiles(self, barcodefiles, datafiles, datafile_type=None):
         ''' Add entries to samples, datafiles and mappings table given a list of barcodefiles 
         and a list of datafiles.'''
            
@@ -253,8 +272,8 @@ class PopGen_DB(Database):
             curs = con.cursor()
 
             for datafile in datafiles:
-                curs.execute('''INSERT OR IGNORE INTO datafiles(filename)
-                                        VALUES(?)''', (datafile,))
+                curs.execute('''INSERT OR IGNORE INTO datafiles(filename, type)
+                                        VALUES(?,?)''', (datafile, datafile_type))
         
                 for barcode in barcodefiles:
                     with open(barcode, 'r') as f: 
@@ -277,15 +296,15 @@ class PopGen_DB(Database):
                             curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
                                             VALUES(?,?)''', (sample_id, datafile_id))
             
-    def add_datafile(self, datafile, sample_desc_list):
+    def add_datafile(self, datafile, sample_desc_list, datafile_type=None ):
         ''' Add ONE new file to the datafile table along with appropriate entries into 
         samples_datafiles mappings table. '''
         
         with self.con as con:
             curs = con.cursor()
             
-            curs.execute('''INSERT OR IGNORE INTO datafiles(filename)
-                                        VALUES(?)''', (datafile,))
+            curs.execute('''INSERT OR IGNORE INTO datafiles(filename, type)
+                                        VALUES(?,?)''', (datafile,datafile_type))
             # Find ID of datafile                             
             curs.execute('''SELECT datafileId FROM datafiles WHERE filename=?''', (datafile,))
             datafile_id = curs.fetchone()['datafileId']
@@ -299,9 +318,10 @@ class PopGen_DB(Database):
                 # Update Mapping table
                 curs.execute('''INSERT INTO samples_datafiles(sampleId, datafileId)
                                             VALUES(?,?)''', (sample_id, datafile_id))
+            return datafile_id 
 
-    def add_experiment(self, name=None, exp_type='', description=None, config):
-        ''' Add appropriate entries into mappings table for samples_experiments. '''
+    def add_experiment(self, config, exp_type='', name=None, description=None):
+        ''' Add appropriate entries into experiment table and parameters table. '''
 
         if name == None:
             name = config.experiment_name
@@ -312,52 +332,52 @@ class PopGen_DB(Database):
             curs = con.cursor()
 
             # Update experiments table            
-            curs.execute('''INSERT OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)'''.format(),
+            curs.execute('''INSERT INTO experiments(name, type, description) VALUES (?,?,?)'''.format(),
                             (config.experiment_name, exp_type, config.experiment_description) )
-            expid = curs.lastid
-            self.add_binary(c, 'config', id=expid, table='experiments')
+            exp_id = curs.lastrowid
+            self.add_binary(config, 'config', id=exp_id, table='experiments')
             
-    def add_samples_paramtered(self):
+            return exp_id
             
-            
-            
-            
-            
-            
-            
-            
-            
-            for barcode in barcodefiles:
-                with open(barcode, 'r') as f: 
-                    for line in f:
-                        line = line.strip().split()
-                        MIDtag = line[0] 
-                        description = line[1]
-
-                        # Find ID of last scanned Barcode                             
-                        curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (description,))
-                        sample_id = curs.fetchone()['sampleId']
-                        
-                        curs.execute('''INSERT INTO results(sampleId, experimentId)
-                                        VALUES(?,?)''', (sample_id, expid))
-
-
-    def add_parameters(self, c, ):
-
-
-            
-#    def add_experiment(self, experiment_details_dict, type, ):
-#        ''' Add an experiment to the '''
-#            
-
-    def update_repalce_table(self, tablename, id = , column_values_dict):
-        ''' Updates values in tablename with values in the passed dictionary.
+    def add_results_parameters_datafiles(self, in_filename, out_filename, counter, config, CDHIT_params):
+        ''' Add appropriate entries into results table for samplesID, ExperimetID, paramaterID,  
+        datafilesID and cluster_counter.
         
-        If id is not given, a new row is inserted using INSERT OR REPLACE '''
+        Also Updates related tables: parameters, experiments_parameters, datafiles and samples_datafiles
+        '''    
         
+        with self.con as con:
+            curs = con.cursor()
+            
+            # Update Parameters table
+            curs.execute('''INSERT INTO parameters(filtering_parameters, CDHIT_parameters)
+                                VALUES(?,?)''', (config.filter_funtion_params, CDHIT_params))
+            # Find parameter ID, (entry may already exist so not necessarily lastID added)                           
+            curs.execute('''SELECT parameterId FROM parameters WHERE filtering_parameters=? 
+                            AND CDHIT_parameters=? ''', (config.filter_funtion_params, CDHIT_params))
+            param_id = curs.fetchone()['parameterId']
+            # Update experiments_parameters mappping table
+            curs.execute('''INSERT INTO experiments_parameters(parameterId, experimentId)
+                                            VALUES(?,?)''', (param_id, config.exp_id))
+            
+            # Update Datafiles
+            # Get samples description list for clustering input file  
+            if in_filename.endswith('.fasta'):
+                fname = in_filename.split('.')[:-1] + ['.bgzf']
+                fname = ''.join(fname)
+            recs = self.get_samples4datafile(fname, fields=['description'])
+            sample_desc_list = [rec['description'] for rec in recs]
+            # Add new entry in datafiles table and samples_datafiles mapping table 
+            datafile_id = self.add_datafile(out_filename, sample_desc_list, datafile_type='Clusters')
             
             
+            # Update Results table
+            curs.execute('''INSERT INTO clust_results(experimentId, parameterId, datafileId)
+                                VALUES(?,?,?)''', (config.exp_id, param_id, datafile_id))
+            res_id = curs.lastrowid
+            self.add_binary(counter, 'cluster_counter', id=res_id, table='clust_results')
             
+                                        
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.
         
@@ -385,6 +405,57 @@ class PopGen_DB(Database):
             records = curs.fetchall()
 
         return records
+    
+    def get_clust_results4sample(self, fields, col, target):
+        ''' Return record from '''
+        
+        querry1 = '''SELECT {0} 
+                    FROM samples NATURAL JOIN samples_datafiles 
+                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
+                    WHERE {1} GLOB {2}'''.format(fields, col, target)
+        
+        with self.con as con:
+        
+            curs = con.cursor()
+            curs.execute(querry1, (fields, col, target))
+            records = curs.fetchall()
+
+        return records
+    
+    def get_cluster_counters4sample(self, sample_description): # fields='cluster_counter', col=, target):
+        ''' Return list of cluster_counter dictionaries for a a given sample description '''
+        
+        table_name = 'samples2results'
+        
+#        querry1 = '''SELECT cluster_counter  
+#                    FROM samples NATURAL JOIN samples_datafiles 
+#                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
+#                    WHERE {1} GLOB {2}'''.format(fields, col, target)
+        
+        querry2 = '''SELECT {0} FROM {1} WHERE {2} GLOB ?'''.format('cluster_counter', 
+                        table_name, 'description')
+        
+        with self.con as con:
+            curs = con.cursor()
+        
+            curs.execute('''CREATE VIEW IF NOT EXISTS {0} AS SELECT * 
+                    FROM samples NATURAL JOIN samples_datafiles 
+                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
+                    NATURAL JOIN parameters'''.format(table_name))
+        
+            curs.execute(querry2, (sample_description,))
+            
+            records = curs.fetchall()
+            data = []
+            for row in records:
+                pickled_data = str(row[0])
+                data.append(pkl.loads(pickled_data))
+
+        return data
+    
+    
+        
+    
                                
 if __name__ == '__main__':
     

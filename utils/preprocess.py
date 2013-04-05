@@ -42,6 +42,9 @@ class Preprocessor(object):
         # Setup config file
         if c:
             self.c = c
+            # Set raw files for next input 
+            self.next_input_files = c.raw_input_files
+            self.next_input_path = c.data_inpath     
         else:
             self.c = ConfigClass()
             # Defaults for other parameters
@@ -50,9 +53,6 @@ class Preprocessor(object):
         if db:
             self.db = db
         
-        # Set raw files for next input 
-        self.next_input_files = c.raw_input_files
-        self.next_input_path = c.data_inpath     
         
                            
     def get_data4file(self, filename, fields=['MIDtag']):
@@ -129,7 +129,6 @@ class Preprocessor(object):
         HWI-ST0747:233:C0RH3ACXX:6:2109:3962:10857    2
         HWI-ST0747:233:C0RH3ACXX:6:1159:3231:10224    0
         ...
-        
         
         Final output file is written in same file format as the input file. 
         
@@ -507,7 +506,7 @@ class Preprocessor(object):
                 
                 # Update datafiles in database
                 filename = outfiles_dict[fnamevar]
-                self.db.add_datafile(filename, [desc])
+                self.db.add_datafile(filename, [desc], datafile_type='1sample')
 
             print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
             
@@ -527,6 +526,8 @@ class Preprocessor(object):
 
             # Find sample description            
             fname = os.path.split(outfile)[1]
+            if fname.endswith('.bgzf'):
+                fname = fname[:-5]
             fname_parts = fname.split('-') 
             desc = fname_parts[2]
             
@@ -690,7 +691,6 @@ class Preprocessor(object):
         return false 
         
         '''
-
         if target_cutsite is None:
             target_cutsite = self.c.cutsite
 
@@ -724,7 +724,7 @@ class Preprocessor(object):
         ''' Returns a filter function based on the overhang part of the cutsite. 
         
         The cut site should end with the specified overhang. Those that dont are likely 
-        to be genetic contaminants which have been inedvertantly sequenced, and 
+        to be genetic contaminants which have been inadvertantly sequenced, and 
         therefore should be discarded. 
            
         Reads that mismatch in the overhang region by more than mindist, cause the 

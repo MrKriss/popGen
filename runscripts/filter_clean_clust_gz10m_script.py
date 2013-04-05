@@ -13,7 +13,7 @@ import re
 
 from utils import get_data_prefix
 from preprocess import  Preprocessor, ConfigClass
-from cluster import Clustering
+from cluster import ClusterClass
 
 from database import PopGen_DB
 
@@ -27,6 +27,10 @@ c = ConfigClass()
 # These should be unique for each experiment, else results table is overwritten
 c.experiment_name = 'gz01'
 c.experiment_description = '''Clustering gazelles and zebras based on individual MIDtags'''
+
+# Testing
+#testfile = 'testset_10m.fastq.bgzf'
+testfile = 'testset_500.fastq.bgzf'
 
 #===============================================================================
 # Setup Configuration
@@ -48,7 +52,7 @@ c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 # Setup input files and barcodes
 os.chdir(c.data_inpath)
 #raw_files = glob.glob('*[0-9].fastq.bgzf')
-raw_files = glob.glob('testset_10m.fastq.bgzf')
+raw_files = glob.glob(testfile)
 assert raw_files
 raw_files.sort()
 c.raw_input_files = raw_files 
@@ -70,12 +74,48 @@ c.max_edit_dist = 2
 # FILTERING
 # Whether to log reads that fail the filtering         
 c.log_fails = False
-       
+
 #===============================================================================
-# Make Database for samples
+# Set Parameters
+#===============================================================================
+# Define Preprocessing Class
+Preprocess = Preprocessor(c) 
+
+# For Filtering
+#------------------------------------------------------------------------------ 
+filter_params = {'propN': 0.1,
+                 'phred': 25,
+                 'cutsite_edit_dist' : 2,
+                 'overhang_edit_dist' : 0,
+                 'overhang_target': 'GG'}
+c.filter_funtion_params = str(filter_params)
+
+Preprocess.filter_functions = [
+                Preprocess.make_propN_filter(filter_params['propN']),
+                Preprocess.make_phred_filter(filter_params['phred']),
+                Preprocess.make_cutsite_filter(max_edit_dist=filter_params['cutsite_edit_dist']),
+                Preprocess.make_overhang_filter('TCGAGG', 'GG', filter_params['overhang_edit_dist'])
+                ]
+
+# For Clustering 
+#------------------------------------------------------------------------------ 
+# Default vars for clustering 
+default_vars = { 'c_thresh' : 0.90,
+                 'n_filter' : 8,
+                 'maskN' : False}
+
+# Varibles to change, 1 dictionary per run
+run_parameters = [ 
+                    { 'c_thresh' : 1.0},
+                    { 'c_thresh' : 0.90},
+                   ]
+
+#===============================================================================
+# Make/Update Database for Experiment
 #===============================================================================
 db_path = joinp(prefix,'gazelles-zebras') 
-db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True)
+db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True, new=True)
+Preprocess.db = db # Pass database reference to Preprocessor Object
         
 #L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
 L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
@@ -91,26 +131,18 @@ L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt'))
 #db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles)
 
 # Testing 
-r3 = re.compile('testset_10m.fastq.bgzf')
+r3 = re.compile(testfile)
 datafiles = filter(r3.match, c.raw_input_files)
-db.add_barcodes_datafiles(L8_barcode_files, datafiles)
+db.add_barcodes_datafiles(L8_barcode_files, datafiles, datafile_type='raw_mixed')
 #db.add_barcodes_datafiles(L6_barcode_files, datafiles)
 
-# Add/Replace Experimental details and config object in database
-newid = db.insert('''OR REPLACE INTO experiments(name, type, description) VALUES (?,?,?)''',
-                  (experiment_name, 'clustering', experiment_description) )
-db.add_binary(c, 'config', id=newid, table='experiments')
-
-# Define Preprocessing Class
-Preprocess = Preprocessor(c, db) 
+# Add Experimental details and config object in database
+#------------------------------------------------------------------------------ 
+c.exp_id = db.add_experiment(config=c, exp_type='clustering')
 
 #===============================================================================
-# Setup and run filter
+# Run Filtering
 #===============================================================================
-Preprocess.filter_functions = [Preprocess.make_propN_filter(0.1),
-                               Preprocess.make_phred_filter(25),
-                               Preprocess.make_cutsite_filter(max_edit_dist=2),
-                               Preprocess.make_overhang_filter('TCGAGG', 'GG', max_edit_dist=0)]
 Preprocess.filter_reads_pipeline()
 
 #===============================================================================
@@ -128,28 +160,18 @@ Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediat
 #===============================================================================
 # Prepare for Clustering 
 #===============================================================================
+
+# Separate all Barcodes into separate files for clustering individually
 files2cluster, path = Preprocess.trim_reads(mode='separate', n=1)
 
 #===============================================================================
 # Cluster Data 
 #===============================================================================
-
-# default Vars for clustering 
-#default_vars = { 'c_thresh' : 0.90,
-#                 'n_filter' : 8,
-#                 'threads' : 1,
-#                 '
-#                 'maskN' : False}
-
-# Variations to run
-batch_parameters = [ 
-                    { 'c_thresh' : 1.0},
-                    { 'c_thresh' : 0.90},
-                   ]
                    
-Clusterer = Clustering(c, infiles=files2cluster, inpath=path) 
+Cluster = ClusterClass(infiles=files2cluster, inpath=path, defaults=default_vars) 
+Cluster.c = c
+Cluster.db = db
 
-Clusterer.run_batch_cdhit_clustering(batch_parameters, threads=1)
+out_list = Cluster.run_batch_cdhit_clustering(run_parameters, threads=1)
 
 ## Display Summary
-#summary(clustered_file)
