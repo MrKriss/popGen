@@ -553,6 +553,117 @@ class Preprocessor(object):
         self.next_input_files = outfiles_dict.values()
         
         return (outfiles_dict.values(), outpath)
+    
+        def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
+                      report=True, savecounter=True):
+        ''' Split the file into separate files based on MID tags '''
+        
+        c = self.c
+        
+        if outpath is None:
+            outpath = c.tag_split_outpath
+        
+        if out_filename is None:
+            out_filename = c.experiment_name
+             
+        # Setup Record Cycler        
+        if infiles is None:
+            infiles = self.next_input_files
+        if inpath is None:
+            inpath = self.next_input_path
+        
+        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
+         
+        print ('\nSpliting {0} file(s) based on MID tags'
+               '').format(RecCycler.numfiles)
+        
+        outfiles_dict = {}
+        
+        first_run = 1
+        
+        for recordgen in RecCycler.seqfilegen:
+            
+            # Set / reset Counter
+            # This may be in the wrong place, or I may not be reseting the file I append too!!!
+            tag_counter = Counter()
+            
+            dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
+            # tags is returned as a list of tuples for each record            
+            MID_length = len(dbtags[0][0])
+            # Convert to dictionary  {'MIDtag' : 'description' }
+            dbtags = dict(dbtags)
+            
+            # Open Files for Writing for each tag  
+            for tag, desc in dbtags.iteritems():
+                
+                fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
+                fnamevar = 'f_' + tag
+
+                # Check that files don't already exist
+                if first_run:
+                    # If file already exists, overwrite it.
+                    if os.path.isfile(os.path.join(outpath, fname)):
+                        f = open(os.path.join(outpath, fname), 'w')
+                        f.close()
+                    
+                vars()[fnamevar] = bgzf.open(os.path.join(outpath, fname), 'a')
+                outfiles_dict[fnamevar] = fname
+    
+            first_run = 0
+            
+            for rec in recordgen:
+        
+                recMIDtag = rec.seq[:MID_length].tostring()
+                
+                if recMIDtag not in dbtags:
+                    raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
+                else:                   
+                    fnamevar = 'f_' + recMIDtag                
+                    SeqIO.write(rec, vars()[fnamevar], 'fastq');
+                    tag_counter[recMIDtag] += 1
+
+            # Flush and Close Files for each tag  
+            for tag, desc in dbtags.iteritems():
+
+                fnamevar = 'f_' + tag
+                vars()[fnamevar].flush()
+                vars()[fnamevar].close()
+                
+                # Update datafiles in database
+                filename = outfiles_dict[fnamevar]
+                self.db.add_datafile(filename, [desc], datafile_type='1sample')
+
+            print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
+            
+            # Update counts
+            for tag, desc in dbtags.iteritems():
+                  
+                row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
+                current_value = row[0]['read_count']
+                if current_value is None:
+                    current_value = 0
+                    
+                self.db.update('''samples SET read_count=? WHERE description=?''',
+                                ( current_value + tag_counter[tag], desc))
+
+        # Store file names 
+        for outfile in outfiles_dict.itervalues():
+
+            # Find sample description            
+            fname = os.path.split(outfile)[1]
+            if fname.endswith('.bgzf'):
+                fname = fname[:-5]
+            fname_parts = fname.split('-') 
+            desc = fname_parts[2]
+            
+            self.db.update('''samples SET read_file=? WHERE description=?''',
+                                (outfile, desc))
+            
+        # Outputs return / update next inputs
+        self.next_input_path = outpath
+        self.next_input_files = outfiles_dict.values()
+        
+        return (outfiles_dict.values(), outpath)
                         
     def trim_reads(self, infiles=None, inpath=None, out_filename=None, outpath=None, n=1, mode='grouped'):
         ''' Trims off the MID tag of each read, as well as the last 'n' bases.

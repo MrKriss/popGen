@@ -25,8 +25,8 @@ c = ConfigClass()
 #===============================================================================
 
 # These should be unique for each experiment, else results table is overwritten
-c.experiment_name = 'gz01'
-c.experiment_description = '''Clustering gazelles and zebras based on individual MIDtags'''
+c.experiment_name = 'gz-allg-allz'
+c.experiment_description = '''Clustering all gazelles and all zebras separately'''
 
 # Testing
 testing = True 
@@ -45,7 +45,7 @@ prefix = get_data_prefix()
 c.data_inpath =  joinp(prefix,'gazelles-zebras', 'raw-data') 
 if testing:
     c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset')
- 
+
 c.barcode_inpath = joinp(prefix,'gazelles-zebras', 'barcodes')
 c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
 c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
@@ -160,7 +160,11 @@ Preprocess.cleanup_files('filtered') # Remove filtered intermediate files
 #===============================================================================
 # Split Data into individuals based on MID tag 
 #===============================================================================
-Preprocess.split_by_tags()
+#Preprocess.split_by_tags()
+
+# NEED ANOTHER SPLITTING FUNCTION HERE!!!
+
+
 Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
 
 #===============================================================================
