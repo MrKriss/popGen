@@ -106,7 +106,8 @@ Preprocess.filter_functions = [
 # Default vars for clustering 
 default_vars = { 'c_thresh' : 0.90,
                  'n_filter' : 8,
-                 'maskN' : False}
+                 'maskN' : False,
+                 'threads' : 12}
 
 # Varibles to change, 1 dictionary per run
 run_parameters = [ 
@@ -178,6 +179,6 @@ Cluster = ClusterClass(infiles=files2cluster, inpath=path, defaults=default_vars
 Cluster.c = c
 Cluster.db = db
 
-out_list = Cluster.run_batch_cdhit_clustering(run_parameters, threads=1)
+out_list = Cluster.run_batch_cdhit_clustering(run_parameters)
 
 ## Display Summary
