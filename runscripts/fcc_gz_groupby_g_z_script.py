@@ -29,7 +29,7 @@ c.experiment_name = 'gz-allg-allz'
 c.experiment_description = '''Clustering all gazelles and all zebras separately'''
 
 # Testing
-testing = True 
+testing = False 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
