@@ -554,9 +554,12 @@ class Preprocessor(object):
         
         return (outfiles_dict.values(), outpath)
     
-        def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
+    def split_by_subgroup(self, subgroups=None, infiles=None, inpath=None, outpath=None, out_filename=None,
                       report=True, savecounter=True):
         ''' Split the file into separate files based on MID tags '''
+        
+        if subgroups is None:
+            subgroups = ['*zebra*', '*gazelle*']
         
         c = self.c
         
