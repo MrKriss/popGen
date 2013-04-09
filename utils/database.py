@@ -453,6 +453,35 @@ class PopGen_DB(Database):
 
         return data
     
+    def get_cluster_counters4experiment(self, exp_name):
+        ''' Return list of cluster_counter dictionaries for a a given sample description '''
+        
+        table_name = 'experiment2results'
+        
+#        querry1 = '''SELECT cluster_counter  
+#                    FROM samples NATURAL JOIN samples_datafiles 
+#                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
+#                    WHERE {1} GLOB {2}'''.format(fields, col, target)
+        
+        querry2 = '''SELECT {0} FROM {1} WHERE {2} GLOB ?'''.format('cluster_counter', 
+                        table_name, 'name')
+        
+        with self.con as con:
+            curs = con.cursor()
+        
+            curs.execute('''CREATE VIEW IF NOT EXISTS {0} AS SELECT * 
+                    FROM experiments NATURAL JOIN clust_results'''.format(table_name))
+        
+            curs.execute(querry2, (exp_name,))
+            
+            records = curs.fetchall()
+            data = []
+            for row in records:
+                pickled_data = str(row[0])
+                data.append(pkl.loads(pickled_data))
+
+        return data
+    
     
         
     

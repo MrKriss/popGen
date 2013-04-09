@@ -53,8 +53,6 @@ class Preprocessor(object):
         if db:
             self.db = db
         
-        
-                           
     def get_data4file(self, filename, fields=['MIDtag']):
         ''' Return a list of records for the given filename with specified fields. 
         Each record is a tuple. 
@@ -433,7 +431,6 @@ class Preprocessor(object):
         ''' Split the file into separate files based on MID tags '''
         
         c = self.c
-        start_dir = os.getcwd() 
         
         if outpath is None:
             outpath = c.tag_split_outpath
