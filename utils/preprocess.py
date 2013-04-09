@@ -243,7 +243,24 @@ class Preprocessor(object):
         print '\nTotal No. Reads Processed:  %s' % read_count[0]
         print '\nTotal No. filtered:  %s (%.2f %%)' % (sum(count.values()), 
                                                         100 * (sum(count.values())/ 
-                                                               float(read_count[0])))
+                                                                float(read_count[0])))
+        # Write the summary to a file 
+        with open(os.path.join(outpath, "filter_summary.log"), 'wb') as f:
+            f.write("Filter parameters:\n") 
+            f.write("------------------\n")
+            f.write(self.c.filter_funtion_params + "\n")
+            f.write("\n")
+            f.write('Filter stats:\n')
+            f.write("-------------------------------------------\n")
+            f.write('Filter No.\t\tHits\tPercentage\n')    
+            f.write("-------------------------------------------\n")
+            for i, x in enumerate(self.filter_functions):
+                percent = count[i] / float(sum(count.values())) 
+                f.write('%s\t\t%s\t   %.2f\n' % (x.__name__, count[i], percent * 100))
+            f.write('\nTotal No. Reads Processed:  \t%s\n' % read_count[0])
+            f.write('Total No. filtered:  \t\t%s (%.2f %%)\n' % (sum(count.values()), 
+                                                        100 * (sum(count.values())/ 
+                                                               float(read_count[0]))))
         # Clean up
         if c.log_fails:     
             logfile.flush()
@@ -651,10 +668,10 @@ class Preprocessor(object):
         Y = was flagged by machine filter i.e. fail 
         '''
         # Define filter function
-        def f(rec):
+        def illumina_filter(rec):
             ''' filter function for phred '''
             return rec.description.split()[1].split(':')[1] == 'N'
-        return f  
+        return illumina_filter  
         
     def make_phred_filter(self, value):
         ''' Returns a filtering function based on the mean phred of each read.
@@ -663,10 +680,10 @@ class Preprocessor(object):
          false.   
         '''
         # Define filter function
-        def f(rec):
+        def phred_filter(rec):
             ''' filter function for phred '''
             return np.array(rec.letter_annotations['phred_quality']).mean() > value
-        return f  
+        return phred_filter  
         
     def make_propN_filter(self, value):
         ''' Returns a filter function based on the proportion of Ns in the read.
@@ -675,10 +692,10 @@ class Preprocessor(object):
         returns false.
         '''
         # Define filter function
-        def f(rec):
+        def propN_filter(rec):
             ''' Filter function for propN'''
             return float(rec.seq.count('N')) / len(rec.seq) < value
-        return f
+        return propN_filter
                 
     def make_cutsite_filter(self, target_cutsite=None, max_edit_dist=None):
         ''' Returns a filter function based on the match of the read cutsite to the 
@@ -697,25 +714,25 @@ class Preprocessor(object):
         cutsite_length = len(target_cutsite)
     
         # Define filterfunc
-        def f(rec):
+        def cutsite_filter(rec):
             ''' Filter function for cutsite '''
             
             fname = self.current_file
             
-            if f.target_file is None or f.target_file != fname:
-                f.target_file = fname
+            if cutsite_filter.target_file is None or cutsite_filter.target_file != fname:
+                cutsite_filter.target_file = fname
                 tags = self.get_data4file(fname, fields=['MIDtag'])
-                f.MIDlength =  len(tags[0][0])
+                cutsite_filter.MIDlength =  len(tags[0][0])
             
-            cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
+            cutsite = rec.seq[cutsite_filter.MIDlength: cutsite_filter.MIDlength + cutsite_length].tostring()
             cutsite_dist = ed.distance(target_cutsite, cutsite)
             
             return cutsite_dist <= max_edit_dist
         
-        f.target_file = None
-        f.MIDlength = None
+        cutsite_filter.target_file = None
+        cutsite_filter.MIDlength = None
         
-        return f
+        return cutsite_filter
         
     def make_overhang_filter(self, target_cutsite=None, overhang=None, max_edit_dist=0):
         ''' Returns a filter function based on the overhang part of the cutsite. 
@@ -736,29 +753,29 @@ class Preprocessor(object):
         cutsite_length = len(target_cutsite)
         overhang_length = len(overhang)
         # Define filterfunc
-        def f(rec):
+        def overhang_filter(rec):
             ''' Filter function for cutsite'''
             
             # Must calculate MIDlength, but this may vary between files
             fname = self.current_file
 #            fname = self.current_file.split('.')[0].split('-')[0]
             
-            if f.target_file is None or f.target_file != fname:
-                f.target_file = fname
+            if overhang_filter.target_file is None or overhang_filter.target_file != fname:
+                overhang_filter.target_file = fname
                 tags = self.get_data4file(fname, fields=['MIDtag'])
-                f.MIDlength =  len(tags[0][0])
+                overhang_filter.MIDlength =  len(tags[0][0])
             
-            cutsite = rec.seq[f.MIDlength: f.MIDlength + cutsite_length].tostring()
+            cutsite = rec.seq[overhang_filter.MIDlength: overhang_filter.MIDlength + cutsite_length].tostring()
             if cutsite.endswith(overhang):
                 return True
             else:
                 overhang_dist = ed.distance(cutsite[-overhang_length:], overhang)
                 return overhang_dist <= max_edit_dist
             
-        f.MIDlength = None
-        f.target_file = None
+        overhang_filter.MIDlength = None
+        overhang_filter.target_file = None
                   
-        return f
+        return overhang_filter
 
         
 #===============================================================================
