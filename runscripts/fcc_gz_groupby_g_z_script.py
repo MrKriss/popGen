@@ -49,7 +49,7 @@ if testing:
 c.barcode_inpath = joinp(prefix,'gazelles-zebras', 'barcodes')
 c.filtered_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
 c.tag_processed_outpath = joinp(prefix,'gazelles-zebras', 'processed-data')
-c.tag_split_outpath = joinp(prefix,'gazelles-zebras', 'processed-data', 'per-individual')
+c.tag_split_outpath = joinp(prefix,'gazelles-zebras', 'processed-data', 'per-species')
 c.clusters_outpath = joinp(prefix,'gazelles-zebras', 'clusters')
 
 # Setup input files and barcodes
@@ -158,12 +158,12 @@ Preprocess.process_MIDtag(max_edit_dist = 1, outfile_postfix='-clean')
 Preprocess.cleanup_files('filtered') # Remove filtered intermediate files 
 
 #===============================================================================
-# Split Data into individuals based on MID tag 
+# Splitting by species zebras and gazelles
 #===============================================================================
-#Preprocess.split_by_tags()
+subgroups = { 'zebra'  : '.*zebra.*',
+            'gazelle' : '.*gazelle.*'}
 
-# NEED ANOTHER SPLITTING FUNCTION HERE!!!
-
+Preprocess.split_by_subgroups(subgroups)
 
 Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
 

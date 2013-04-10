@@ -29,7 +29,7 @@ c.experiment_name = 'gz-separate-MIDs'
 c.experiment_description = '''Clustering of gazelles and zebras based on individual MIDtags'''
 
 # Testing
-testing = False 
+testing = True 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
@@ -139,8 +139,8 @@ else:
     L8_datafiles = filter(r2.match, c.raw_input_files)
     
     # Associate subsets of the data files list to their respective barcode files.   
-    db.add_barcodes_datafiles(L6_barcode_files, L6_datafiles)
-    db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles)
+    db.add_barcodes_datafiles(L6_barcode_files, L6_datafiles, datafile_type='raw_mixed')
+    db.add_barcodes_datafiles(L8_barcode_files, L8_datafiles, datafile_type='raw_mixed')
 
 
 # Add Experimental details and config object in database

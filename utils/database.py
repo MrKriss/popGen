@@ -223,7 +223,8 @@ class PopGen_DB(Database):
             linkId INTEGER PRIMARY KEY, 
             sampleId INTEGER, 
             datafileId INTEGER, 
-            FOREIGN KEY(sampleId) REFERENCES samples(sampleId)  
+            UNIQUE(sampleId, datafileId) ON CONFLICT IGNORE,
+            FOREIGN KEY(sampleId) REFERENCES samples(sampleId),  
             FOREIGN KEY(datafileId) REFERENCES datafiles(datafileId) )''')
             self.tables.append('samples_datafiles')
             

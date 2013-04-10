@@ -9,7 +9,7 @@ import sys
 from plot_utils import cluster_summary_plot, hist_counter
 
 from preprocess import  Preprocessor, ConfigClass
-from cluster import Clustering
+from cluster import ClusterClass
 
 import socket 
 

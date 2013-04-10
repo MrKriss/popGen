@@ -6,15 +6,12 @@ Created on 11 Mar 2013
 import os 
 import sys 
 
-import numpy as np 
-import matplotlib.pyplot as plt
-
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import SeqIO
 
 from gen_synth_data import seq_generator
-from cluster import cluster_cdhit
+from cluster import ClusterClass
 
 f = open('indel_test.fasta', 'w')
 
@@ -35,8 +32,18 @@ SeqIO.write([seqR1, seqR2, seqR3, seqR4, seqR5], f, 'fasta')
 f.flush()
 f.close()
 
-cluster_cdhit('indel_test.fasta','indel_test_clust', 0.9, 8, maskN=0)
+path = os.getcwd()
 
-with open('indel_test_clust.clstr', 'r') as outf:
+params = { 'c_thresh' : 0.90,
+            'n_filter' : 8,
+            'threads' : 1,
+            'mem' : 0,
+            'maskN' : False,
+            'outfile_postfix' : '-clustered'}
+
+C = ClusterClass(infiles='indel_test.fasta', inpath=path, defaults=params)
+out = C.run_single_cdhit_clustering()
+
+with open(out[0], 'r') as outf:
     for line in outf:
         print line

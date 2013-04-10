@@ -308,7 +308,10 @@ class Preprocessor(object):
                 Keeps track of number of skipped and corrected reads as class attributes.
                 '''
                 self.skipped_count = 0
-                self.corrected_count = 0
+                self.MIDtag_corrected_count = 0
+                self.cutsite_corrected_count = 0
+                self.read_corrected_count = 0
+                self.total_read_count = 0
                 
                 self.barMIDs = sorted(tags)
                 self.cutsite = cutsite
@@ -321,6 +324,9 @@ class Preprocessor(object):
             def clean_reads_gen(self, recgen):
                 
                 for rec in recgen:
+
+                    self.total_read_count += 1
+                    MID_corrected = False
                     
                     #===============================================================
                     # Analise MID tag section
@@ -353,7 +359,9 @@ class Preprocessor(object):
                             rec.seq[:self.MIDlength] = self.barMIDs[min_dist_idxs[0]]
                             rec.seq = rec.seq.toseq()
                             rec.letter_annotations.update(temp_var)
-                            self.corrected_count += 1
+                            self.MIDtag_corrected_count += 1
+                            self.read_corrected_count += 1
+                            MID_corrected = True
                             
                     #===============================================================
                     # Analise Cut site section
@@ -374,11 +382,17 @@ class Preprocessor(object):
                             rec.seq[self.MIDlength: self.MIDlength + len(self.cutsite)] = self.cutsite
                             rec.seq = rec.seq.toseq()
                             rec.letter_annotations.update(temp_var)
-                            self.corrected_count += 1
+                            self.cutsite_corrected_count += 1
+                            if not MID_corrected:
+                                self.read_corrected_count += 1
                         else:
                             # Amount of error in cute site is too large to correct 
                             # May also be from contaminants. So read is skipped altogether 
                             self.skipped_count += 1
+                            if MID_corrected:
+                                # Roll back counters
+                                self.MIDtag_corrected_count -= 1
+                                self.read_corrected_count -= 1
                             continue
                     # Note: rec only yielded if the MID tag and the cutsite are 
                     # sucessfuly cleaned         
@@ -387,9 +401,13 @@ class Preprocessor(object):
         #===========================================================================
         # MAIN LOOP
         #===========================================================================
-        total_numwritten = 0
-        total_numskipped = 0
-        total_numcorrected = 0
+        total_reads = 0 
+        total_written = 0 
+        total_skipped =  0 
+        total_corrected = 0 
+        total_MIDcorrected = 0 
+        total_cutsite_corrected = 0 
+        
         toc = time.time()
         cum_t = 0
         outnames = []
@@ -419,21 +437,49 @@ class Preprocessor(object):
             output_filehdl.flush()        
             output_filehdl.close()        
     
+            # Increment Counters
+            total_reads += ReadCorrector.total_read_count
+            total_written += numwritten
+            total_corrected += ReadCorrector.read_corrected_count
+            total_MIDcorrected += ReadCorrector.MIDtag_corrected_count
+            total_cutsite_corrected += ReadCorrector.cutsite_corrected_count
+            total_skipped += ReadCorrector.skipped_count
+            
             print ('{0} records written, of which ' 
-            '{1} were corrected').format(numwritten, ReadCorrector.corrected_count)
-            total_numwritten += numwritten
-            total_numcorrected += ReadCorrector.corrected_count
+            '{1} were corrected').format(numwritten, ReadCorrector.read_corrected_count)
             print '{0} records skipped'.format(ReadCorrector.skipped_count)
-            total_numskipped += ReadCorrector.skipped_count
             loop_t = time.time() - toc - cum_t
             cum_t += loop_t
             print 'Finished {0} after {1}'.format(filename, 
                             time.strftime('%H:%M:%S', time.gmtime(loop_t)))
     
-        print 'Total records written: {0}'.format(total_numwritten)
-        print 'Total records skipped: {0}'.format(total_numskipped)
-        print 'Total of {0} tags corrected.'.format(total_numcorrected)
-                
+        print 'Total records written: {0}'.format(total_written)
+        print 'Total records skipped: {0}'.format(total_skipped)
+        print 'Total of {0} tags corrected.'.format(total_corrected)
+        
+        # Write the summary to a file 
+        with open(os.path.join(outpath, "cleaner_summary.log"), 'wb') as f:
+            f.write("Cleaner parameters:\n") 
+            f.write("------------------\n")
+            f.write("Maximum Edit Distance = " + str(max_edit_dist) + "\n")
+            f.write("\n")
+            f.write('Cleaner Stats:\n')
+            f.write("Total reads: {0} \n".format(total_reads))
+            f.write("-----------------------------------------------------\n")
+            f.write("Count      Percentage      \n")
+            f.write("-----------------------------------------------------\n")
+            f.write("{0} \t({1:.2f}%)\twritten to files\n".format(
+                    total_written, (float(total_written)/total_reads) * 100))
+            f.write("{0} \t({1:.2f}%)\tskipped\n".format(
+                    total_skipped, (float(total_skipped)/total_reads) * 100))
+            f.write("{0} \t({1:.2f}%) \tMIDtag or cutsite corrected\n".format(
+                    total_corrected, (float(total_corrected)/total_reads) * 100))
+            f.write("\n")
+            f.write("{0} \t({1:.2f}%) \tMIDtags were corrected in total\n".format(
+                    total_MIDcorrected, (float(total_MIDcorrected)/total_reads) * 100))
+            f.write("{0} \t({1:.2f}%) \tcutsites were corrected in total\n".format(
+                    total_cutsite_corrected, (float(total_cutsite_corrected)/total_reads) * 100))
+            
         total_t = time.time() - toc    
         print 'Processed all files in {0}\n'.format(time.strftime('%H:%M:%S', 
                                                             time.gmtime(total_t)))
@@ -473,7 +519,6 @@ class Preprocessor(object):
         for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
-            # This may be in the wrong place, or I may not be reseting the file I append too!!!
             tag_counter = Counter()
             
             dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
@@ -554,21 +599,29 @@ class Preprocessor(object):
         
         return (outfiles_dict.values(), outpath)
     
-    def split_by_subgroup(self, subgroups=None, infiles=None, inpath=None, outpath=None, out_filename=None,
+    def split_by_subgroups(self, subgroups=None, infiles=None, inpath=None, outpath=None, out_filename=None,
                       report=True, savecounter=True):
         ''' Split the file into separate files based on MID tags '''
         
         if subgroups is None:
-            subgroups = ['*zebra*', '*gazelle*']
+            # Dictionary of regular expressions to match sample discription
+            subgroups = { 'zebra'  : '.*zebra.*',
+                         'gazelle' : '.*gazelle.*'}
+        
+        # Compile regexes
+        for k,v in subgroups.iteritems():
+            subgroups[k] = re.compile(v)
         
         c = self.c
         
         if outpath is None:
             outpath = c.tag_split_outpath
-        
         if out_filename is None:
             out_filename = c.experiment_name
-             
+        
+        if not os.path.exists(outpath):
+            os.makedirs(outpath)
+        
         # Setup Record Cycler        
         if infiles is None:
             infiles = self.next_input_files
@@ -577,7 +630,7 @@ class Preprocessor(object):
         
         RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
          
-        print ('\nSpliting {0} file(s) based on MID tags'
+        print ('\nSpliting {0} file(s) into zebras and gazelles'
                '').format(RecCycler.numfiles)
         
         outfiles_dict = {}
@@ -587,7 +640,6 @@ class Preprocessor(object):
         for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
-            # This may be in the wrong place, or I may not be reseting the file I append too!!!
             tag_counter = Counter()
             
             dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
@@ -596,11 +648,11 @@ class Preprocessor(object):
             # Convert to dictionary  {'MIDtag' : 'description' }
             dbtags = dict(dbtags)
             
-            # Open Files for Writing for each tag  
-            for tag, desc in dbtags.iteritems():
+            # Open Files for Writing for each subgroup  
+            for group in subgroups.iterkeys():
                 
-                fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
-                fnamevar = 'f_' + tag
+                fname = '-'.join([out_filename, group]) + '.bgzf'
+                fnamevar = 'f_' + group
 
                 # Check that files don't already exist
                 if first_run:
@@ -620,47 +672,32 @@ class Preprocessor(object):
                 
                 if recMIDtag not in dbtags:
                     raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
-                else:                   
-                    fnamevar = 'f_' + recMIDtag                
-                    SeqIO.write(rec, vars()[fnamevar], 'fastq');
-                    tag_counter[recMIDtag] += 1
-
+                else:
+                    # Get description
+                    desc = dbtags[recMIDtag]
+                    # Write to approprite file if it matches the regex
+                    for group in subgroups.iterkeys():
+                        if subgroups[group].match(desc):
+                            
+                            fnamevar = 'f_' + group                
+                            SeqIO.write(rec, vars()[fnamevar], 'fastq');
+                            tag_counter[recMIDtag] += 1
+                            
             # Flush and Close Files for each tag  
-            for tag, desc in dbtags.iteritems():
+            for group in subgroups.iterkeys():
 
-                fnamevar = 'f_' + tag
+                fnamevar = 'f_' + group
                 vars()[fnamevar].flush()
                 vars()[fnamevar].close()
                 
                 # Update datafiles in database
                 filename = outfiles_dict[fnamevar]
-                self.db.add_datafile(filename, [desc], datafile_type='1sample')
+                
+                desc_list = filter(subgroups[group].match ,dbtags.values())
+                
+                self.db.add_datafile(filename, desc_list, datafile_type='1sample')
 
-            print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
-            
-            # Update counts
-            for tag, desc in dbtags.iteritems():
-                  
-                row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
-                current_value = row[0]['read_count']
-                if current_value is None:
-                    current_value = 0
-                    
-                self.db.update('''samples SET read_count=? WHERE description=?''',
-                                ( current_value + tag_counter[tag], desc))
-
-        # Store file names 
-        for outfile in outfiles_dict.itervalues():
-
-            # Find sample description            
-            fname = os.path.split(outfile)[1]
-            if fname.endswith('.bgzf'):
-                fname = fname[:-5]
-            fname_parts = fname.split('-') 
-            desc = fname_parts[2]
-            
-            self.db.update('''samples SET read_file=? WHERE description=?''',
-                                (outfile, desc))
+            print 'Finished Splitting reads for input file: {0}'.format(RecCycler.curfilename)
             
         # Outputs return / update next inputs
         self.next_input_path = outpath
@@ -762,11 +799,13 @@ class Preprocessor(object):
           
         if 'filtered' in args or 'all' in args:
             pattern = os.path.join(self.c.filtered_outpath, 
-                                   '*' + self.c.filtered_files_postfix) 
+                                   '*' + self.c.filtered_files_postfix + ".fastq.bgzf") 
             files2remove.extend(glob.glob(pattern))
         elif 'tag_processed' in args or 'all' in args:
             pattern = os.path.join(self.c.tag_processed_outpath, 
-                                   '*' + self.c.tag_processed_files_postfix) 
+                                   '*' + self.c.filtered_files_postfix + 
+                                   self.c.tag_processed_files_postfix + 
+                                   ".fastq.bgzf") 
             files2remove.extend(glob.glob(pattern))
         
         # Remove files
