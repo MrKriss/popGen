@@ -294,18 +294,31 @@ class ClusterClass(object):
         elif mode == 'by_seqlen':
             return ds
     
-    def hist_counter(self, counter, **kwargs):
-        ''' Construct a histogram from a Counter Dictionary '''
+    def hist_counters(self, counters, labels=None, **kwargs):
+        ''' Construct a series of histograms from a list of Counter Dictionarys '''
         
         import matplotlib.pyplot as plt
         
-        data = np.array(list(counter.elements()), dtype = np.int)
+        if type(counters) is not list:
+            counters = [counters]
+        
+        if labels is not None:
+            assert len(labels) == len(counters), "Number of labels must match number of counters."
+        
+        
+        for i in range(len(counters)):
+            data = np.array(list(counters[i].elements()), dtype = np.int)
     
-        plt.hist(data, histtype='step', **kwargs)
-        plt.title("Cluster Size Distribution")
-        plt.xlabel("Value")
-        plt.ylabel("Frequency")
-    #    plt.legend()
+            if labels:
+                plt.hist(data, histtype='step', label=labels[i], **kwargs)
+            else:
+                
+                plt.hist(data, histtype='step', label='Counter-'+str(i), **kwargs)
+            plt.title("Cluster Size Distribution")
+            plt.xlabel("Value")
+            plt.ylabel("Frequency")
+
+        plt.legend()
         plt.show()
     
 

@@ -8,7 +8,6 @@ from os.path import join as joinp
 import sys 
 
 import glob
-import socket
 import re
 
 from utils import get_data_prefix
@@ -29,7 +28,7 @@ c.experiment_name = 'gz-separate-MIDs'
 c.experiment_description = '''Clustering of gazelles and zebras based on individual MIDtags'''
 
 # Testing
-testing = True 
+testing = False 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
