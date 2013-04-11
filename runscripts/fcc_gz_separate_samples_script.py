@@ -128,7 +128,7 @@ if testing:
     datafiles = filter(r3.match, c.raw_input_files)
     db.add_barcodes_datafiles(L8_barcode_files, datafiles, datafile_type='raw_mixed')
 else:
-    L6_barcode_files = glob.glob(joinp(outfiles_dictc.barcode_inpath, '*[6].txt')) 
+    L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
     L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
     
     r1 = re.compile('lane6.*bgzf')
