@@ -28,7 +28,7 @@ c.experiment_name = 'gz-separate-MIDs'
 c.experiment_description = '''Clustering of gazelles and zebras based on individual MIDtags'''
 
 # Testing
-testing = True 
+testing = False 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
@@ -161,7 +161,7 @@ Preprocess.cleanup_files('filtered') # Remove filtered intermediate files
 # Split Data into individuals based on MID tag 
 #===============================================================================
 Preprocess.split_by_tags()
-Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
+# Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
 
 #===============================================================================
 # Prepare for Clustering 
