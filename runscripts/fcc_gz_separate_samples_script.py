@@ -28,7 +28,7 @@ c.experiment_name = 'gz-separate-MIDs'
 c.experiment_description = '''Clustering of gazelles and zebras based on individual MIDtags'''
 
 # Testing
-testing = False 
+testing = True 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
@@ -128,7 +128,7 @@ if testing:
     datafiles = filter(r3.match, c.raw_input_files)
     db.add_barcodes_datafiles(L8_barcode_files, datafiles, datafile_type='raw_mixed')
 else:
-    L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
+    L6_barcode_files = glob.glob(joinp(outfiles_dictc.barcode_inpath, '*[6].txt')) 
     L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
     
     r1 = re.compile('lane6.*bgzf')

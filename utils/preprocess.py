@@ -727,7 +727,10 @@ class Preprocessor(object):
         c = self.c
         
         if outpath is None:
-            outpath = c.tag_processed_outpath
+            if mode == 'grouped':
+                outpath = c.tag_processed_outpath
+            elif mode == 'separate':
+                outpath = c.tag_split_outpath
         if out_filename is None:
             out_filename = c.experiment_name + '_all_preprocessed.fasta'
         
