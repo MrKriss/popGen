@@ -516,6 +516,8 @@ class Preprocessor(object):
         
         first_run = 1
         
+        
+        # Running through all records in all passed files 
         for recordgen in RecCycler.seqfilegen:
             
             # Set / reset Counter
@@ -524,14 +526,19 @@ class Preprocessor(object):
             dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
             # tags is returned as a list of tuples for each record            
             MID_length = len(dbtags[0][0])
-            # Convert to dictionary  {'MIDtag' : 'description' }
+            # as tuple of descriptions then tuple of MIDtags
+            tups = zip(*dbtags)
+            # Cheack using MIDtags as keys would be unique
+            assert len(set(tups[1])) == len(tups[1]), 'Duplicate MIDtags returned for file {0}'.format(RecCycler.curfilename) 
+
+            # Convert to dictionary  {'MIDtag': 'description'} 
             dbtags = dict(dbtags)
             
             # Open Files for Writing for each tag  
             for tag, desc in dbtags.iteritems():
                 
                 fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
-                fnamevar = 'f_' + tag
+                fnamevar = 'f_' + desc
 
                 # Check that files don't already exist
                 if first_run:
@@ -552,14 +559,14 @@ class Preprocessor(object):
                 if recMIDtag not in dbtags:
                     raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
                 else:                   
-                    fnamevar = 'f_' + recMIDtag                
+                    fnamevar = 'f_' + dbtags[recMIDtag]           
                     SeqIO.write(rec, vars()[fnamevar], 'fastq');
                     tag_counter[recMIDtag] += 1
 
             # Flush and Close Files for each tag  
             for tag, desc in dbtags.iteritems():
 
-                fnamevar = 'f_' + tag
+                fnamevar = 'f_' + desc
                 vars()[fnamevar].flush()
                 vars()[fnamevar].close()
                 
@@ -588,7 +595,7 @@ class Preprocessor(object):
             if fname.endswith('.bgzf'):
                 fname = fname[:-5]
             fname_parts = fname.split('-') 
-            desc = fname_parts[2]
+            desc = fname_parts[-1]
             
             self.db.update('''samples SET read_file=? WHERE description=?''',
                                 (outfile, desc))

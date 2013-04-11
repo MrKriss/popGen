@@ -423,7 +423,7 @@ class PopGen_DB(Database):
 
         return records
     
-    def get_cluster_counters4sample(self, sample_description): # fields='cluster_counter', col=, target):
+    def get_cluster_counters4sample(self, sample_description="*", clust_parameters="*"): # fields='cluster_counter', col=, target):
         ''' Return list of cluster_counter dictionaries for a a given sample description '''
         
         table_name = 'samples2results'
@@ -433,8 +433,8 @@ class PopGen_DB(Database):
 #                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
 #                    WHERE {1} GLOB {2}'''.format(fields, col, target)
         
-        querry2 = '''SELECT {0} FROM {1} WHERE {2} GLOB ?'''.format('cluster_counter', 
-                        table_name, 'description')
+        querry2 = '''SELECT {0} FROM {1} WHERE {2} GLOB ? AND {3} GLOB ?'''.format('cluster_counter, CDHIT_parameters', 
+                        table_name, 'description', 'CDHIT_parameters')
         
         with self.con as con:
             curs = con.cursor()
@@ -444,13 +444,13 @@ class PopGen_DB(Database):
                     NATURAL JOIN datafiles NATURAL JOIN clust_results 
                     NATURAL JOIN parameters'''.format(table_name))
         
-            curs.execute(querry2, (sample_description,))
+            curs.execute(querry2, (sample_description, clust_parameters))
             
             records = curs.fetchall()
             data = []
             for row in records:
                 pickled_data = str(row[0])
-                data.append(pkl.loads(pickled_data))
+                data.append((pkl.loads(pickled_data), row[1]))
 
         return data
     

@@ -19,10 +19,12 @@ from collections import Counter, defaultdict
 class ClusterClass(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
-    def __init__(self, infiles, inpath, config=None, db=None, defaults=None):
+    def __init__(self, infiles=None, inpath=None, config=None, db=None, defaults=None):
 
-        self.input_files = infiles
-        self.inpath = inpath
+        if infiles is not None:
+            self.input_files = infiles
+        if inpath is not None:
+            self.inpath = inpath
         self.clusterd_postfix = '-clustered'
 
         if db:
@@ -299,7 +301,7 @@ class ClusterClass(object):
         
         import matplotlib.pyplot as plt
         
-        if type(counters) is not list:
+        if type(counters) is not list and type(counters) is not tuple:
             counters = [counters]
         
         if labels is not None:
