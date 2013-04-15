@@ -245,7 +245,7 @@ class Preprocessor(object):
                                                         100 * (sum(count.values())/ 
                                                                 float(read_count[0])))
         # Write the summary to a file 
-        with open(os.path.join(outpath, "filter_summary.log"), 'wb') as f:
+        with open(os.path.join(outpath, "filter_summary_" + self.c.experiment_name +  ".log"), 'wb') as f:
             f.write("Filter parameters:\n") 
             f.write("------------------\n")
             f.write(self.c.filter_funtion_params + "\n")
@@ -458,7 +458,7 @@ class Preprocessor(object):
         print 'Total of {0} tags corrected.'.format(total_corrected)
         
         # Write the summary to a file 
-        with open(os.path.join(outpath, "cleaner_summary.log"), 'wb') as f:
+        with open(os.path.join(outpath, "cleaner_summary_" + self.c.experiment_name + ".log"), 'wb') as f:
             f.write("Cleaner parameters:\n") 
             f.write("------------------\n")
             f.write("Maximum Edit Distance = " + str(max_edit_dist) + "\n")
