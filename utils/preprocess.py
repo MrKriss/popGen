@@ -89,21 +89,27 @@ class Preprocessor(object):
         
         return rows
 
-    def set_input_files(self, infiles, file_pattern, data_inpath):
+    def set_input_files(self, infiles=None, data_inpath=None, file_pattern=None):
         
         starting_dir = os.getcwd()
         
-        if file_pattern:
-            if data_inpath:
-                os.chdir(data_inpath)
+        if infiles is None:
+            # Glob the file pattern 
+            if file_pattern:
+                if data_inpath:
+                    os.chdir(data_inpath)
+                files = glob.glob(file_pattern)
+                files.sort()
+                self.c.next_input_files = files
+                self.c.next_input_path = os.getcwd()
             else:
-                os.chdir(self.c.paths.data_inpath)
-            raw_files = glob.glob('infiles')
-            raw_files.sort()
-            self.c.next_input_files = raw_files
+                raise Exception('No input files passed and no file pattern defined')
         else:
-            if not type(infiles) == list:
+            if type(infiles) is str:
                 infiles = [infiles]
+            if data_inpath:
+                self.c.next_input_path = data_inpath
+                   
             self.c.next_input_files = infiles
         
         if os.getcwd() != starting_dir:
