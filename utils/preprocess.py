@@ -252,15 +252,19 @@ class Preprocessor(object):
             f.write("\n")
             f.write('Filter stats:\n')
             f.write("-------------------------------------------\n")
-            f.write('Filter No.\t\tHits\tPercentage\n')    
+            f.write('Filter\t\tHits\t\tPercentage\n')    
             f.write("-------------------------------------------\n")
             for i, x in enumerate(self.filter_functions):
                 percent = count[i] / float(sum(count.values())) 
-                f.write('%s\t\t%s\t   %.2f\n' % (x.__name__, count[i], percent * 100))
+                f.write('%s\t\t%s\t\t%.2f\n' % (x.__name__, count[i], percent * 100))
             f.write('\nTotal No. Reads Processed:  \t%s\n' % read_count[0])
             f.write('Total No. filtered:  \t\t%s (%.2f %%)\n' % (sum(count.values()), 
                                                         100 * (sum(count.values())/ 
                                                                float(read_count[0]))))
+            f.write('\nTotal No. Passed: \t\t%s (%.2f %%)\n' % (read_count[0] - sum(count.values()), 
+                                                        100 * (read_count[0] - sum(count.values())/ 
+                                                               float(read_count[0]))))
+            
         # Clean up
         if c.log_fails:     
             logfile.flush()
@@ -466,18 +470,18 @@ class Preprocessor(object):
             f.write('Cleaner Stats:\n')
             f.write("Total reads: {0} \n".format(total_reads))
             f.write("-----------------------------------------------------\n")
-            f.write("Count      Percentage      \n")
+            f.write("Count          Percentage      \n")
             f.write("-----------------------------------------------------\n")
-            f.write("{0} \t({1:.2f}%)\twritten to files\n".format(
+            f.write("{0} \t({1:.2f}%)\tWritten to files\n".format(
                     total_written, (float(total_written)/total_reads) * 100))
-            f.write("{0} \t({1:.2f}%)\tskipped\n".format(
+            f.write("{0} \t({1:.2f}%)\tSkipped\n".format(
                     total_skipped, (float(total_skipped)/total_reads) * 100))
             f.write("{0} \t({1:.2f}%) \tMIDtag or cutsite corrected\n".format(
                     total_corrected, (float(total_corrected)/total_reads) * 100))
             f.write("\n")
-            f.write("{0} \t({1:.2f}%) \tMIDtags were corrected in total\n".format(
+            f.write("{0} \t({1:.2f}%) \tMIDtags corrected in total\n".format(
                     total_MIDcorrected, (float(total_MIDcorrected)/total_reads) * 100))
-            f.write("{0} \t({1:.2f}%) \tcutsites were corrected in total\n".format(
+            f.write("{0} \t({1:.2f}%) \tcutsites corrected in total\n".format(
                     total_cutsite_corrected, (float(total_cutsite_corrected)/total_reads) * 100))
             
         total_t = time.time() - toc    
