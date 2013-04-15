@@ -31,7 +31,7 @@ c.experiment_description = '''Clustering all gazelles and all zebras separately'
 c.db_name = 'gz_allg-allz.db'
 
 # Testing
-testing = True 
+testing = False 
 if testing: 
     #testfile = 'testset_10m.fastq.bgzf'
     testfile = 'testset_500.fastq.bgzf'
