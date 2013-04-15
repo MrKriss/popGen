@@ -252,17 +252,17 @@ class Preprocessor(object):
             f.write("\n")
             f.write('Filter stats:\n')
             f.write("-------------------------------------------\n")
-            f.write('Filter\t\tHits\t\tPercentage\n')    
+            f.write('Filter\t\t\tHits\n')    
             f.write("-------------------------------------------\n")
             for i, x in enumerate(self.filter_functions):
                 percent = count[i] / float(sum(count.values())) 
-                f.write('%s\t\t%s\t\t%.2f\n' % (x.__name__, count[i], percent * 100))
+                f.write('%s\t\t%s\t(%.2f %%)\n' % (x.__name__, count[i], percent * 100))
             f.write('\nTotal No. Reads Processed:  \t%s\n' % read_count[0])
             f.write('Total No. filtered:  \t\t%s (%.2f %%)\n' % (sum(count.values()), 
                                                         100 * (sum(count.values())/ 
                                                                float(read_count[0]))))
-            f.write('\nTotal No. Passed: \t\t%s (%.2f %%)\n' % (read_count[0] - sum(count.values()), 
-                                                        100 * (read_count[0] - sum(count.values())/ 
+            f.write('Total No. Passed: \t\t%s (%.2f %%)\n' % (read_count[0] - sum(count.values()), 
+                                                        100 * ((read_count[0] - sum(count.values()))/ 
                                                                float(read_count[0]))))
             
         # Clean up
