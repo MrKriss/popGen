@@ -27,6 +27,8 @@ c = ConfigClass()
 c.experiment_name = 'gz-separate-MIDs'
 c.experiment_description = '''Clustering of gazelles and zebras based on individual MIDtags'''
 
+c.db_name = 'gazelles-zebras'
+
 # Testing
 testing = False 
 if testing: 
@@ -117,7 +119,7 @@ run_parameters = [
 #===============================================================================
 # Make/Update Database for Experiment
 #===============================================================================
-db_path = joinp(prefix,'gazelles-zebras') 
+db_path = joinp(prefix,c.db_name) 
 db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True, new=True)
 Preprocess.db = db # Pass database reference to Preprocessor Object
         

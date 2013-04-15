@@ -133,8 +133,8 @@ else:
     L6_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[6].txt')) 
     L8_barcode_files = glob.glob(joinp(c.barcode_inpath, '*[8].txt')) 
     
-    r1 = re.compile('lane6*.bgzf')
-    r2 = re.compile('lane8*.bgzf')
+    r1 = re.compile('lane6.*bgzf')
+    r2 = re.compile('lane8.*bgzf')
     
     L6_datafiles = filter(r1.match, c.raw_input_files)
     L8_datafiles = filter(r2.match, c.raw_input_files)
