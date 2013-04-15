@@ -28,6 +28,8 @@ c = ConfigClass()
 c.experiment_name = 'gz-allg-allz'
 c.experiment_description = '''Clustering all gazelles and all zebras separately'''
 
+c.db_name = 'gz_allg-allz.db'
+
 # Testing
 testing = True 
 if testing: 
@@ -118,7 +120,7 @@ run_parameters = [
 # Make/Update Database for Experiment
 #===============================================================================
 db_path = joinp(prefix,'gazelles-zebras') 
-db = PopGen_DB(joinp(db_path, 'gz_samples.db'), recbyname=True, new=True)
+db = PopGen_DB(joinp(db_path, c.db_name), recbyname=True, new=True)
 Preprocess.db = db # Pass database reference to Preprocessor Object
         
 # Testing 
