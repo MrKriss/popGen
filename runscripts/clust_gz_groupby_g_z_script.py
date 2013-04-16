@@ -35,9 +35,6 @@ c.db_name = 'gz_allg-allz.db'
 db_path = joinp(prefix,'gazelles-zebras') 
 db = PopGen_DB(joinp(db_path, c.db_name), recbyname=True)
 
-## Get previous config file 
-#c2 =  db.get_binary('config', 'name', c.experiment_name, 'experiments')
-#c = c2
 
 #===============================================================================
 # Setup Configuration
@@ -58,6 +55,11 @@ c.tag_processed_files_postfix = '-clean'
 # MIDtags
 c.cutsite = 'TGCAGG'
 c.max_edit_dist = 2
+
+# Get previous config file 
+c2 =  db.get_binary('config', 'name', c.experiment_name, 'experiments')
+c.filter_funtion_params = c2.filter_funtion_params
+
 
 #===============================================================================
 # Set Parameters

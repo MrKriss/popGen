@@ -44,6 +44,8 @@ if testing:
 prefix = get_data_prefix()
 
 # Set paths 
+
+
 c.data_inpath =  joinp(prefix,'gazelles-zebras', 'raw-data') 
 if testing:
     c.data_inpath =  joinp(prefix,'gazelles-zebras', 'testset')
