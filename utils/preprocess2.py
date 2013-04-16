@@ -431,7 +431,7 @@ class Preprocessor(object):
         
         for seqfile in RecCycler.seqfilegen:
             
-            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
+            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
             # tags is returned as a list of tuples for each record            
             tags = zip(*tags)[0]
             # tags is now a tuple of all the first elements in each record  
@@ -452,7 +452,7 @@ class Preprocessor(object):
             numwritten = SeqIO.write(ReadCorrector.clean_reads_gen(seqfile), 
                                      output_filehdl, 'fastq')
             output_filehdl.flush()        
-            output_filehdl.close()        
+            output_filehdl.close()      
     
             # Increment Counters
             total_reads += ReadCorrector.total_read_count
@@ -500,6 +500,18 @@ class Preprocessor(object):
         total_t = time.time() - toc    
         print 'Processed all files in {0}\n'.format(time.strftime('%H:%M:%S', 
                                                             time.gmtime(total_t)))
+
+        # Update datafiles in database
+        for fname in outnames:
+            # find samples present in file 
+            desc_list = self.get_data4file(fname, fields=['description'])
+            # Store results in database 
+            desc_list = list(zip(*desc_list)[0]) # now a list of sample descriptions
+            data_id = self.db.add_datafile(fname, desc_list, datafile_type='processed')
+            
+            # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+            self.db.update('datafiles SET filtering_parametersId=? WHERE datafileId=?', (self.c.filterparam_id, data_id))
+        
         # Update internal Variables
         self.next_input_files = outnames
         self.next_input_path = outpath
@@ -719,7 +731,7 @@ class Preprocessor(object):
                 
                 desc_list = filter(subgroups[group].match ,dbtags.values())
                 
-                self.db.add_datafile(filename, desc_list, datafile_type='1sample')
+                self.db.add_datafile(filename, desc_list, datafile_type='group')
 
             print 'Finished Splitting reads for input file: {0}'.format(RecCycler.curfilename)
             

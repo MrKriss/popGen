@@ -134,20 +134,29 @@ class Database(object):
             # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
             cur.execute("UPDATE " + cmd, *args)
         
-    def add_binary(self, obj, col, target, value, table):
+    def update_binary(self, obj, col, target, value, table):
         """ Store a binary object to the database 
         Add Obj to field 'col' where field 'target' = 'value'
-        
         """
-
-        if table.endswith('s'):
-            tablename = table[:-1]
 
         with self.con as con:        
             cur = con.cursor()
             b = sqlite3.Binary(pkl.dumps(obj))             
             # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
             cur.execute('UPDATE {0} SET {1}=? WHERE {2}=?'.format(table, col, target), (b, value))
+        
+    def insert_binary(self, obj, col, table):
+        """ Store a binary object to the database 
+        Insert Obj to field 'col' on a new row. Return Rowid 
+        """
+
+        with self.con as con:        
+            cur = con.cursor()
+            b = sqlite3.Binary(pkl.dumps(obj))             
+            # INSERT INTO table_name(column_name) VALUES (?) 
+            cur.execute('INSERT INTO {0}({1}) VALUES (?)'.format(table, col), (b,))
+        
+        return cur.lastrowid
         
     def get_binary(self, col, target, value, table):
         """ Retrieve binary object in the database 
@@ -178,7 +187,7 @@ class Database(object):
             cur = con.cursor()
             cur.executescript(sql, *args)
         
-class PopGen_DB(Database):  
+class Popgen_db(Database):  
    
     def __init__(self, db_file="sample.db", recbyname=True, new=False):
        
@@ -214,7 +223,8 @@ class PopGen_DB(Database):
             curs.execute(''' CREATE TABLE datafiles (
             datafileId INTEGER PRIMARY KEY, 
             filename TEXT UNIQUE,
-            type TEXT )''')
+            type TEXT, 
+            processing_parameters BLOB )''')
             self.tables.append('datafiles')
             
             curs.execute('DROP TABLE IF EXISTS samples_datafiles')
@@ -236,29 +246,41 @@ class PopGen_DB(Database):
             config BLOB )''')
             self.tables.append('experiments')
             
-            curs.execute('DROP TABLE IF EXISTS parameters ')
-            curs.execute(''' CREATE TABLE parameters (
-            parameterId INTEGER PRIMARY KEY, 
-            CDHIT_parameters TEXT,
-            filtering_parameters TEXT, 
-            UNIQUE(CDHIT_parameters, filtering_parameters) ON CONFLICT IGNORE )''')
-            self.tables.append('parameters')
+            curs.execute('DROP TABLE IF EXISTS filtering_parameters ')
+            curs.execute(''' CREATE TABLE filtering_parameters (
+            filtering_parameterId INTEGER PRIMARY KEY, 
+            params BLOB )''')
+            self.tables.append('filtering_parameters')
+
+            curs.execute('DROP TABLE IF EXISTS CDHIT_parameters ')
+            curs.execute(''' CREATE TABLE CDHIT_parameters (
+            CDHIT_parametersId INTEGER PRIMARY KEY, 
+            params TEXT )''')
+            self.tables.append('CDHIT_parameters')
             
-            curs.execute('DROP TABLE IF EXISTS experiments_parameters')
-            curs.execute(''' CREATE TABLE experiments_parameters (
-            linkId INTEGER PRIMARY KEY, 
-            experimentId INTEGER, 
-            parameterId INTEGER, 
-            FOREIGN KEY(experimentId) REFERENCES experiments(experimentId)  
-            FOREIGN KEY(parameterId) REFERENCES parameters(parameterId) )''')
-            self.tables.append('experiments_parameters')
+#            curs.execute('DROP TABLE IF EXISTS parameters ')
+#            curs.execute(''' CREATE TABLE parameters (
+#            parameterId INTEGER PRIMARY KEY, 
+#            CDHIT_parameters TEXT,
+#            filtering_parameters TEXT, 
+#            UNIQUE(CDHIT_parameters, filtering_parameters) ON CONFLICT IGNORE )''')
+#            self.tables.append('parameters')
+            
+#            curs.execute('DROP TABLE IF EXISTS experiments_parameters')
+#            curs.execute(''' CREATE TABLE experiments_parameters (
+#            linkId INTEGER PRIMARY KEY, 
+#            experimentId INTEGER, 
+#            parameterId INTEGER, 
+#            FOREIGN KEY(experimentId) REFERENCES experiments(experimentId)  
+#            FOREIGN KEY(parameterId) REFERENCES parameters(parameterId) )''')
+#            self.tables.append('experiments_parameters')
             
             curs.execute('DROP TABLE IF EXISTS clust_results')
             curs.execute(''' CREATE TABLE clust_results (
             clust_resultId INTEGER PRIMARY KEY, 
-            parameterId INTEGER,
             experimentId INTEGER,
-            datafileId INTEGER, 
+            outdatafileId INTEGER, 
+            CDHIT_parameters TEXT,
             cluster_counter BLOB )''')
             self.tables.append('clust_results')
             
@@ -319,7 +341,7 @@ class PopGen_DB(Database):
             return datafile_id 
 
     def add_experiment(self, config, exp_type='', name=None, description=None):
-        ''' Add appropriate entries into experiment table and parameters table. '''
+        ''' Add appropriate entries into experiment table. '''
 
         if name == None:
             name = config.experiment_name
@@ -336,7 +358,11 @@ class PopGen_DB(Database):
             self.add_binary(config, 'config', id=exp_id, table='experiments')
             
             return exp_id
-            
+    
+    def add_CDHIT_parameters(self, ):
+        ''' Add entries to database for CDHIT parameters '''
+        pass
+    
     def add_results_parameters_datafiles(self, in_filename, out_filename, counter, config, CDHIT_params):
         ''' Add appropriate entries into results table for samplesID, ExperimetID, paramaterID,  
         datafilesID and cluster_counter.
