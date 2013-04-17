@@ -545,7 +545,6 @@ class Preprocessor(object):
         
         first_run = 1
         
-        
         # Running through all records in all passed files 
         for recordgen in RecCycler.seqfilegen:
             

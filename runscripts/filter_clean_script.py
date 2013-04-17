@@ -14,6 +14,7 @@ import re
 from utils import get_data_prefix
 from preprocess import  Preprocessor, ConfigClass
 from cluster import ClusterClass
+import cPickle as pkl
 
 from database2 import Popgen_db
 
@@ -131,62 +132,6 @@ Preprocess.filter_reads_pipeline()
 Preprocess.process_MIDtag(max_edit_dist = p['cleaning']['max_edit_dist'])
 Preprocess.cleanup_files('filtered') # Remove filtered intermediate files 
 
-
 # Store or pass on config file to clustering section
-
-
-
-#===============================================================================
-# END OF FILTERING AND CLEANING 
-#===============================================================================
-
-# clustering section 
-
-
-
-
-
-
-
-#===============================================================================
-# Splitting by species zebras and gazelles
-#===============================================================================
-subgroups = { 'zebra'  : '.*zebra.*',
-            'gazelle' : '.*gazelle.*'}
-
-Preprocess.split_by_subgroups(subgroups)
-
-Preprocess.cleanup_files('tag_processed') # Remove MID tag processed intermediate files 
-
-#===============================================================================
-# Prepare for Clustering 
-#===============================================================================
-
-# Separate all Barcodes into separate files for clustering individually
-files2cluster, path = Preprocess.trim_reads(mode='separate', n=1)
-
-
-#===============================================================================
-# Cluster Data 
-#===============================================================================
-
-# For Clustering 
-#------------------------------------------------------------------------------ 
-# Default vars for clustering 
-default_vars = { 'c_thresh' : 0.90,
-                 'n_filter' : 8,
-                 'maskN' : False}
-
-# Varibles to change, 1 dictionary per run
-run_parameters = [ 
-                    { 'c_thresh' : 1.0},
-                    { 'c_thresh' : 0.90},
-                   ]
-                   
-Cluster = ClusterClass(infiles=files2cluster, inpath=path, defaults=default_vars) 
-Cluster.c = c
-Cluster.db = db
-
-out_list = Cluster.run_batch_cdhit_clustering(run_parameters, threads=1)
-
-## Display Summary
+# Pickle config 
+pkl.dump(c, open('config.pkl', 'wb'))
