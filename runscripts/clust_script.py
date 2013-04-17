@@ -44,6 +44,15 @@ db_path = joinp(prefix, c.root)
 db = Popgen_db(joinp(db_path, c.db_name), recbyname=True)
 Preprocess.db = db
 
+#==============================================================================
+# Add Experimental details and config object in database
+#==============================================================================
+
+# These should be unique for each experiment, else results table is overwritten
+c.experiment_name = 'gz-allg-allz'
+c.experiment_description = '''Clustering all gazelles and all zebras separately'''
+c.exp_id = db.add_experiment(config=c, exp_type='clustering')
+
 #===============================================================================
 # Splitting by species zebras and gazelles
 #===============================================================================
@@ -60,6 +69,7 @@ Preprocess.split_by_subgroups(subgroups)
 
 # Separate all reads into separate files for each group so they are clustered individually
 files2cluster, path = Preprocess.trim_reads(mode='separate', n=1)
+
 
 #===============================================================================
 # Cluster Data 

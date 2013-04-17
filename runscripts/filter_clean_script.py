@@ -28,10 +28,6 @@ prefix = get_data_prefix()
 ''' Filter and Clean SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD-data'''
 #===============================================================================
 
-# These should be unique for each experiment, else results table is overwritten
-#c.experiment_name = 'gz-allg-allz'
-#c.experiment_description = '''Clustering all gazelles and all zebras separately'''
-
 c.root = 'gazelles-zebras'
 
 c.db_name = 'gz_allg-allz.db'
@@ -98,9 +94,6 @@ else:
 Preprocess = Preprocessor(c) 
 Preprocess.db = db # Pass database reference to Preprocessor Object
 
-## Add Experimental details and config object in database
-##------------------------------------------------------------------------------ 
-#c.exp_id = db.add_experiment(config=c, exp_type='clustering')
 
 #===============================================================================
 # Setup Filtering Parameters
