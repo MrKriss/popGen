@@ -18,7 +18,7 @@ import editdist as ed
 
 from general_utilities import set_trace
 
-from utils import smartopen, Cycler
+from utils.__init__ import smartopen, Cycler
 
 class ConfigClass(object):
     pass
@@ -43,8 +43,10 @@ class Preprocessor(object):
         if c:
             self.c = c
             # Set raw files for next input 
-            self.next_input_files = c.raw_input_files
-            self.next_input_path = c.data_inpath     
+            if hasattr(self.c, 'starting_input_files'):
+                self.next_input_files = c.starting_input_files
+            if hasattr(self.c, 'starting_data_inpath') :
+                self.next_input_path = c.starting_data_inpath   
         else:
             self.c = ConfigClass()
             # Defaults for other parameters
@@ -107,17 +109,17 @@ class Preprocessor(object):
                     os.chdir(data_inpath)
                 files = glob.glob(file_pattern)
                 files.sort()
-                self.c.next_input_files = files
-                self.c.next_input_path = os.getcwd()
+                self.next_input_files = files
+                self.next_input_path = os.getcwd()
             else:
                 raise Exception('No input files passed and no file pattern defined')
         else:
             if type(infiles) is str:
                 infiles = [infiles]
             if data_inpath:
-                self.c.next_input_path = data_inpath
+                self.next_input_path = data_inpath
                    
-            self.c.next_input_files = infiles
+            self.next_input_files = infiles
         
         if os.getcwd() != starting_dir:
             os.chdir(starting_dir)
@@ -258,10 +260,13 @@ class Preprocessor(object):
                                                         100 * (sum(count.values())/ 
                                                                 float(read_count[0])))
         # Write the summary to a file 
-        with open(os.path.join(outpath, "filter_summary_" + self.c.experiment_name +  ".log"), 'wb') as f:
+        with open(os.path.join(outpath, "filter_summary_" + self.c.root + 
+                               '_params-' + str(self.c.filterparam_id) + ".log"), 'wb') as f:
             f.write("Filter parameters:\n") 
             f.write("------------------\n")
-            f.write(self.c.filter_funtion_params + "\n")
+            p = self.db.get_binary(col='params', target='filtering_parameterID',
+                                    value = c.filterparam_id, table = 'filtering_parameters')
+            f.write(str(p) + "\n")
             f.write("\n")
             f.write('Filter stats:\n')
             f.write("-------------------------------------------\n")
@@ -277,6 +282,8 @@ class Preprocessor(object):
             f.write('Total No. Passed: \t\t%s (%.2f %%)\n' % (read_count[0] - sum(count.values()), 
                                                         100 * ((read_count[0] - sum(count.values()))/ 
                                                                float(read_count[0]))))
+            self.db.update('filtering_parameters SET filtering_summary=? WHERE filtering_parameterId=?', 
+                           (os.path.split(f.name)[1], c.filterparam_id))
             
         # Clean up
         if c.log_fails:     
@@ -431,7 +438,7 @@ class Preprocessor(object):
         
         for seqfile in RecCycler.seqfilegen:
             
-            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
+            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
             # tags is returned as a list of tuples for each record            
             tags = zip(*tags)[0]
             # tags is now a tuple of all the first elements in each record  
@@ -452,7 +459,7 @@ class Preprocessor(object):
             numwritten = SeqIO.write(ReadCorrector.clean_reads_gen(seqfile), 
                                      output_filehdl, 'fastq')
             output_filehdl.flush()        
-            output_filehdl.close()        
+            output_filehdl.close()      
     
             # Increment Counters
             total_reads += ReadCorrector.total_read_count
@@ -475,7 +482,8 @@ class Preprocessor(object):
         print 'Total of {0} tags corrected.'.format(total_corrected)
         
         # Write the summary to a file 
-        with open(os.path.join(outpath, "cleaner_summary_" + self.c.experiment_name + ".log"), 'wb') as f:
+        with open(os.path.join(outpath, "cleaner_summary_" + self.c.root + 
+                               '_params-' + str(self.c.filterparam_id) + ".log"), 'wb') as f:
             f.write("Cleaner parameters:\n") 
             f.write("------------------\n")
             f.write("Maximum Edit Distance = " + str(max_edit_dist) + "\n")
@@ -497,9 +505,25 @@ class Preprocessor(object):
             f.write("{0} \t({1:.2f}%) \tcutsites corrected in total\n".format(
                     total_cutsite_corrected, (float(total_cutsite_corrected)/total_reads) * 100))
             
+            self.db.update('filtering_parameters SET cleaning_summary=? WHERE filtering_parameterId=?', 
+                           (os.path.split(f.name)[1], c.filterparam_id))
+            
+            
         total_t = time.time() - toc    
         print 'Processed all files in {0}\n'.format(time.strftime('%H:%M:%S', 
                                                             time.gmtime(total_t)))
+
+        # Update datafiles in database
+        for fname in outnames:
+            # find samples present in file 
+            recs = self.get_data4file(fname, fields=['description'])
+            # Store results in database 
+            desc_list = [rec[0] for rec in recs]
+            data_id = self.db.add_datafile(fname, desc_list, datafile_type='processed')
+            
+            # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+            self.db.update('datafiles SET filtering_parameterId=? WHERE datafileId=?', (self.c.filterparam_id, data_id))
+        
         # Update internal Variables
         self.next_input_files = outnames
         self.next_input_path = outpath
@@ -532,7 +556,6 @@ class Preprocessor(object):
         outfiles_dict = {}
         
         first_run = 1
-        
         
         # Running through all records in all passed files 
         for recordgen in RecCycler.seqfilegen:
@@ -719,7 +742,7 @@ class Preprocessor(object):
                 
                 desc_list = filter(subgroups[group].match ,dbtags.values())
                 
-                self.db.add_datafile(filename, desc_list, datafile_type='1sample')
+                self.db.add_datafile(filename, desc_list, datafile_type='group')
 
             print 'Finished Splitting reads for input file: {0}'.format(RecCycler.curfilename)
             

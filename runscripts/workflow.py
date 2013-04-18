@@ -12,11 +12,11 @@ import socket
 import re
 
 from utils import get_data_prefix
-from preprocess2 import  Preprocessor, ConfigClass
+from preprocess import  Preprocessor, ConfigClass
 from cluster import ClusterClass
 import cPickle as pkl
 
-from database2 import Popgen_db
+from database import Popgen_db
 
 starting_dir = os.getcwd()
 c = ConfigClass()

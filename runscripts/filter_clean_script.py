@@ -12,11 +12,11 @@ import socket
 import re
 
 from utils import get_data_prefix
-from preprocess2 import  Preprocessor, ConfigClass
+from preprocess import  Preprocessor, ConfigClass
 from cluster import ClusterClass
 import cPickle as pkl
 
-from database2 import Popgen_db
+from database import Popgen_db
 
 starting_dir = os.getcwd()
 c = ConfigClass()
@@ -27,7 +27,6 @@ prefix = get_data_prefix()
 #==============================================================================
 ''' Filter and Clean SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD-data'''
 #===============================================================================
-
 
 c.root = 'gazelles-zebras'
 
@@ -57,6 +56,8 @@ c.filtered_outpath = joinp(prefix, c.root , 'processed-data')
 c.tag_processed_outpath = joinp(prefix, c.root, 'processed-data')
 c.tag_split_outpath = joinp(prefix, c.root, 'processed-data', 'per-species')
 c.clusters_outpath = joinp(prefix, c.root, 'clusters')
+c.cdhit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
+
 
 # Set interim file suffixes
 c.filtered_files_postfix = '-pass'

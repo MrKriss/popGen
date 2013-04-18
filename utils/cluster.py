@@ -5,15 +5,12 @@ Created on 6 Dec 2012
 '''
 import os 
 import sys 
+import time
+import shlex
+import subprocess
+import re
 
 import numpy as np 
-from subprocess import call, Popen, STDOUT, PIPE
-import shlex
-import re
-import string
-from threading  import Thread
-from Queue import Queue, Empty
-
 from collections import Counter, defaultdict
 
 class ClusterClass(object):
@@ -25,7 +22,7 @@ class ClusterClass(object):
             self.input_files = infiles
         if inpath is not None:
             self.inpath = inpath
-        self.clusterd_postfix = '-clustered'
+        self.clustered_postfix = '-clustered'
 
         if db:
             self.db = db
@@ -40,7 +37,6 @@ class ClusterClass(object):
                                     'maskN' : False}
         if defaults:
             self.default_parameters.update(defaults)
-        
         
     def run_single_cdhit_clustering(self, **kwargs):
         ''' Runs cd-hit-est over the list of files given for a single set of parameters. ''' 
@@ -132,30 +128,26 @@ class ClusterClass(object):
         -r 0   --> DO Only +/+ and not -/+ alignment comparisons as reads are done in both directions but on different strands. 
         -s 0.8 --> If shorter sequence is less than 80% of the representative sequence, dont cluster. 
         
-        Writes stdout to console and saves to log file in real time. 
+        Writes stdout to console.
+        Counter dictionary and summary logfile are generated after each run. 
         
         '''
         if outfile_postfix is None:
-            outfile_postfix = self.clusterd_postfix
+            outfile_postfix = self.clustered_postfix
         
         # input check
-        if type(infiles) is not list: 
+        if type(infiles) is str: 
             infiles = [infiles]
-              
-        # Define re patterns 
-        pattern1 = re.compile('^\.')
-        pattern2 = re.compile('%$')
-        pattern3 = re.compile('^#')
-        
-        cd_hit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
         
         returned_outfiles_list = []
         counters = []
         for infile in infiles:
             
-            out_filename = infile.split('.')[0] + outfile_postfix
+            start_time = time.time()
             
+            out_filename = infile.split('.')[0] + outfile_postfix
             returned_outfiles_list.append(out_filename)
+            
             log_filename = infile.split('.')[0] + '-report.log'
             
             infile_path = os.path.join(inpath, infile)
@@ -169,46 +161,15 @@ class ClusterClass(object):
                 cmd = cmd + ' -mask N'
             if allvall:
                 cmd = cmd + ' -g 1'
-                
-            # Wish to write progress to console and also capture summary in a log file
-            
-            # function to thread
-            def enqueue_output(out, queue):
-                for line in iter(out.readline, b''):
-                    queue.put(line)
-                out.close()
             
             # Process to run CD-HIT
-            proc = Popen(shlex.split(os.path.join(cd_hit_path, cmd)), stdout=PIPE, bufsize=1)
+            subprocess.check_call(shlex.split(os.path.join(self.c.cdhit_path, cmd)))
             
-            # Setup queue and threading 
-            q = Queue()
-            t = Thread(target=enqueue_output, args=(proc.stdout, q))
-            t.daemon = True # thread dies with the program
-            t.start()
-        
-            with open(logfile_path, 'wb') as logfile:
-                while True:
-                    # read line without blocking
-                    try:  line = q.get_nowait() # or q.get(timeout=.1)
-                    except Empty:
-                        if proc.poll() != None:
-                            break
-                    else: # got line
-                        if (pattern1.match(line) or pattern2.match(line) 
-                          or pattern3.match(line)):
-                            sys.stdout.write(line)
-                            sys.stdout.flush()
-                            continue
-                        else:
-                            line.translate(string.maketrans("\r","\n"))
-                            sys.stdout.write(line)
-                            sys.stdout.flush()
-                            logfile.write(line)
-                            logfile.flush()
-                            
+            finish_time = time.time()
+            
             # Update database if present 
             if self.db:
+                
                 # Get cluster size summary counter 
                 counter = self.cluster_summary_counter(infile=out_filename, path=outpath,
                                  mode='total', report=True)    
@@ -216,6 +177,43 @@ class ClusterClass(object):
                 st_idx = cmd.find('-c ')
                 CDHIT_parameters = cmd[st_idx:]
             
+                # Write summary logfile 
+                with open(logfile_path, 'wb') as f:
+                    program_name = os.path.split(self.c.cdhit_path)[1]
+                    f.write('=========================================================\n')
+                    f.write('Program     : {0}\n'.format(program_name))
+                    f.write('Input File  : {0}\n'.format(infile_path))
+                    f.write('Output File : {0}\n'.format(outfile_path))
+                    f.write('Commands    : {0}\n'.format(CDHIT_parameters))
+                    f.write('\n')
+                    f.write('Started     : {0}\n'.format(time.strftime('%a, %d %b %Y, %H:%M:%S', 
+                                                            time.gmtime(start_time))))
+                    f.write('=========================================================\n')
+                    f.write('\n')
+                    f.write('                       Report Log\n')
+                    f.write('---------------------------------------------------------\n')
+                    
+                    reads_per_cluster = {key: int(key)*value for key, value in counter.iteritems()}
+                    total_reads = sum(reads_per_cluster.values())
+                    total_clusters = sum(counter.values())
+                    f.write('Total number of reads     : {0}\n'.format(total_reads))
+                    f.write('Total number of clusters  : {0}\n'.format(total_clusters))
+                    read_lengths = [int(key) for key in counter.keys()]
+                    f.write('Read length Min and Max    : {0} and {1}\n'.format(min(read_lengths), max(read_lengths)))
+                    f.write('Time taken                 : {0}\n'.format(time.strftime('%H:%M:%S', 
+                                                            time.gmtime(finish_time - start_time))))
+                    f.write('\n')
+                    f.write('Top 20 Percentage Reads per cluster \n')
+                    f.write('---------------------------------------------------------\n')
+                    f.write('Cluster Size    No. Clusters    Total Reads         %    \n')
+                    f.write('---------------------------------------------------------\n')
+                    top_reads_per_cluster = sorted(reads_per_cluster.iteritems(), 
+                                                   key=lambda tup: int(tup[1]), reverse=True)[:20]
+                    for tup in top_reads_per_cluster:
+                        f.write("{clust_size: <16}{num_clust: <16}{total_reads: <18d}{percentage:.2%}\n".format(
+                              clust_size=tup[0], num_clust=counter[tup[0]], total_reads=tup[1], 
+                              percentage=float(tup[1]) / total_reads))
+
                 self.db.add_results_parameters_datafiles(infile, out_filename, counter, self.c, CDHIT_parameters)
                 
                 counters.append(counter)
@@ -223,7 +221,7 @@ class ClusterClass(object):
         return (returned_outfiles_list, outpath, counters) 
 
 
-    def cluster_summary_counter(self, infile, path='', mode='by_seqlen', report=True):
+    def cluster_summary_counter(self, infile, path='', mode='total', report=True):
         ''' Takes cluster file output by CD-Hit and produces two Counter for the 
         
         modes:
