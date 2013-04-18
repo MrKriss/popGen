@@ -24,6 +24,46 @@ c = ConfigClass()
 # Work out where data is stored on this machine
 prefix = get_data_prefix()
 
+
+
+
+class Workflow(object):
+    ''' Container for all preprocessing, filtering, and exploritory analysis with a particular
+     '''
+    
+    
+    def __init__(self):
+        pass
+    
+    def create_new(self, name=None):
+        ''' '''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #==============================================================================
 ''' Filter and Clean SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD-data'''
 #===============================================================================
