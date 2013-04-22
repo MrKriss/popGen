@@ -210,9 +210,14 @@ class ClusterClass(object):
                     top_reads_per_cluster = sorted(reads_per_cluster.iteritems(), 
                                                    key=lambda tup: int(tup[1]), reverse=True)[:20]
                     for tup in top_reads_per_cluster:
+                        if total_reads == 0:
+                            perc = 0.0
+                        else:
+                            perc = float(tup[1]) / total_reads
+                        
                         f.write("{clust_size: <16}{num_clust: <16}{total_reads: <18d}{percentage:.2%}\n".format(
                               clust_size=tup[0], num_clust=counter[tup[0]], total_reads=tup[1], 
-                              percentage=float(tup[1]) / total_reads))
+                              percentage=perc))
 
                 self.db.add_results_parameters_datafiles(infile, out_filename, counter, self.c, CDHIT_parameters)
                 

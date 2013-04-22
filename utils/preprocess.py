@@ -98,28 +98,26 @@ class Preprocessor(object):
         
         return rows
 
-    def set_input_files(self, infiles=None, data_inpath=None, file_pattern=None):
+    def set_input_files(self, data_files=None, data_inpath=None):
+        ''' Set next input files and file path. 
+        If data_file is a string, it is treated as a glob to the data_inpath '''
         
         starting_dir = os.getcwd()
         
-        if infiles is None:
+        if type(data_files) is str:
             # Glob the file pattern 
-            if file_pattern:
-                if data_inpath:
-                    os.chdir(data_inpath)
-                files = glob.glob(file_pattern)
-                files.sort()
-                self.next_input_files = files
-                self.next_input_path = os.getcwd()
-            else:
-                raise Exception('No input files passed and no file pattern defined')
-        else:
-            if type(infiles) is str:
-                infiles = [infiles]
             if data_inpath:
-                self.next_input_path = data_inpath
-                   
-            self.next_input_files = infiles
+                os.chdir(data_inpath)
+            files = glob.glob(data_files)
+            assert files, "No files returned from glob"
+            files.sort()
+            self.next_input_files = files
+            self.next_input_path = os.getcwd()
+        elif type(data_files) is list or type(data_files) is tuple:
+            self.next_input_path = data_inpath
+            self.next_input_files = data_files
+        else:
+            raise Exception('Invalid entry for data_files.')
         
         if os.getcwd() != starting_dir:
             os.chdir(starting_dir)
@@ -260,7 +258,7 @@ class Preprocessor(object):
                                                         100 * (sum(count.values())/ 
                                                                 float(read_count[0])))
         # Write the summary to a file 
-        with open(os.path.join(outpath, "filter_summary_" + self.c.root + 
+        with open(os.path.join(outpath, "filter_summary_" + self.c.root_name + 
                                '_params-' + str(self.c.filterparam_id) + ".log"), 'wb') as f:
             f.write("Filter parameters:\n") 
             f.write("------------------\n")
@@ -482,7 +480,7 @@ class Preprocessor(object):
         print 'Total of {0} tags corrected.'.format(total_corrected)
         
         # Write the summary to a file 
-        with open(os.path.join(outpath, "cleaner_summary_" + self.c.root + 
+        with open(os.path.join(outpath, "cleaner_summary_" + self.c.root_name + 
                                '_params-' + str(self.c.filterparam_id) + ".log"), 'wb') as f:
             f.write("Cleaner parameters:\n") 
             f.write("------------------\n")
@@ -530,8 +528,7 @@ class Preprocessor(object):
         
         return (outnames, outpath)
 
-    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None,
-                      report=True, savecounter=True):
+    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None):
         ''' Split the file into separate files based on MID tags '''
         
         c = self.c
@@ -621,6 +618,7 @@ class Preprocessor(object):
                   
                 row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
                 current_value = row[0]['read_count']
+                
                 if current_value is None:
                     current_value = 0
                     
@@ -646,8 +644,8 @@ class Preprocessor(object):
         
         return (outfiles_dict.values(), outpath)
     
-    def split_by_subgroups(self, subgroups=None, infiles=None, inpath=None, outpath=None, out_filename=None,
-                      report=True, savecounter=True):
+    def split_by_subgroups(self, subgroups=None, infiles=None, inpath=None, outpath=None, 
+                           out_filename=None ):
         ''' Split the file into separate files based on MID tags '''
         
         if subgroups is None:
