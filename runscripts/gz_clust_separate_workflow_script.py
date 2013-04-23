@@ -19,7 +19,7 @@ description = 'Cluster all gazelles and zebras separately at 90% and 100%'
 #===============================================================================
 W = Workflow()
 
-W.create_new(name='zebras-gazelles-test', testing=testing)
+W.create_new(name='gazelles-zebras', testing=testing)
 
 # Make sure barcodes and datafiles are in their right folders
 
