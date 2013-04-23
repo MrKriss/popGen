@@ -171,15 +171,15 @@ class ClusterClass(object):
             if self.db:
                 
                 # Get cluster size summary counter 
-                counter = self.cluster_summary_counter(infile=out_filename, path=outpath,
-                                 mode='total', report=True)    
+                total_counter, by_seqlen_counter = self.cluster_summary_counter(infile=out_filename, path=outpath,
+                                 mode='both', report=True)    
             
                 st_idx = cmd.find('-c ')
                 CDHIT_parameters = cmd[st_idx:]
             
                 # Write summary logfile 
                 with open(logfile_path, 'wb') as f:
-                    program_name = os.path.split(self.c.cdhit_path)[1]
+                    program_name = os.path.join(self.c.cdhit_path, cmd).split(' -i ')[0]
                     f.write('=========================================================\n')
                     f.write('Program     : {0}\n'.format(program_name))
                     f.write('Input File  : {0}\n'.format(infile_path))
@@ -193,12 +193,12 @@ class ClusterClass(object):
                     f.write('                       Report Log\n')
                     f.write('---------------------------------------------------------\n')
                     
-                    reads_per_cluster = {key: int(key)*value for key, value in counter.iteritems()}
+                    reads_per_cluster = {key: int(key)*value for key, value in total_counter.iteritems()}
                     total_reads = sum(reads_per_cluster.values())
-                    total_clusters = sum(counter.values())
+                    total_clusters = sum(total_counter.values())
                     f.write('Total number of reads     : {0}\n'.format(total_reads))
                     f.write('Total number of clusters  : {0}\n'.format(total_clusters))
-                    read_lengths = [int(key) for key in counter.keys()]
+                    read_lengths = [int(key) for key in by_seqlen_counter.keys()]
                     f.write('Read length Min and Max    : {0} and {1}\n'.format(min(read_lengths), max(read_lengths)))
                     f.write('Time taken                 : {0}\n'.format(time.strftime('%H:%M:%S', 
                                                             time.gmtime(finish_time - start_time))))
@@ -216,12 +216,12 @@ class ClusterClass(object):
                             perc = float(tup[1]) / total_reads
                         
                         f.write("{clust_size: <16}{num_clust: <16}{total_reads: <18d}{percentage:.2%}\n".format(
-                              clust_size=tup[0], num_clust=counter[tup[0]], total_reads=tup[1], 
+                              clust_size=tup[0], num_clust=total_counter[tup[0]], total_reads=tup[1], 
                               percentage=perc))
 
-                self.db.add_results_parameters_datafiles(infile, out_filename, counter, self.c, CDHIT_parameters)
+                self.db.add_results_parameters_datafiles(infile, out_filename, total_counter, self.c, CDHIT_parameters)
                 
-                counters.append(counter)
+                counters.append(total_counter)
             
         return (returned_outfiles_list, outpath, counters) 
 
@@ -298,6 +298,9 @@ class ClusterClass(object):
             return total_cluster_size_counter
         elif mode == 'by_seqlen':
             return ds
+        elif mode =='both':
+            return total_cluster_size_counter, ds
+        
     
     def hist_counters(self, counters, labels=None, **kwargs):
         ''' Construct a series of histograms from a list of Counter Dictionarys '''

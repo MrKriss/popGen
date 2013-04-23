@@ -12,8 +12,8 @@ from utils.workflow import Workflow
 
 testing = False
 
-experiment_name = '10percent-test'
-description = 'A larger test set to test out the data on'
+experiment_name = 'gz_allg_allz'
+description = 'Cluster all gazelles and zebras separately at 90% and 100%'
 
 # Preprocessing 
 #===============================================================================
@@ -74,7 +74,7 @@ run_parameters = [
                     { 'c_thresh' : 0.90},
                    ]
 
-W.run_clustering(run_parameters, threads=1)
+W.run_clustering(run_parameters, threads=5)
 
 
 

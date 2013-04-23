@@ -51,7 +51,7 @@ class Workflow(object):
         self.c.tag_split_outpath = joinp(prefix, name, 'processed-data', 'per-sample')
         self.c.clusters_outpath = joinp(prefix, name, 'clusters')
         self.c.db_path = joinp(prefix,  name)
-        self.c.cdhit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1/")
+        self.c.cdhit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1")
 
         # Create directories of they dont exist
         for attr in dir(self.c): 
