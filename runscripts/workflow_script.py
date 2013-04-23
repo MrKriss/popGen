@@ -10,10 +10,10 @@ from utils.workflow import Workflow
                Workflow script for Gazelles-Zebras RAD-data 
 -----------------------------------------------------------------------------'''
 
-testing = True
+testing = False
 
-experiment_name = ''
-description = ''
+experiment_name = '10percent-test'
+description = 'A larger test set to test out the data on'
 
 # Preprocessing 
 #===============================================================================
@@ -58,13 +58,15 @@ subgroups = { 'zebra'  : '.*zebra.*',
             'gazelle' : '.*gazelle.*'}
 
 if testing:
-#     W.setup_clustering(mode='split_by_subgroups', infiles_pattern='test*-clean.fastq.bgzf',
-#                      default_params=default_params, subgroups=subgroups) 
-    W.setup_clustering(mode='split_by_tags', infiles_pattern='test*-clean.fastq.bgzf',
-                     default_params=default_params) 
+    W.setup_clustering(mode='split_by_subgroups', infiles_pattern='test*-clean.fastq.bgzf',
+                     default_params=default_params, subgroups=subgroups) 
+#     W.setup_clustering(mode='split_by_tags', infiles_pattern='test*-clean.fastq.bgzf',
+#                      default_params=default_params) 
 else:
     W.setup_clustering(mode='split_by_subgroups', infiles_pattern='lane*-clean.fastq.bgzf',
                      default_params=default_params, subgroups=subgroups) 
+#     W.setup_clustering(mode='split_by_tags', infiles_pattern='lane*-clean.fastq.bgzf',
+#                      default_params=default_params) 
 
 # Varibles to change, 1 dictionary per run
 run_parameters = [ 

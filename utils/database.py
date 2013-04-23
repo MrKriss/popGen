@@ -257,7 +257,7 @@ class Popgen_db(Database):
             curs.execute('DROP TABLE IF EXISTS CDHIT_parameters ')
             curs.execute(''' CREATE TABLE CDHIT_parameters (
             CDHIT_parameterId INTEGER PRIMARY KEY, 
-            params TEXT )''')
+            params TEXT UNIQUE ON CONFLICT IGNORE )''')
             self.tables.append('CDHIT_parameters')
             
 #            curs.execute('DROP TABLE IF EXISTS parameters ')
@@ -361,13 +361,10 @@ class Popgen_db(Database):
             curs.execute('''INSERT INTO experiments(name, type, description) VALUES (?,?,?)'''.format(),
                             (config.experiment_name, exp_type, config.experiment_description) )
             exp_id = curs.lastrowid
-            self.update_binary(config, col='config', target='config', value=exp_id, table='experiments')
+            self.update_binary(config, col='config', target='experimentId', value=exp_id, table='experiments')
             
             return exp_id
     
-    def add_CDHIT_parameters(self, ):
-        ''' Add entries to database for CDHIT parameters '''
-        pass
     
     def add_results_parameters_datafiles(self, in_filename, out_filename, counter, config, CDHIT_params):
         ''' Add appropriate entries into results table for samplesID, ExperimetID, paramaterID,  
@@ -400,7 +397,7 @@ class Popgen_db(Database):
             curs.execute('''INSERT INTO clust_results(experimentId, CDHIT_parameterId, datafileId)
                                 VALUES(?,?,?)''', (config.exp_id, param_id, datafile_id))
             res_id = curs.lastrowid
-            self.update_binary(counter, col='cluster_counter', target='cluster_counter', value=res_id, table='clust_results')
+            self.update_binary(counter, col='cluster_counter', target='clust_resultId', value=res_id, table='clust_results')
             
     def get_samples4datafile(self, filename, fields=['MIDtag']):
         ''' Return samples that are present for a given filename.
