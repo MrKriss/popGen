@@ -72,33 +72,57 @@ def file2bgzf(infiles=None, filepattern=False, data_inpath='', SQLindex=True):
     total_t = time.time() - start_time
     print 'Finished all processing {0} files in {1}'.format(len(infiles), time.strftime('%H:%M:%S', time.gmtime(total_t)))
  
-def makeSQLindex(infiles=None, filepattern=False, data_inpath=''):
+def makeSQLindex(infiles=None, data_inpath='', mode='grouped', outname=None):
     ''' Creates an SQL index out of either an uncompressed file or a compressed .bgzf file 
     
-    if infiles is list, goes through all file names in list
+    if infiles is a string it is interpreted as a glob
+    
+    if infiles is list, goes through all file names in list.
+    
+     - mode  - grouped: all files are indexed to a single index file, specified by outname 
     
     '''
+    
+    starting_dir = os.getcwd()
+    
     if data_inpath:
         os.chdir(data_inpath)
+        
+    if outname is None:
+        outname = 'reads.idx'
   
-    # Handle multiple types of input for infiles
-    assert infiles is not None, 'No files listed or file pattern specified.'         
-    if filepattern:
+    if type(infiles) is str:
         # Fetch files by file types using glob
         import glob 
         infiles = glob.glob(infiles)
-    elif type(infiles) == str:
-        # Convert to list
-        infiles = [infiles]
+    elif type(infiles) is not list and type(infiles) is not tuple:
+        raise Exception("Invalid input files specified.")
 
-    for filename in infiles: 
+    assert infiles, 'No files found, or no files passed.'
+
+    # Handle multiple types of input for infiles
+    if mode == 'grouped':
+        idx_filename = outname
         tak = time.time()
-        print 'Writing SQL index file for {0} ...'.format(filename)
-        idx_filename = filename.split('.')[0] + '.idx'
-        SeqIO.index_db(idx_filename, filename , 'fastq')
-        print '{0} written successfully'.format(idx_filename)
+        print 'Writing {0} files to SQL index ...'.format(len(infiles))
+        SeqIO.index_db(idx_filename, infiles , 'fastq')
         idx_t = time.time() - tak
         print 'Finished Indexing to {0}\n after {1}\n'.format(idx_filename, time.strftime('%H:%M:%S', time.gmtime(idx_t)))
+
+    elif mode == 'separate':
+    
+        for filename in infiles: 
+            tak = time.time()
+            print 'Writing SQL index file for {0} ...'.format(filename)
+            idx_filename = filename.split('.')[0] + '.idx'
+            SeqIO.index_db(idx_filename, filename , 'fastq')
+            print '{0} written successfully'.format(idx_filename)
+            idx_t = time.time() - tak
+            print 'Finished Indexing after {1}\n'.format(time.strftime('%H:%M:%S', time.gmtime(idx_t)))
+
+    if os.getcwd() != starting_dir:
+        os.chdir(starting_dir) 
+
 
 def file2fasta(filename):
     ''' Convert fastq file to fasta file '''

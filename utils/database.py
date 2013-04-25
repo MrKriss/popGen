@@ -365,7 +365,6 @@ class Popgen_db(Database):
             
             return exp_id
     
-    
     def add_results_parameters_datafiles(self, in_filename, out_filename, counter, config, CDHIT_params):
         ''' Add appropriate entries into results table for samplesID, ExperimetID, paramaterID,  
         datafilesID and cluster_counter.
@@ -462,7 +461,7 @@ class Popgen_db(Database):
             curs.execute('''CREATE VIEW IF NOT EXISTS {0} AS SELECT * 
                     FROM samples NATURAL JOIN samples_datafiles 
                     NATURAL JOIN datafiles NATURAL JOIN clust_results 
-                    NATURAL JOIN parameters'''.format(table_name))
+                    NATURAL JOIN CDHIT_parameters'''.format(table_name))
         
             curs.execute(querry2, (sample_description, clust_parameters))
             
@@ -491,7 +490,7 @@ class Popgen_db(Database):
             curs = con.cursor()
         
             curs.execute('''CREATE VIEW IF NOT EXISTS {0} AS SELECT * 
-                    FROM experiments NATURAL JOIN clust_results'''.format(table_name))
+                    FROM experiments NATURAL JOIN clust_results NATURAL JOIN datafiles'''.format(table_name))
         
             curs.execute(querry2, (exp_name,))
             
@@ -502,9 +501,44 @@ class Popgen_db(Database):
                 data.append(pkl.loads(pickled_data))
 
         return data
-    
-    
         
+    def get_cluster_counters(self, fields="cluster_counter", target1='', value1='', target2=None, value2=None): # fields='cluster_counter', col=, target):
+        ''' Return list of cluster_counter dictionaries for a a given sample description. 
+        
+        Also returns a list of datafiles for those cluster counters, and/or parameters if required
+        '''
+    
+        table_name = 'all'
+        
+        querry = '''SELECT {0} FROM {1} WHERE {2} GLOB ?'''.format(
+                    fields, table_name, target1)
+        
+        if target2 and value2:
+            querry += " AND {3} GLOB ?".format(target2)
+        
+        with self.con as con:
+            curs = con.cursor()
+        
+            curs.execute('''CREATE VIEW IF NOT EXISTS {0} AS SELECT * 
+                    FROM samples NATURAL JOIN samples_datafiles 
+                    NATURAL JOIN datafiles NATURAL JOIN clust_results 
+                    NATURAL JOIN CDHIT_parameters NATURAL JOIN filtering_parameters
+                    NATURAL JOIN experiments'''.format(table_name))
+        
+            if value2:
+                curs.execute(querry, (value1, value2))
+            else:
+                curs.execute(querry, (value1,))
+                
+            records = curs.fetchall()
+            data = []
+            other_fields = []
+            for row in records:
+                pickled_data = str(row[0])
+                data.append((pkl.loads(pickled_data), row[1]))
+                other_fields.append(row[1:])
+    
+        return data, other_fields
     
                                
 if __name__ == '__main__':

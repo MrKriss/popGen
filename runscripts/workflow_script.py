@@ -76,6 +76,9 @@ run_parameters = [
 
 W.run_clustering(run_parameters, threads=1)
 
+# Next steps 
+
+# Delete all fasta files
 
 
 

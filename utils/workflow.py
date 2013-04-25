@@ -15,6 +15,8 @@ from utils.preprocess import  Preprocessor, ConfigClass
 from utils.cluster import ClusterClass
 import cPickle as pkl
 
+from file_conversions import makeSQLindex
+
 from utils.database import Popgen_db
 
 class Workflow(object):
@@ -48,10 +50,12 @@ class Workflow(object):
         self.c.barcode_inpath = joinp(prefix, name , 'barcodes')
         self.c.filtered_outpath = joinp(prefix, name , 'processed-data')
         self.c.tag_processed_outpath = joinp(prefix, name, 'processed-data')
-        self.c.tag_split_outpath = joinp(prefix, name, 'processed-data', 'per-sample')
+        self.c.tag_splitby_sample_outpath = joinp(prefix, name, 'processed-data', 'per-sample')
+        self.c.tag_splitby_subgroup_outpath = joinp(prefix, name, 'processed-data', 'per-subgroup')
         self.c.clusters_outpath = joinp(prefix, name, 'clusters')
         self.c.db_path = joinp(prefix,  name)
         self.c.cdhit_path = os.path.expanduser("~/bin/cd-hit-v4.6.1")
+
 
         # Create directories of they dont exist
         for attr in dir(self.c): 
@@ -175,14 +179,27 @@ class Workflow(object):
         self.Preprocessor.set_input_files(data_files=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
         
         if mode == 'split_by_tags':
-            self.Preprocessor.split_by_tags()
-            files2cluster, path = self.Preprocessor.trim_reads(mode='separate', n=1)
+            (outfiles, outpath) = self.Preprocessor.split_by_tags()
+            
+            # Create index for files clustered
+            makeSQLindex(outfiles, outpath)
+            
+            files2cluster, path = self.Preprocessor.trim_reads(mode='separate', 
+                                outpath=self.c.tag_splitby_sample_outpath, n=1)
         elif mode == 'split_by_subgroups':
             if subgroups is None:
                 raise Exception("No subgroups specified")
-            self.Preprocessor.split_by_subgroups(subgroups)
-            files2cluster, path = self.Preprocessor.trim_reads(mode='separate', n=1)
+            (outfiles, outpath) = self.Preprocessor.split_by_subgroups(subgroups)
+            
+            # Create index for files clustered
+            makeSQLindex(outfiles, outpath)
+            
+            files2cluster, path = self.Preprocessor.trim_reads(mode='separate',
+                             outpath=self.c.tag_splitby_subgroup_outpath,  n=1)
         elif mode == 'no_split':
+            # Create index for files clustered
+            makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
+            
             files2cluster, path = self.Preprocessor.trim_reads(mode='grouped', n=1)
         else:
             raise Exception(' No valid mode specified. ')
@@ -207,4 +224,11 @@ class Workflow(object):
         self.c.experiment_name = name
         self.c.experiment_description = description
         self.c.exp_id = self.db.add_experiment(config=self.c, exp_type='clustering')
+        
+    def cleanup_files(self, file_type):
+        ''' Remove all intermediate files specified '''
+        self.Preprocessor.cleanup_files(file_type)
+        
+        
+        
 

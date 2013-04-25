@@ -534,7 +534,7 @@ class Preprocessor(object):
         c = self.c
         
         if outpath is None:
-            outpath = c.tag_split_outpath
+            outpath = c.tag_splitby_sample_outpath
         
         if out_filename is None:
             out_filename = c.experiment_name
@@ -660,7 +660,7 @@ class Preprocessor(object):
         c = self.c
         
         if outpath is None:
-            outpath = c.tag_split_outpath
+            outpath = c.tag_splitby_subgroup_outpath
         if out_filename is None:
             out_filename = c.experiment_name
         
@@ -768,7 +768,7 @@ class Preprocessor(object):
             if mode == 'grouped':
                 outpath = c.tag_processed_outpath
             elif mode == 'separate':
-                outpath = c.tag_split_outpath
+                outpath = c.tag_processed_outpath
         if out_filename is None:
             out_filename = c.experiment_name + '_all_preprocessed.fasta'
         
@@ -854,6 +854,9 @@ class Preprocessor(object):
                                    '*' + self.c.filtered_files_postfix + 
                                    self.c.tag_processed_files_postfix + 
                                    ".fastq.bgzf") 
+            files2remove.extend(glob.glob(pattern))
+        elif 'fasta' in args or 'all' in args:
+            pattern = os.path.join(self.c.tag_split_outpath, "*" + ".fasta")
             files2remove.extend(glob.glob(pattern))
         
         # Remove files
