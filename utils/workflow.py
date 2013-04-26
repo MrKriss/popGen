@@ -63,6 +63,9 @@ class Workflow(object):
                 path = getattr(self.c, attr)
                 if not os.path.exists(path):
                     os.makedirs(path)
+
+        # Var to choose between different output locations after splitting data 
+        self.c.current_tag_split_outpath = None
         
         # Set interim file suffixes
         self.c.filtered_files_postfix = '-pass'
@@ -180,7 +183,7 @@ class Workflow(object):
         
         if mode == 'split_by_tags':
             (outfiles, outpath) = self.Preprocessor.split_by_tags()
-            
+            self.c.current_tag_split_outpath = outpath
             # Create index for files clustered
             makeSQLindex(outfiles, outpath)
             
@@ -190,7 +193,7 @@ class Workflow(object):
             if subgroups is None:
                 raise Exception("No subgroups specified")
             (outfiles, outpath) = self.Preprocessor.split_by_subgroups(subgroups)
-            
+            self.c.current_tag_split_outpath = outpath
             # Create index for files clustered
             makeSQLindex(outfiles, outpath)
             
@@ -199,8 +202,8 @@ class Workflow(object):
         elif mode == 'no_split':
             # Create index for files clustered
             makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
-            
             files2cluster, path = self.Preprocessor.trim_reads(mode='grouped', n=1)
+            self.c.current_tag_split_outpath = path 
         else:
             raise Exception(' No valid mode specified. ')
 

@@ -843,6 +843,9 @@ class Preprocessor(object):
         # Choices of 'filtered', 'tag_processed', 'all'
         # Raw inputs are always unchanged, and output .fasta is always kept
              
+        import fnmatch
+        import os
+        
         files2remove = []
           
         if 'filtered' in args or 'all' in args:
@@ -856,7 +859,7 @@ class Preprocessor(object):
                                    ".fastq.bgzf") 
             files2remove.extend(glob.glob(pattern))
         elif 'fasta' in args or 'all' in args:
-            pattern = os.path.join(self.c.tag_split_outpath, "*" + ".fasta")
+            pattern = os.path.join(self.c.current_tag_split_outpath, "*" + ".fasta")
             files2remove.extend(glob.glob(pattern))
         
         # Remove files
