@@ -100,8 +100,24 @@ class Workflow(object):
         path2config = joinp(prefix, name, '.' + name + '-config.pkl')
         path2db = joinp(prefix, name, db_name)
         
-        self.c = pkl.load(open(path2config))
         self.db = Popgen_db(path2db, recbyname=recbyname)
+        self.c = pkl.load(open(path2config))
+        
+        # Setup Configuration with new prefix 
+        prefix =  get_data_prefix()
+        
+        if self.c.testing:
+            self.c.data_inpath =  joinp(prefix,name, 'testset')
+        else:
+            self.c.data_inpath =  joinp(prefix, name, 'raw-data') 
+        self.c.barcode_inpath = joinp(prefix, name , 'barcodes')
+        self.c.filtered_outpath = joinp(prefix, name , 'processed-data')
+        self.c.tag_processed_outpath = joinp(prefix, name, 'processed-data')
+        self.c.tag_splitby_sample_outpath = joinp(prefix, name, 'processed-data', 'per-sample')
+        self.c.tag_splitby_subgroup_outpath = joinp(prefix, name, 'processed-data', 'per-subgroup')
+        self.c.clusters_outpath = joinp(prefix, name, 'clusters')
+        self.c.db_path = joinp(prefix,  name)
+        
         
     def add_datafiles(self, data_files=None , barcode_files=None ):
         ''' Add datafiles and barcodes in pairs to the database.
