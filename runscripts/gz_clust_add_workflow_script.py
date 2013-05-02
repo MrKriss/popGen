@@ -52,10 +52,11 @@ else:
 
 # Varibles to change, 1 dictionary per run
 run_parameters = [ 
-                    { 'c_thresh' : 0.95},
+                    { 'c_thresh' : 0.95, 
+                     'allvall' : True  },
                  ]
 
-W.run_clustering(run_parameters, threads=10)
+W.run_clustering(run_parameters, threads=15)
 
 W.cleanup_files('fasta')
 

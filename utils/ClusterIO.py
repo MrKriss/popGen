@@ -310,7 +310,6 @@ def sortby(handle, reverse=True, mode='cluster_size'):
 
     return sorted_cluster_idxs, cluster_idxs
 
-        
     
 def get_seqrec4descriptions(cluster_list, path2idxfile):
     """Return a cluster dictionary containing the sequence record objects for the 
@@ -433,7 +432,7 @@ def summary_counter(cluster_path2file, mode='total', report=True):
         reads_per_cluster = {}
         for k,v in total_cluster_size_counter.iteritems():
             reads_per_cluster[k] = int(k) * v
-        
+        return reads_per_cluster
     
 def hist_counters(counters, labels=None, **kwargs):
     ''' Construct a series of histograms from a list of Counter Dictionarys '''
