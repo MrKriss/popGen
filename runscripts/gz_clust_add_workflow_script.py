@@ -12,8 +12,8 @@ from utils.workflow import Workflow
 
 testing = False
 
-experiment_name = 'gz_byMIDs_90_100'
-description = 'Cluster individual samples separately by MIDtag at 90% and 100% identity'
+experiment_name = 'gz_allg_allz_95'
+description = 'Cluster all Gazelles and Zebras separately at 95% identity'
 
 # Load previously processed data info
 #===============================================================================
@@ -44,16 +44,18 @@ if testing:
 else:
 #     W.setup_clustering(mode='split_by_subgroups', infiles_pattern='lane*-clean.fastq.bgzf',
 #                      default_params=default_params, subgroups=subgroups) 
-    W.setup_clustering(mode='split_by_tags', infiles_pattern='lane*-clean.fastq.bgzf',
-                     default_params=default_params) 
+#     W.setup_clustering(mode='split_by_tags', infiles_pattern='lane*-clean.fastq.bgzf',
+#                      default_params=default_params) 
+    W.setup_clustering(mode='no_split', infiles_pattern='*.bgzf', 
+                       infiles_path=W.c.tag_splitby_subgroup_outpath, 
+                       default_params=default_params) 
 
 # Varibles to change, 1 dictionary per run
 run_parameters = [ 
-                    { 'c_thresh' : 1.0},
-                    { 'c_thresh' : 0.90},
-                   ]
+                    { 'c_thresh' : 0.95},
+                 ]
 
-W.run_clustering(run_parameters, threads=5)
+W.run_clustering(run_parameters, threads=10)
 
 W.cleanup_files('fasta')
 

@@ -181,7 +181,7 @@ class Workflow(object):
         # Remove filtered intermediate files 
         self.Preprocessor.cleanup_files('filtered') 
 
-    def setup_clustering(self, mode, infiles_pattern, default_params=None, subgroups=None):
+    def setup_clustering(self, mode, infiles_pattern, infiles_path=None, default_params=None, subgroups=None):
         ''' Setup files for the Clustering function of the workflow. 
         
         Does the necessary splitting and trimming of files if specified in mode.
@@ -194,14 +194,17 @@ class Workflow(object):
             self.Preprocessor = Preprocessor(self.c)
             self.Preprocessor.db = self.db
 
+        if infiles_path is None:
+            infiles_path = self.c.tag_processed_outpath
+
         # Set files to process for clustering         
-        self.Preprocessor.set_input_files(data_files=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
+        self.Preprocessor.set_input_files(data_files=infiles_pattern, data_inpath=infiles_path)
         
         if mode == 'split_by_tags':
             (outfiles, outpath) = self.Preprocessor.split_by_tags()
             self.c.current_tag_split_outpath = outpath
             # Create index for files clustered
-            makeSQLindex(outfiles, outpath)
+#             makeSQLindex(outfiles, outpath)
             
             files2cluster, path = self.Preprocessor.trim_reads(mode='separate', 
                                 outpath=self.c.tag_splitby_sample_outpath, n=1)
@@ -211,13 +214,13 @@ class Workflow(object):
             (outfiles, outpath) = self.Preprocessor.split_by_subgroups(subgroups)
             self.c.current_tag_split_outpath = outpath
             # Create index for files clustered
-            makeSQLindex(outfiles, outpath)
+#             makeSQLindex(outfiles, outpath)
             
             files2cluster, path = self.Preprocessor.trim_reads(mode='separate',
                              outpath=self.c.tag_splitby_subgroup_outpath,  n=1)
         elif mode == 'no_split':
             # Create index for files clustered
-            makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
+#             makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
             files2cluster, path = self.Preprocessor.trim_reads(mode='grouped', n=1)
             self.c.current_tag_split_outpath = path 
         else:
@@ -234,7 +237,6 @@ class Workflow(object):
         outnames_list, out_path, counters_list = zip(*outputs_list)
         
         return outnames_list, out_path, counters_list
-        
         
     def add_experiment_name(self, name, description):
         ''' Add Experimental details and config object in database'''

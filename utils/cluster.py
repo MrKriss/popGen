@@ -333,10 +333,6 @@ class ClusterClass(object):
 
 
 
-
-
-
-
 #def plot_counter( bins,cluster_length_bins=None, mincutoff=10, bins=5000, report=True, plot_hist=True,):
 #    
 #    

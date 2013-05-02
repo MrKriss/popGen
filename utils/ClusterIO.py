@@ -312,28 +312,29 @@ def sortby(handle, reverse=True, mode='cluster_size'):
 
         
     
-def get_seqrec4descriptions(cluster_dictionary_list, path2idxfile):
+def get_seqrec4descriptions(cluster_list, path2idxfile):
     """Return a cluster dictionary containing the sequence record objects for the 
     representative sequence and all cluster members.
     
     Only return minimal info for now incase run into memory issues with large data volume.
+    
+    rewrote to use cluster classs
     """
     
     seq_record_db = SeqIO.index_db(path2idxfile)  
     
     cluster_seqrecs_list = []
     
-    for cluster_dictionary in cluster_dictionary_list:
+    for cluster in cluster_list:
     
-        # Setup Data structure
-        cluster_seqrecs = {}
-        cluster_seqrecs['members_desc'] = []
-        cluster_seqrecs['rep_seq'] = seq_record_db[cluster_dictionary['rep_seq_desc']]
+        newclust = Cluster()
+        newclust.members_desc = []
+        newclust.rep_seq = seq_record_db[cluster.rep_seq_desc]
         
-        for elem in cluster_dictionary['members_desc']:
-            cluster_seqrecs['members_desc'].append(seq_record_db[elem])
+        for elem in cluster.members_desc:
+            newclust.members_desc.append(seq_record_db[elem])
         
-        cluster_seqrecs_list.append(cluster_seqrecs)
+        cluster_seqrecs_list.append(newclust)
         
     return cluster_seqrecs_list
 
