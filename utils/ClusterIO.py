@@ -454,7 +454,7 @@ def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", *
     
     # Default plot options
     if 'ms' not in kwargs:
-        kwargs['ms'] = 2.5
+        kwargs['ms'] = 4.0
     if 'marker' not in kwargs:
         kwargs['marker'] = '.'
     if 'mew' not in kwargs:
@@ -486,7 +486,7 @@ def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", *
         plt.xlabel(xlab)
         plt.ylabel(ylab)
 
-    plt.legend(numpoints=1, markerscale=10)
+    plt.legend(numpoints=1, markerscale=8)
     plt.show()
 
 
