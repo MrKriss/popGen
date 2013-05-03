@@ -218,10 +218,15 @@ class Workflow(object):
             
             files2cluster, path = self.Preprocessor.trim_reads(mode='separate',
                              outpath=self.c.tag_splitby_subgroup_outpath,  n=1)
-        elif mode == 'no_split':
+        elif mode == 'no_split_grouped':
             # Create index for files clustered
 #             makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
             files2cluster, path = self.Preprocessor.trim_reads(mode='grouped', n=1)
+            self.c.current_tag_split_outpath = path 
+        elif mode == 'no_split_separate':
+            # Create index for files clustered
+#             makeSQLindex(filepattern=infiles_pattern, data_inpath=self.c.tag_processed_outpath)
+            files2cluster, path = self.Preprocessor.trim_reads(mode='separate', n=1)
             self.c.current_tag_split_outpath = path 
         else:
             raise Exception(' No valid mode specified. ')
