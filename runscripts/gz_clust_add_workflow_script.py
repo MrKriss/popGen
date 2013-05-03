@@ -47,7 +47,7 @@ else:
 #     W.setup_clustering(mode='split_by_tags', infiles_pattern='lane*-clean.fastq.bgzf',
 #                      default_params=default_params) 
     W.setup_clustering(mode='no_split_separate', infiles_pattern='*.bgzf', 
-                       infiles_path=W.c.tag_splitby_sample_outpath, 
+                       infiles_path=W.c.tag_splitby_subgroup_outpath, 
                        default_params=default_params) 
 
 # Varibles to change, 1 dictionary per run
