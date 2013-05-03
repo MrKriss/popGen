@@ -104,18 +104,6 @@ def gettop_clusters(clusterfile, x, lower_limit, upper_limit):
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 
 def mismatche2percentage(mismatches, seq_length):
@@ -457,6 +445,48 @@ def hist_counters(counters, labels=None, **kwargs):
         plt.ylabel("Frequency")
 
     plt.legend()
+    plt.show()
+
+def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", **kwargs):
+    ''' Construct a series of scatter plots from a list of Counter Dictionaries '''
+    
+    import matplotlib.pyplot as plt
+    
+    # Default plot options
+    if 'ms' not in kwargs:
+        kwargs['ms'] = 2.5
+    if 'marker' not in kwargs:
+        kwargs['marker'] = '.'
+    if 'mew' not in kwargs:
+        kwargs['mew'] = 0.0
+    
+    if type(counters) is not list and type(counters) is not tuple:
+        counters = [counters]
+    
+    if labels is not None:
+        assert len(labels) == len(counters), "Number of labels must match number of counters."
+    
+    for i in range(len(counters)):
+        
+        data_xs = [int(k) for k in counters[i].keys()]
+        data_ys = counters[i].values()
+
+        if labels:
+            plt.plot(data_xs, data_ys, label=labels[i], ls='', **kwargs)
+        else:
+            plt.plot(data_xs, data_ys, label='Counter-'+str(i), ls='', **kwargs)
+        
+        ax = plt.gca()
+        if 'x' in log:
+            ax.set_xscale('log')
+        if 'y' in log:
+            ax.set_yscale('log')
+        
+        plt.title(title)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+
+    plt.legend(numpoints=1, markerscale=10)
     plt.show()
 
 
