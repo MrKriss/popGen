@@ -12,8 +12,8 @@ from utils.workflow import Workflow
 
 testing = False
 
-experiment_name = 'gz_allg_allz_95g1'
-description = 'Cluster all Zebras and Gazelles separately at 95% identity all v all.'
+experiment_name = 'gz_MIDs_95g1'
+description = 'Cluster all MID tags separately at 95% identity all v all.'
 
 # Load previously processed data info
 #===============================================================================
@@ -46,8 +46,11 @@ else:
 #                      default_params=default_params, subgroups=subgroups) 
 #     W.setup_clustering(mode='split_by_tags', infiles_pattern='lane*-clean.fastq.bgzf',
 #                      default_params=default_params) 
+#     W.setup_clustering(mode='no_split_separate', infiles_pattern='*.bgzf', 
+#                        infiles_path=W.c.tag_splitby_subgroup_outpath, 
+#                        default_params=default_params) 
     W.setup_clustering(mode='no_split_separate', infiles_pattern='*.bgzf', 
-                       infiles_path=W.c.tag_splitby_subgroup_outpath, 
+                       infiles_path=W.c.tag_splitby_sample_outpath, 
                        default_params=default_params) 
 
 # Varibles to change, 1 dictionary per run
@@ -56,7 +59,7 @@ run_parameters = [
                      'allvall' : True  },
                  ]
 
-W.run_clustering(run_parameters, threads=20)
+W.run_clustering(run_parameters, threads=15)
 
 W.cleanup_files('fasta')
 
