@@ -16,3 +16,13 @@ def debugf(f, *args, **kwargs):
     from IPython.core.debugger import Pdb
     pdb = Pdb(color_scheme='Linux')
     return pdb.runcall(f, *args, **kwargs)
+
+def print_attr(obj):
+    """ Print out all non private methods and attributes of an abject """
+    for attr in dir(obj):
+        if attr.startswith('__'):
+            continue
+        else:
+            print attr
+            print getattr(obj, attr)
+            print '\n'
