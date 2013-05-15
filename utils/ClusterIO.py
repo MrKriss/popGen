@@ -98,6 +98,13 @@ class Cluster(object):
         if start_dir != path:
             os.chdir(path) 
 
+        if 'seq' in items and 'phred' in items:
+            self.rep_seq = lookup_db[self.rep_seq_desc].seq.tostring()
+            self.rep_phred = np.array(lookup_db[self.rep_seq_desc].letter_annotations['phred_quality'])
+            for elem in self.members_desc:
+                self.members_seq.append(lookup_db[elem].seq.tostring())
+                self.members_phred.append(np.array(lookup_db[elem].letter_annotations['phred_quality']))
+
         if 'seq' in items:
             self.rep_seq = lookup_db[self.rep_seq_desc].seq.tostring()
             for elem in self.members_desc:
@@ -114,8 +121,101 @@ class Cluster(object):
         
         if os.getcwd() != start_dir:
             os.chdir(start_dir)
+                    
+    def get_unique_seq(self, ignoreup2=6, lookup_db=None):
+        """ Work out the counts for unique reads within a cluster """
+        
+        if not self.members_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(self, ['seq'], lookup_db=lookup_db)
+        if not self.rep_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(self, ['rep'], lookup_db=lookup_db)
+        
+        unique_seq_counter = Counter()
+        unique_seq_counter[self.rep_seq[ignoreup2:]] += 1
+        
+        seqs = [s[ignoreup2:] for s in self.members_seq]        
+        unique_seq_counter.update(Counter(seqs))
+        self.unique_seq = unique_seq_counter
+    
+    def get_basefraction(self, lookup_db=None):
+        """ Calculate the fraction of nucleotide bases per base location """
+        
+        # Make sure seq data is available
+        if not self.members_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(['seq'], lookup_db=lookup_db)
+        if not self.rep_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(['rep'], lookup_db=lookup_db)
+        
+        self.basefrac = {} 
+        self.basefrac['A'] = np.zeros(len(self.rep_seq)) 
+        self.basefrac['T'] = np.zeros(len(self.rep_seq)) 
+        self.basefrac['G'] = np.zeros(len(self.rep_seq)) 
+        self.basefrac['C'] = np.zeros(len(self.rep_seq)) 
+        self.basefrac['N'] = np.zeros(len(self.rep_seq)) 
+        
+        # Cheack representative sequence
+        for i in range(len(self.rep_seq)):
+            self.basefrac[self.rep_seq[i]][i] += 1
+            
+        # Check Cluster members
+        for seq in self.members_seq:
+            for i in range(len(self.rep_seq)):  
+                self.basefrac[seq[i]][i] += 1
+        
+        for i in range(len(self.rep_seq)):
+            self.basefrac['A'][i] /= float(self.size)
+            self.basefrac['T'][i] /= float(self.size)
+            self.basefrac['G'][i] /= float(self.size)
+            self.basefrac['C'][i] /= float(self.size)
+            self.basefrac['N'][i] /= float(self.size)
+            
+    def plot_basefrac(self, ignorefirst=6, xlab="", ylab="", title="", **kwargs):
+        """ Visualise the fraction of bases """
+        
+        import matplotlib.pyplot as plt
+    
+        # Default plot options
+        if 'ms' not in kwargs:
+            kwargs['ms'] = 10.0
+        if 'marker' not in kwargs:
+            kwargs['marker'] = '.'
+        if 'mew' not in kwargs:
+            kwargs['mew'] = 0.0
+    
+        plt.figure()
+        for k,v in self.basefrac.iteritems():
+        
+            data_xs = range(1,len(v[ignorefirst:])+1) 
+            data_ys = v[ignorefirst:]
+            label =  k 
+            
+            vars()['line' + k], = plt.plot(data_xs, data_ys, label=label, ls='', **kwargs)
+    
+        # Shink current axis's height by 10% on the bottom
+        ax = plt.gca()
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0 + box.height * 0.1,
+                 box.width, box.height * 0.9])
+    
+        # Put a legend below current axis
+        
+        ax.legend([vars()['lineA'], vars()['lineT'], vars()['lineG'], vars()['lineC'], vars()['lineN']],
+                  ['A', 'T', 'G', 'C', 'N'], loc='upper center', bbox_to_anchor=(0.5, -0.05),
+                  fancybox=True, shadow=True, ncol=5, numpoints=1, markerscale=3)
         
     
+        plt.ylim(-0.1, 1.1)
+        plt.xlim(1, 101)
+        plt.title(title)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+        plt.show()
+    
+
 def gettop_clusters(clusterfile, x, lower_limit, upper_limit):
     """ Return the top x cluster sizes which have most reads"""
     
@@ -143,10 +243,6 @@ def gettop_clusters(clusterfile, x, lower_limit, upper_limit):
     
      
     """
-    
-    
-    
-
 
 def mismatche2percentage(mismatches, seq_length):
     ''' Convert a number of mismatches to a percentage rounded to the nearest 2 dp '''
@@ -171,9 +267,6 @@ def parse(handle, idx_file_path=""):
     Currently iterates in the order the file is read. 
     Typical usage, opening a file to read in, and looping over the record(s):
     """
-
-    # Setup Data structure
-    cluster = Cluster()
     
     # input checks    
     if type(handle) is str:
@@ -183,9 +276,11 @@ def parse(handle, idx_file_path=""):
         
     if idx_file_path:
         assert type(idx_file_path) is str and os.path.exists(idx_file_path), 'Invalid path.'
-        cluster.idx_file_path = idx_file_path
         
     first = True
+    # Setup Data structure
+    cluster = Cluster()
+    cluster.idx_file_path = idx_file_path
     
     # Cycle through file     
     try:
@@ -208,6 +303,9 @@ def parse(handle, idx_file_path=""):
                         first = False
                     else: 
                         yield cluster
+                        # Reset Cluster
+                        cluster = Cluster()
+                        cluster.idx_file_path = idx_file_path
                     
                 elif line.endswith('*'): 
                     # Record Cluster number as this section only gets executed once per cluster
@@ -252,6 +350,9 @@ def sortby(handle, reverse=True, mode='cluster_size'):
         handle = open(handle, 'rb')
     else:
         assert type(handle) is file, 'Invalid file handle.'
+        
+    if mode == 'reads_per_clust_size':
+        summary_counter(handle, mode='total', report=True)
         
     # Setup Data structure
     # cluster_idxs = [ (size, start_bytes, end_bytes ), ... ]
@@ -320,96 +421,45 @@ def sortby(handle, reverse=True, mode='cluster_size'):
     return sorted_cluster_idxs, cluster_idxs
 
     
-def get_seqrec4descriptions(cluster_list, path2idxfile):
-    """Return a cluster dictionary containing the sequence record objects for the 
-    representative sequence and all cluster members.
+def getfromdb(cluster_list, items, lookup_db=None, path2idxfile=None,):
+    """ Adds the specified items to each cluster in list, looked up from the indexed db.
     
-    Only return minimal info for now incase run into memory issues with large data volume.
-    
-    rewrote to use cluster classs
+    items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
+            'rep' will fetch just the seq and phred info for the representative sequence.
+            
     """
-    
-    seq_record_db = SeqIO.index_db(path2idxfile)  
-    
-    cluster_seqrecs_list = []
+
+    if lookup_db is None:
+        assert path2idxfile, 'No lookup data base parsed or index file specified'
+        lookup_db = SeqIO.index_db(path2idxfile)  
     
     for cluster in cluster_list:
-    
-        newclust = Cluster()
-        newclust.rep_seq = seq_record_db[cluster.rep_seq_desc]
+        cluster.getfromdb(items, lookup_db)
         
-        for elem in cluster.members_desc:
-            newclust.members_desc.append(seq_record_db[elem])
-        
-        cluster_seqrecs_list.append(newclust)
-        
-    return cluster_seqrecs_list
-
-def get_seqrecs(cluster_list, path2idxfile):
-    """Return a cluster dictionary containing the sequence record objects for the 
-    representative sequence and all cluster members.
-    
-    Only return minimal info for now incase run into memory issues with large data volume.
-    
-    rewrote to use cluster classs
-    """
-    
-    start_dir = os.getcwd()
-    path = os.path.split(path2idxfile)[0]
-    
-    if start_dir != path:
-        os.chdir(path) 
-    
-    print "Loading {} ...".format(os.path.split(path2idxfile)[1])
-    seq_record_db = SeqIO.index_db(path2idxfile)  
-    print "Loading complete"
-    
-    cluster_seqrecs_list = []
-    
-    for cluster in cluster_list:
-    
-        newclust = Cluster()
-        newclust.rep_seq = seq_record_db[cluster.rep_seq_desc]
-        
-        for elem in cluster.members_desc:
-            newclust.members.append(seq_record_db[elem].seq.tostring())
-        
-        cluster_seqrecs_list.append(newclust)
-    
-    if os.getcwd() != start_dir:
-        os.chdir(start_dir)
-    
-    return cluster_seqrecs_list
+    return cluster_list
 
 
-def cluster_unique_read_counter(cluster_obj, path2idxfile):
-    """ Work out the counts for unique reads within a cluster """
-    
-    cluster_seqrecs = get_seqrec4descriptions(cluster_obj, path2idxfile)
-    
-    unique_reads_counter = Counter()
-    
-    unique_reads_counter[cluster_seqrecs['rep_seq']] += 1
-
-    unique_reads_counter.update(Counter(cluster_seqrecs['members']))
-    
-    return unique_reads_counter
-
-
-def summary_counter(cluster_path2file, mode='total', report=True):
+def summary_counter(handle, mode='total', report=True):
     ''' Takes cluster file output by CD-Hit and produces two Counter dictionaries 
     
     output depends on mode specified:
     
-    modes:
-    counter_per_sequence_length = { 'sequence_length' : Counter(cluster_size) }
-    total = Counter(cluster_sizes_for _all_sequences)
-    reads_per_cluster = { 'cluster size'  : cluster_size * Num clusters }
+    - handle   - handle to the file, or the filename as a string.
+    - mode:
+        'by_seqlen'         = { 'sequence_length' : Counter(cluster_size) }
+        'total'             = Counter(cluster_sizes_for_all_sequence_lengths)
+        'reads_per_cluster' = { 'cluster size'  : cluster_size * Num clusters }
+    
     '''
 
-    if not cluster_path2file.endswith('.clstr'):
-        cluster_path2file = cluster_path2file + '.clstr'
-    
+    # input checks    
+    if type(handle) is str:
+        if not handle.endswith('.clstr'):
+            handle = handle + '.clstr'
+        handle = open(handle, 'rb')
+    else:
+        assert type(handle) is file, 'Invalid file handle.'
+
     # Data structure to store cluster size info is a DefaultDictionary of Counter dictionaries.
     # ds = { 'seq_len' : Counter(cluster_size)  }
     # empty keys of ds are initialised with a Counter dictionary. 
@@ -419,10 +469,10 @@ def summary_counter(cluster_path2file, mode='total', report=True):
     seq_in_cluster = 0
     rep_length = 0
 
-    print 'Generating cluster summary for  %s ...' % (os.path.split(cluster_path2file)[1])
+    print 'Generating cluster summary for  %s ...' % (handle.name)
 
     try:
-        with open(cluster_path2file, 'rb')  as cluster_file:   
+        with handle  as cluster_file:   
             
             for line in cluster_file:              
                 line = line.strip()
@@ -478,30 +528,30 @@ def summary_counter(cluster_path2file, mode='total', report=True):
             reads_per_cluster[k] = int(k) * v
         return reads_per_cluster
     
-def hist_counters(counters, labels=None, **kwargs):
-    ''' Construct a series of histograms from a list of Counter Dictionarys '''
-    
-    import matplotlib.pyplot as plt
-    
-    if type(counters) is not list and type(counters) is not tuple:
-        counters = [counters]
-    
-    if labels is not None:
-        assert len(labels) == len(counters), "Number of labels must match number of counters."
-    
-    for i in range(len(counters)):
-        data = np.array(list(counters[i].elements()), dtype = np.int)
-
-        if labels:
-            plt.hist(data, histtype='step', label=labels[i], **kwargs)
-        else:
-            plt.hist(data, histtype='step', label='Counter-'+str(i), **kwargs)
-        plt.title("Cluster Size Distribution")
-        plt.xlabel("Value")
-        plt.ylabel("Frequency")
-
-    plt.legend()
-    plt.show()
+# def hist_counters(counters, labels=None, **kwargs):
+#     ''' Construct a series of histograms from a list of Counter Dictionarys '''
+#     
+#     import matplotlib.pyplot as plt
+#     
+#     if type(counters) is not list and type(counters) is not tuple:
+#         counters = [counters]
+#     
+#     if labels is not None:
+#         assert len(labels) == len(counters), "Number of labels must match number of counters."
+#     
+#     for i in range(len(counters)):
+#         data = np.array(list(counters[i].elements()), dtype = np.int)
+# 
+#         if labels:
+#             plt.hist(data, histtype='step', label=labels[i], **kwargs)
+#         else:
+#             plt.hist(data, histtype='step', label='Counter-'+str(i), **kwargs)
+#         plt.title("Cluster Size Distribution")
+#         plt.xlabel("Value")
+#         plt.ylabel("Frequency")
+# 
+#     plt.legend()
+#     plt.show()
 
 def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", **kwargs):
     ''' Construct a series of scatter plots from a list of Counter Dictionaries '''
