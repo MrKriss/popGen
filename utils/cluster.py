@@ -13,6 +13,7 @@ import re
 import numpy as np 
 from collections import Counter, defaultdict
 
+
 class ClusterClass(object):
     ''' Class to act as a holder of all wrappers for all clustering methods 
     '''
