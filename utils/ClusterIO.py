@@ -334,35 +334,6 @@ def filter_subprocess(infile, file_sorted=False, mode=None):
         pass
 
 
-
-def gettop_clusters(clusterfile, x, lower_limit, upper_limit):
-    """ Return the top x cluster sizes which have most reads"""
-    
-    # Get the top cluster sizes that contain the top most x reads
-    reads_counter = summary_counter(clusterfile, mode='reads_per_cluster', report=False)
-    top_reads_per_cluster = reads_counter.most_common(x)
-
-
-    for cluster_size in top_reads_per_cluster.iterkeys():
-        
-        if cluster_size > upper_limit or cluster_size < lower_limit:
-            continue
-        
-        # Now have a target cluster size to work with.
-        
-        # Generator to return clusters of this size? 
-        
-    
-    
-    pass
-    """
-    Get summary counter for cluster file.
-    
-    Find most representative clusters/ hump of the clusters
-    
-     
-    """
-
 def mismatche2percentage(mismatches, seq_length):
     ''' Convert a number of mismatches to a percentage rounded to the nearest 2 dp '''
     mismatches = int(mismatches)
@@ -375,13 +346,30 @@ def percentage2mismatch(percentage, seq_length):
     seq_length = int(seq_length)
     return  int(round( (percentage / 100.) * seq_length))
 
-def parse(handle, idx_file_path=""):
+
+
+
+"""
+Impliment a double pass generator to parse reads:
+
+1. Get the next cluster size, and store start and end places. 
+
+2. If size passes, go back and rescan file to get detailed info for that cluster.
+
+"""
+
+
+
+
+def parse(handle, idx_file_path="", mode="size_only"):
     """ Reads in a CDHIT cluster file and returns a generator for the clusters. 
     
      - handle   - handle to the file, or the filename as a string
      - idx_file - full path to file containing the index to the original sequence records.
                   If given, the file is stored and passed to each Cluster object generated
                   for possible future lookup. 
+    - mode:
+        'size_only'   =   Only return the cluster size each iteration.
 
     Currently iterates in the order the file is read. 
     Typical usage, opening a file to read in, and looping over the record(s):
@@ -472,7 +460,7 @@ def sortby(handle, reverse=True, mode='cluster_size'):
     # Sorting key functions
     key_ops = {
                'cluster_size': lambda x : x[0],
-               'reads_per_cluster': lambda x : reads_per_cluster_counter[x[0]], 
+               'reads_per_cluster': lambda x : reads_per_cluster_counter[str(x[0])], 
                }
 
     # Input checks    
