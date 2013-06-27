@@ -20,7 +20,6 @@ from general_utilities import set_trace
 from database.core import SQLdatabase
 
 
-
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
     
@@ -68,6 +67,9 @@ class Reads_db(SQLdatabase):
             controlBits INTEGER,
             indexSeq TEXT) ''')
             self.tables.append('seqs')
+
+    def load_seqs(self, ):
+
 
 
 
