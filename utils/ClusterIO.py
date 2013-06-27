@@ -14,6 +14,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
 
+from editdist import distance
 
 '''
 IO support for CDHIT clustering files in python.
@@ -130,10 +131,10 @@ class Cluster(object):
         
         if not self.members_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(self, ['seq'], lookup_db=lookup_db)
+            self.getfromdb(['seq'], lookup_db=lookup_db)
         if not self.rep_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(self, ['rep'], lookup_db=lookup_db)
+            self.getfromdb(['rep'], lookup_db=lookup_db)
         
         unique_seq_counter = Counter()
         unique_seq_counter[self.rep_seq[ignoreup2:]] += 1
@@ -217,124 +218,240 @@ class Cluster(object):
         plt.ylabel(ylab)
         plt.show()
         
-    def write2fastq(self):
-        """ Write cluster to a fastq file format. First seq is representative seq for the cluster """
-        pass
+    def write2clstr(self, handle, lookup_db=None):
+        """ Write cluster to a .clstr file format like CD-HIT. 
+        
+        e.g.
+        
+        >Cluster 0
+        0    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:1148:2096... *
+        1    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:2328:25159... at +/100.00%
+        2    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:7411:52830... at +/98.86%
+        3    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:9529:76269... at +/100.00%
+        4    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1102:6206:12309... at +/100.00%
+        
+        """
+        
+        if type(handle) is str:
+            if not handle.endswith('.clstr'):
+                filename = handle + '.clstr'
+            handle = open(handle, 'a')
+        else:
+            assert type(handle) is file, 'Invalid file handle.'
+            if handle.closed:
+                handle = open(handle.name, 'a')
+        
+        # Make sure seq data is available
+        if not self.members_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(['seq'], lookup_db=lookup_db)
+        if not self.rep_seq:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(['rep'], lookup_db=lookup_db)
+        
+        # Derived vars
+        seq_len = str(len(self.rep_seq) - 13)
+        
+        with handle as clust_file:
+            
+            # Write Header 
+            clust_file.write('>Cluster {0}\n'.format(self.id))
+            
+            # Write representative sequence
+            clust_file.write('0\t{length}nt, >{rep_seq_desc}... *\n'.format(length=seq_len , rep_seq_desc=self.rep_seq_desc))
+            
+            count = 0
+            # Write rest of cluster members
+            for idx, desc in enumerate(self.members_desc):
+                
+                count += 1
 
-def filter_clusters(cluster_filepath, idx_filepath, size_range, output_dirpath):
-    """ Writes a subset of cluster sizes to FastQ files 
+                # Calculate percentage similarity
+                mismatches = distance(self.members_seq[idx][12:], self.rep_seq[12:])
+                percentage = 100.00 - mismatch2percentage(mismatches, seq_len)
+                
+                clust_file.write('{count}\t{length}nt, >{seq_desc}... at +/{percentage:.2f}%\n'.format(
+                    count=str(count), length=seq_len, seq_desc=desc, percentage=percentage 
+                                                                                                  ))
+                
+class ClusterFilter(object):
+    """ Holds all methods for parsing and filtering a cluster file from CD-HIT
     
-    The representative sequence is the first sequence record written.
-    
+    Impliments a double pass generator to parse reads:
+    1. Get the next cluster size, and store start and end places. 
+
+    2. If size passes, go back and rescan file to get detailed info for that cluster.
     """
     
-    starting_dir = os.getcwd()
-    idx_dir = os.path.split(idx_filepath)[0]
-    
-    # Check and create directory 
-    if not os.path.exists(output_dirpath):
-        os.makedirs(output_dirpath)
+    def __init__(self, handle, idx_file_path, lookup_db, filter_params,
+                 reads_per_cluster_size_counter, output_dirpath=None):
+
+        # IO
+        handle = input_check(handle)
+        self.handle4parser = handle
+        self.handle4get_desc = open(handle.name, 'rb')
         
-    cluster_gen = parse(cluster_filepath, idx_filepath)
-    seqrec_lookup = SeqIO.index_db(idx_filepath)
-    
-    size_counter = Counter()
-    
-    for cluster in cluster_gen:
-        # Check if cluster size is within defined range
-        if cluster.size >= size_range[0] and cluster.size < size_range[1]:
+        if output_dirpath is None:
+            self.output_dirpath = os.getcwd()
+        else:
+            if not os.path.exists(output_dirpath):
+                os.makedirs(output_dirpath)
+            self.output_dirpath = output_dirpath
             
-            size_counter[cluster.size] += 1
-            
-            # Get the sequence records for the cluster 
-            seqs = []
-            if os.getcwd() != idx_dir:
-                os.chdir(idx_dir)
-            seqs.append(seqrec_lookup[cluster.rep_seq_desc])
-            for member in cluster.members_desc:
-                seqs.append(seqrec_lookup[member])
-            
-            if os.getcwd() != output_dirpath:
-                os.chdir(output_dirpath)
-            # Write cluster to a file 
-            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
-            output_handle = open(fname, "wb")
-            SeqIO.write(seqs, output_handle, "fastq")
+        # Store internal params        
+        self.idx_file_path = idx_file_path
+        self.idx_file_dir = os.path.split(idx_file_path)[0]
+        self.lookup_db = lookup_db
+        self.filter_params = filter_params
+        self.reads_per_cluster_size_counter = reads_per_cluster_size_counter
+        # Setup generator
+        self.cluster_size_gen = self.__setup_cluster_size_parser()
         
-def filter_clusters2(cluster_filepath, idx_filepath, size_range, output_dirpath):
-    """ Writes a subset of cluster sizes to FastQ files 
-    
-    The representative sequence is the first sequence record written.
-    
-    make the sequence record instead of passing it.
-    
-    """
-    
-    starting_dir = os.getcwd()
-    idx_dir = os.path.split(idx_filepath)[0]
-    
-    # Check and create directory 
-    if not os.path.exists(output_dirpath):
-        os.makedirs(output_dirpath)
+    def __setup_cluster_size_parser(self):
         
-    cluster_gen = parse(cluster_filepath, idx_filepath)
-    seqrec_lookup = SeqIO.index_db(idx_filepath)
-    
-    size_counter = Counter()
-    
-    for cluster in cluster_gen:
-        # Check if cluster size is within defined range
-        if cluster.size > size_range[0] and cluster.size < size_range[1]:
+        first = True
+        # Setup Data structure
+        cluster = Cluster()        
+        # Cycle through file 
+        seq_count = 0    
+        try:
+            with self.handle4parser as cluster_file:  
+                
+                while True:
+                    line = cluster_file.readline()  # Reading one line from file including end-of-line char '\n'
+                    if not line: 
+                        break
+                
+                    if line.startswith('>'):
+                        # This is start of new cluster
+                        # yield last cluster if not first pass
+                        if not first:
+                            # Record Cluster info 
+                            
+                            start_of_line_position = cluster_file.tell() - len(line)
+                            cluster.size = seq_count
+                            cluster.end_loc = start_of_line_position
+                            
+                            yield cluster
+                            
+                            # Reset Cluster and counter
+                            cluster = Cluster()
+                            seq_count = 0
+                            cluster.start_loc = start_of_line_position
+                        else: 
+                            first = False
+                    else:
+                        seq_count += 1
+                            
+                # Got to end of file but still one more cluster to add
+                cluster.size = seq_count
+                yield cluster
+        
+        except IOError:
+            print "Error: can\'t find file or read data"
+        else:
+            print "Finished Scanning cluster file."    
+
+    def get_desc(self, cluster):
+        """ Scan back over cluster and get sequence descriptions """
+        
+        cluster_file = self.handle4get_desc
+
+        # Update info 
+        cluster.idx_file_path = self.idx_file_path
+
+        # Load cluster 
+        cluster_file.seek(cluster.start_loc)
+        
+        first = True
+        for line in cluster_file:              
+            line = line.strip() # Remove white space at start and end
             
-            size_counter[cluster.size] += 1
+            if line.startswith('>'):
+                # This is start of new cluster
+                
+                # yield this cluster
+                if first:
+                    cluster.id = line.split()[1]
+                    first = False
+                else: 
+                    break
+                
+            elif line.endswith('*'): 
+                # This is the representative sequence for the cluster
+                cluster.rep_seq_desc = line.split()[2].strip('>.')
+            else: 
+                line_parts = line.split()
+                next_desc = line_parts[2].strip('>.')
+                cluster.members_desc.append(next_desc)
+                
+        if os.getcwd() != self.output_dirpath:
+            os.chdir(self.output_dirpath)
+                
+        return cluster    
+
+    def run_filter(self):
+        """ Run through file and write desired clusters to fastq file """
+ 
+        size_counter = Counter()
+ 
+        count = 0
+ 
+        for cluster in self.cluster_size_gen:
             
-            # Get the sequence records for the cluster 
-            if os.getcwd() != idx_dir:
-                os.chdir(idx_dir)
-            # Representative sequence first 
-            seqrecord = seqrec_lookup[cluster.rep_seq_desc]
+            count += 1 
             
-            if os.getcwd() != output_dirpath:
-                os.chdir(output_dirpath)
-            # Write cluster to a file 
-            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
-            
-            if os.path.isfile(fname):
+            if cluster.size >= self.filter_params['min_size'] and cluster.size <= self.filter_params['max_size']:
+                
+                # Get seq descriptions in cluster 
+                cluster = self.get_desc(cluster)
+                
+                # Write to output file
+                size_counter[str(cluster.size)] += 1
+                
+                # Get the sequence records for the cluster 
+                seqs = []
+                if os.getcwd() != self.idx_file_dir:
+                    os.chdir(self.idx_file_dir)
+                seqs.append(self.lookup_db[cluster.rep_seq_desc])
+                for member in cluster.members_desc:
+                    seqs.append(self.lookup_db[member])
+                
+                if os.getcwd() != self.output_dirpath:
+                    os.chdir(self.output_dirpath)
+                    
+                # Write cluster to a file 
+                fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[str(cluster.size)]))
                 output_handle = open(fname, "wb")
-                output_handle.close()
-            
-            output_handle = open(fname, "a")
-            SeqIO.write(seqrecord, output_handle, "fastq")
-            
-            for member in cluster.members_desc :
+                SeqIO.write(seqs, output_handle, "fastq")
                 
-                if os.getcwd() != idx_dir:
-                    os.chdir(idx_dir)
-                # Representative sequence first 
-                seqrecord = seqrec_lookup[member]
-            
-                if os.getcwd() != output_dirpath:
-                    os.chdir(output_dirpath)
-                # Write sequence record to file 
-                SeqIO.write(seqrecord, output_handle, "fastq")
-                
-    if os.getcwd() != starting_dir: 
-        os.chdir(starting_dir)
+            elif self.reads_per_cluster_size_counter[str(cluster.size)] < self.filter_params['min_reads']:
+                break
         
-def filter_subprocess(infile, file_sorted=False, mode=None):
-    """" Filtering Steps to obtain clusters in a certain size range and % range of all reads """
+        print count
+
+
+#==============================================================================
+# Utility functions
+#==============================================================================
+
+def input_check(handle):
+    """ Check if input is valid and or a string for a file name.
+    Always returns a ahndle for an an open file.
     
-    # Sort clusters by reads in clusters of that size 
-    if not file_sorted:
-        infile = sortby(infile, reverse=True, mode='reads_per_cluster')
+    handle = input_check(handle)
     
-    # Return size only in parsing clusters  
+    """
+    if type(handle) is str:
+        handle = open(handle, 'rb')
+    else:
+        assert type(handle) is file, 'Invalid file handle.'
+        if handle.closed:
+            handle = open(handle.name, 'rb')
 
-    for c in parse(infile):
-        pass
+    return handle 
 
-
-def mismatche2percentage(mismatches, seq_length):
+def mismatch2percentage(mismatches, seq_length):
     ''' Convert a number of mismatches to a percentage rounded to the nearest 2 dp '''
     mismatches = int(mismatches)
     seq_length = int(seq_length)
@@ -345,51 +462,33 @@ def percentage2mismatch(percentage, seq_length):
     percentage = float(percentage)
     seq_length = int(seq_length)
     return  int(round( (percentage / 100.) * seq_length))
-
-
-
-
-"""
-Impliment a double pass generator to parse reads:
-
-1. Get the next cluster size, and store start and end places. 
-
-2. If size passes, go back and rescan file to get detailed info for that cluster.
-
-"""
-
-
-
-
-def parse(handle, idx_file_path="", mode="size_only"):
+                   
+def parse(handle, idx_file_path="", edit_dist=False, similarity_count=False):
     """ Reads in a CDHIT cluster file and returns a generator for the clusters. 
     
      - handle   - handle to the file, or the filename as a string
      - idx_file - full path to file containing the index to the original sequence records.
                   If given, the file is stored and passed to each Cluster object generated
                   for possible future lookup. 
-    - mode:
-        'size_only'   =   Only return the cluster size each iteration.
+    - edit_dist - Only calculated if set to true.
 
     Currently iterates in the order the file is read. 
     Typical usage, opening a file to read in, and looping over the record(s):
     """
     
     # input checks    
-    if type(handle) is str:
-        handle = open(handle, 'rb')
-    else:
-        assert type(handle) is file, 'Invalid file handle.'
-        if handle.closed:
-            handle = open(handle.name, handle.mode)
+    handle = input_check(handle)
         
     if idx_file_path:
         assert type(idx_file_path) is str and os.path.exists(idx_file_path), 'Invalid path.'
-        
+    
     first = True
     # Setup Data structure
     cluster = Cluster()
     cluster.idx_file_path = idx_file_path
+    
+    if similarity_count:
+        cluster.similarity_counter = Counter()
     
     # Cycle through file     
     try:
@@ -409,17 +508,18 @@ def parse(handle, idx_file_path="", mode="size_only"):
                     
                     # yeild this cluster
                     if first:
+                        cluster.id = line.split()[1]
                         first = False
                     else: 
                         yield cluster
                         # Reset Cluster
                         cluster = Cluster()
                         cluster.idx_file_path = idx_file_path
+                        cluster.id = next_cluster_num
+                        if similarity_count:
+                            cluster.similarity_counter = Counter()
                     
                 elif line.endswith('*'): 
-                    # Record Cluster number as this section only gets executed once per cluster
-                    cluster.id = next_cluster_num
-                    
                     # This is the representative sequence for the cluster
                     cluster.rep_seq_desc = line.split()[2].strip('>.')
                 else:
@@ -427,9 +527,13 @@ def parse(handle, idx_file_path="", mode="size_only"):
                     line_parts = line.split()
                     
                     cluster.members_desc.append(line_parts[2].strip('>.'))
-                    similarity = line_parts[4].strip('+/%')
-                    seq_len = line_parts[1].strip('nt,')
-                    cluster.edit_dists.append(percentage2mismatch( 100 - float(similarity), seq_len))
+                    if edit_dist:
+                        similarity = line_parts[4].strip('+/%')
+                        seq_len = line_parts[1].strip('nt,')
+                        cluster.edit_dists.append(percentage2mismatch( 100 - float(similarity), seq_len))
+                    if similarity_count:
+                        similarity = line_parts[4].strip('+/%')
+                        cluster.similarity_counter[similarity] += 1
                     
             # Got to end of file but still one more cluster to add
             cluster.size = len(cluster.members_desc) + 1
@@ -439,8 +543,10 @@ def parse(handle, idx_file_path="", mode="size_only"):
         print "Error: can\'t find file or read data"
     else:
         print "Finished Scanning cluster file."    
+
     
-def sortby(handle, reverse=True, mode='cluster_size'):
+def sortby(handle, reverse=True, mode='cluster_size', outfile_postfix=None, 
+           cutoff=None, clustersize_min=None, clustersize_max=None):
     """ Reads in a CDHIT cluster file and writes a sorted file for the clusters.
     by their size.  
     
@@ -449,6 +555,9 @@ def sortby(handle, reverse=True, mode='cluster_size'):
                   the sort will instead be in descending order.  
      - mode     - "cluster_size" = Sort by the cluster sizes
                   "reads_per_cluster" = Sort by total reads in clusters of each size
+
+     - cutoff   - Minimum threshold for sorted attribute. Any clusters with smaller values 
+                  are not written to file.
 
     Works by scanning file once through to build an index, sorting the index, then 
     rewriting file accordingly. 
@@ -462,14 +571,8 @@ def sortby(handle, reverse=True, mode='cluster_size'):
                'cluster_size': lambda x : x[0],
                'reads_per_cluster': lambda x : reads_per_cluster_counter[str(x[0])], 
                }
-
     # Input checks    
-    if type(handle) is str:
-        handle = open(handle, 'rb')
-    else:
-        assert type(handle) is file, 'Invalid file handle.'
-        if handle.closed:
-            handle = open(handle.name, handle.mode)
+    handle = input_check(handle)
 
     # Setup Data structure and utility vars
     # cluster_idxs = [ (size, start_bytes, end_bytes ), ... ]
@@ -512,23 +615,48 @@ def sortby(handle, reverse=True, mode='cluster_size'):
             sorted_cluster_idxs = sorted(cluster_idxs, key=key_ops[mode], reverse=reverse)    
                 
             # Rewrite file
+            if outfile_postfix is None: 
+                outfile_postfix = '-sortedby_' + mode
+                
             old_filename_parts = cluster_file.name.split('.')
-            old_filename_parts[0]  += '-sortedby_' + mode
+            old_filename_parts[0]  += outfile_postfix
             new_filename = '.'.join(old_filename_parts)
+                
             with open(new_filename, 'wb') as sorted_cluster_file :
                 
-                for tup in sorted_cluster_idxs:
-                    cluster_file.seek(tup[1])
-                    cluster_text = cluster_file.read(tup[2] - tup[1])
-                    sorted_cluster_file.write(cluster_text)
-                    
+                if cutoff and clustersize_min and clustersize_max:
+                    # Filter the clusters that are written 
+                    for tup in sorted_cluster_idxs:
+                        if key_ops[mode](tup) >= cutoff:
+                            if tup[0] >= clustersize_min and tup[0] <= clustersize_max:
+                                cluster_file.seek(tup[1])
+                                cluster_text = cluster_file.read(tup[2] - tup[1])
+                                sorted_cluster_file.write(cluster_text)
+                        else:
+                            break
+                elif cutoff:
+                    for tup in sorted_cluster_idxs:
+                        # Stop writing after minimum cutoff is reached
+                        if key_ops[mode](tup) >= cutoff:
+                            cluster_file.seek(tup[1])
+                            cluster_text = cluster_file.read(tup[2] - tup[1])
+                            sorted_cluster_file.write(cluster_text)
+                        else:
+                            break
+                else:
+                    for tup in sorted_cluster_idxs:
+                        # Write all clusters to file
+                        cluster_file.seek(tup[1])
+                        cluster_text = cluster_file.read(tup[2] - tup[1])
+                        sorted_cluster_file.write(cluster_text)
+                        
     except IOError:
         print "Error: can\'t find file or read data"
     else:
         t = time.time() - start_time
         print "Finished sorting cluster file after {0}\n".format(time.strftime('%H:%M:%S', time.gmtime(t)))    
 
-    return handle, sorted_cluster_idxs, cluster_idxs
+    return sorted_cluster_file
 
     
 def getfromdb(cluster_list, items, lookup_db=None, path2idxfile=None,):
@@ -570,7 +698,9 @@ def summary_counter(handle, mode='cluster_size', report=True):
         assert type(handle) is file, 'Invalid file handle.'
         if handle.closed:
             handle = open(handle.name, handle.mode)
-
+            
+    assert mode in ['by_seqlen', 'cluster_size', 'reads_per_cluster'], 'Mode not recognised.'
+            
     # Data structure to store cluster size info is a DefaultDictionary of Counter dictionaries.
     # ds = { 'seq_len' : Counter(cluster_size)  }
     # empty keys of ds are initialised with a Counter dictionary. 
@@ -681,6 +811,182 @@ def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", *
 
     plt.legend(numpoints=1, markerscale=8)
     plt.show()
+
+
+
+#===============================================================================
+# Possibly usefull
+#===============================================================================
+
+def get_desc(self, cluster, items):
+        """ Scan back over cluster and get all details """
+        
+        # Input checks  
+        handle = input_check(self.handle)  
+
+        # Store flag info
+#         do_rep = 'rep' in items
+#         do_phred = 'phred' in items
+#         do_seq = 'seq' in items
+#         do_dist = 'dist' in items
+
+        # Update info 
+        cluster.idx_file_path = self.idx_file_path
+
+        with handle as cluster_file:
+             
+            # Load cluster 
+            cluster_file.seek(cluster.start_loc)
+            
+            first = True
+            for line in cluster_file:              
+                line = line.strip() # Remove white space at start and end
+                
+                if line.startswith('>'):
+                    # This is start of new cluster
+                    
+                    # yield this cluster
+                    if first:
+                        cluster.id = line.split()[1]
+                        first = False
+                    else: 
+                        break
+                    
+                elif line.endswith('*'): 
+                    # This is the representative sequence for the cluster
+                    cluster.rep_seq_desc = line.split()[2].strip('>.')
+                    
+#                     # Fill in info
+#                     if do_seq or do_rep:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.rep_seq = self.lookup_db[cluster.rep_seq_desc].seq.tostring()
+#                     if do_phred or do_rep:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.rep_phred = np.array(self.lookup_db[cluster.rep_seq_desc].letter_annotations['phred_quality'])
+                else: 
+                    
+                    line_parts = line.split()
+                    
+                    next_desc = line_parts[2].strip('>.')
+                    cluster.members_desc.append(next_desc)
+#                     if do_seq:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.members_seq.append(self.lookup_db[next_desc].seq.tostring())
+#                     if do_phred:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.members_phred.append(np.array(self.lookup_db[next_desc].letter_annotations['phred_quality']))
+#                     if do_dist: 
+#                         similarity = line_parts[4].strip('+/%')
+#                         seq_len = line_parts[1].strip('nt,')
+#                         cluster.edit_dists.append(percentage2mismatch(100 - float(similarity), seq_len))
+                    
+            if os.getcwd() != self.output_dirpath:
+                os.chdir(self.output_dirpath)
+                    
+            return cluster    
+
+def filter_clusters(cluster_filepath, idx_filepath, size_range, output_dirpath):
+    """ Writes a subset of cluster sizes to FastQ files 
+    
+    The representative sequence is the first sequence record written.
+    
+    """
+    starting_dir = os.getcwd()
+    idx_dir = os.path.split(idx_filepath)[0]
+    
+    # Check and create directory 
+    if not os.path.exists(output_dirpath):
+        os.makedirs(output_dirpath)
+        
+    cluster_gen = parse(cluster_filepath, idx_filepath)
+    seqrec_lookup = SeqIO.index_db(idx_filepath)
+    
+    size_counter = Counter()
+    
+    for cluster in cluster_gen:
+        # Check if cluster size is within defined range
+        if cluster.size >= size_range[0] and cluster.size < size_range[1]:
+            
+            size_counter[cluster.size] += 1
+            
+            # Get the sequence records for the cluster 
+            seqs = []
+            if os.getcwd() != idx_dir:
+                os.chdir(idx_dir)
+            seqs.append(seqrec_lookup[cluster.rep_seq_desc])
+            for member in cluster.members_desc:
+                seqs.append(seqrec_lookup[member])
+            
+            if os.getcwd() != output_dirpath:
+                os.chdir(output_dirpath)
+            # Write cluster to a file 
+            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
+            output_handle = open(fname, "wb")
+            SeqIO.write(seqs, output_handle, "fastq")
+        
+def filter_clusters2(cluster_filepath, idx_filepath, size_range, output_dirpath):
+    """ Writes a subset of cluster sizes to FastQ files 
+    
+    The representative sequence is the first sequence record written.
+    
+    make the sequence record instead of passing it.
+    
+    """
+    
+    starting_dir = os.getcwd()
+    idx_dir = os.path.split(idx_filepath)[0]
+    
+    # Check and create directory 
+    if not os.path.exists(output_dirpath):
+        os.makedirs(output_dirpath)
+        
+    cluster_gen = parse(cluster_filepath, idx_filepath)
+    seqrec_lookup = SeqIO.index_db(idx_filepath)
+    
+    size_counter = Counter()
+    
+    for cluster in cluster_gen:
+        # Check if cluster size is within defined range
+        if cluster.size > size_range[0] and cluster.size < size_range[1]:
+            
+            size_counter[cluster.size] += 1
+            
+            # Get the sequence records for the cluster 
+            if os.getcwd() != idx_dir:
+                os.chdir(idx_dir)
+            # Representative sequence first 
+            seqrecord = seqrec_lookup[cluster.rep_seq_desc]
+            
+            if os.getcwd() != output_dirpath:
+                os.chdir(output_dirpath)
+            # Write cluster to a file 
+            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
+            
+            if os.path.isfile(fname):
+                output_handle = open(fname, "wb")
+                output_handle.close()
+            
+            output_handle = open(fname, "a")
+            SeqIO.write(seqrecord, output_handle, "fastq")
+            
+            for member in cluster.members_desc :
+                
+                if os.getcwd() != idx_dir:
+                    os.chdir(idx_dir)
+                # Representative sequence first 
+                seqrecord = seqrec_lookup[member]
+            
+                if os.getcwd() != output_dirpath:
+                    os.chdir(output_dirpath)
+                # Write sequence record to file 
+                SeqIO.write(seqrecord, output_handle, "fastq")
+                
+    if os.getcwd() != starting_dir: 
+        os.chdir(starting_dir)
 
 
 if __name__ == '__main__':
