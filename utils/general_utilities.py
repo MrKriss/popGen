@@ -7,6 +7,7 @@ General utility recipies across all projects
 '''
 
 import sys
+import os
 
 def set_trace():
     from IPython.core.debugger import Pdb 
@@ -26,3 +27,25 @@ def print_attr(obj):
             print attr
             print getattr(obj, attr)
             print '\n'
+            
+def get_data_prefix():
+    '''Return directory prefix where data is stored'''    
+    import socket
+
+    if socket.gethostname() == 'yildun':
+        prefix = '/space/musselle/data/RAD-seq'
+    elif socket.gethostname() == 'luca':
+        prefix = '/home/musselle/san/data/RAD-seq'
+    elif socket.gethostname() == 'gg-pc6':
+        prefix = '/home/musselle/data/RAD-seq'
+
+    return prefix
+
+
+import string
+def search_file(filename, search_path, pathsep=os.pathsep):
+    """ Given a search path, find file with requested name """
+    for path in string.split(search_path, pathsep):
+        candidate = os.path.join(path, filename)
+        if os.path.exists(candidate): return os.path.abspath(candidate)
+    return None
