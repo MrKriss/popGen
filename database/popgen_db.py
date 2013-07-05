@@ -14,7 +14,7 @@ import numpy as np
 from Bio import SeqIO
 
 import sqlite3
-from utils import get_data_prefix
+from utils import get_path_prefix
 from general_utilities import set_trace
 
 from database.core import SQLdatabase
@@ -382,7 +382,7 @@ if __name__ == '__main__':
         class Config(object):
             pass
         c = Config()
-        prefix = get_data_prefix()
+        prefix = get_path_prefix()
 #        c.barcode_inpath = '/Users/chris/Dropbox/work/code/popGen/testData/barcodes'
         c.barcode_inpath = os.path.join(prefix,'gazelles-zebras', 'barcodes')
         

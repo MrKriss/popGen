@@ -28,7 +28,7 @@ def print_attr(obj):
             print getattr(obj, attr)
             print '\n'
             
-def get_data_prefix():
+def get_path_prefix():
     '''Return directory prefix where data is stored'''    
     import socket
 

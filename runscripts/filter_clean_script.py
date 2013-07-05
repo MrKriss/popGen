@@ -11,7 +11,7 @@ import glob
 import socket
 import re
 
-from utils import get_data_prefix
+from utils import get_path_prefix
 from utils.preprocess import  Preprocessor, ConfigClass
 from utils.cluster import ClusterClass
 import cPickle as pkl
@@ -22,7 +22,7 @@ starting_dir = os.getcwd()
 c = ConfigClass()
 
 # Work out where data is stored on this machine
-prefix = get_data_prefix()
+prefix = get_path_prefix()
 
 #==============================================================================
 ''' Filter and Clean SCRIPT FOR ALLL READS IN Gazelles-Zebras RAD-data'''

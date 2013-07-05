@@ -58,7 +58,9 @@ class Workflow(object):
 
 
         # Create directories of they dont exist
-        for attr in dir(self.c): 
+        for attr in dir(self.c): #numwritten = SeqIO.write(RecCycler.recgen , output_filehdl , 'fastq')
+#print '{0} records written'.format(numwritten)
+#total_numwritten += numwritten
             if 'path' in attr:
                 path = getattr(self.c, attr)
                 if not os.path.exists(path):

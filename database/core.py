@@ -16,11 +16,23 @@ import numpy as np
 from Bio import SeqIO
 
 import sqlite3
-from utils import get_data_prefix
+from utils import get_path_prefix
 from general_utilities import set_trace
 
 class SQLdatabase(object):
-    """ Class to handle all python communication with a sqlite database file """
+    """ Class to handle all python communication with a sqlite database file 
+    
+    Note on using with statement as a context manager:
+    
+    # Successful, con.commit() is called automatically afterwards
+    with con:
+        con.execute("insert into person(firstname) values (?)", ("Joe",))
+
+    # con.rollback() is called after the with block finishes with an exception, the
+    # exception is still raised and must be caught
+     
+    """
+    
     def __init__(self, dbfile="default.db", recbyname=True):
         """ 
         recbyname - sets returned records by select to be callable by column names 
@@ -52,23 +64,23 @@ class SQLdatabase(object):
         ''' Close connection to database'''
         self.con.close()
         
-    def new_table(self, name, headers):
-        """ Create a table with specified headers """       
-        self.tables.append(name)
+#     def new_table(self, name, headers):
+#         """ Create a table with specified headers """       
+#         self.tables.append(name)
+#         
+#         with self.con as con:        
+#             cur = con.cursor()
+#             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
         
-        with self.con as con:        
-            cur = con.cursor()
-            cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
-        
-    def overwrite_table(self, name, headers):
-        """ Create or overwrite a table if it already exists with specified headers """       
-        if name not in self.tables: 
-            self.tables.append(name)
-        
-        with self.con as con:        
-            cur = con.cursor()
-            cur.execute("DROP TABLE IF EXISTS {0}".format(name))
-            cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
+#     def overwrite_table(self, name, headers):
+#         """ Create or overwrite a table if it already exists with specified headers """       
+#         if name not in self.tables: 
+#             self.tables.append(name)
+#         
+#         with self.con as con:        
+#             cur = con.cursor()
+#             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
+#             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
         
     def select(self,cmd, *args):
         """ Select records from the database returned as tuple of Row Objects. """
@@ -172,13 +184,11 @@ class SQLdatabase(object):
         return data   
         
     def execute(self,sql, *args):
-        """ execute any SQL statement but no return value given """
+        """ execute any SQL statement and return all records """
         
         with self.con as con:        
             cur = con.cursor()
             cur.execute(sql, *args)
-            records = cur.fetchall()
-        return records
 
     def executescript(self,sql, *args):
         """ execute any SQL statement but no return value given """

@@ -12,9 +12,8 @@ import glob
 import time
 
 import gzip
-import numpy as np
-from Bio import SeqIO, bgzf
 
+from Bio import SeqIO, bgzf
 
 class SeqRecCycler(object):
     ''' Object to hold generators that yield Sequence record objects or
@@ -99,16 +98,7 @@ class SeqRecCycler(object):
             next_data_file_loc = os.path.join(self.input_path, filename)
 
             # Check file extensions
-            if filename.endswith('.idx'):
-                # Raise warning if first call to generator
-                print '''Warning: Processing .idx files takes ~3 times longer
-                than using .bgzf or .fastq files.'''
-                print 'Processing .idx files currently unsuported.'
-                print '''Accepted formats for cycling through all records = .gz
-                .bgzf and .fastq'''
-                sys.exit()
-
-            elif (filename.endswith('.gz') or filename.endswith('.bgzf') or
+            if (filename.endswith('.gz') or filename.endswith('.bgzf') or
                                             filename.endswith('.fastq')):
                 try:
                     yield SeqIO.parse(smartopen(next_data_file_loc), format='fastq')
