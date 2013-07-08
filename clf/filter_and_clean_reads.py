@@ -6,36 +6,493 @@ Created on 3 Jul 2013
 import os 
 import sys 
 import glob
+import time
 
 import numpy as np 
 import matplotlib.pyplot as plt
 
+import editdist
+
 from utils.preprocess import Preprocessor, ConfigClass
 from utils.fileIO import SeqRecCycler
+from collections import Counter
+
+from Bio import SeqIO, bgzf 
+import gzip
 
 import argparse
+
+
+
+class RecordPreprocessor(object):
+    
+    def __init__(self, args):
+        
+        # Set counting variables 
+        self.filterfail_counter = Counter()
+        self.total_read_count = 0
+        
+        self.skipped_count = 0
+        self.MIDtag_corrected_count = 0
+        self.cutsite_corrected_count = 0
+        self.read_corrected_count = 0
+            
+        # Load barcodes 
+        if 'barcodes' in args:
+            # input checks
+            barcode_files = glob.glob(args.barcodes)
+            assert barcode_files, "No barcode files found at destination"
+            barcode_files.sort()
+
+            # Store barcode dictionary            
+            MIDs = []
+            individuals = []
+            for barcode_file in barcode_files:
+                with open(barcode_file, 'rb') as f: 
+                    for line in f:
+                        parts = line.strip().split()
+                        MIDs.append(parts[0])
+                        individuals.append(parts[1])
+                    diff = len(MIDs) - len(set(MIDs))
+                    if diff > 0:
+                        raise Exception('MID tags in barcode files are not unique.\n{0} duplicates found'.format(diff))
+                    else:
+                        self.barcode_dict = dict(zip(MIDs, individuals))
+                        
+        # Check length of MIDs
+        lengths = [len(mid) for mid in self.barcode_dict.keys()]
+        assert all([x == lengths[0] for x in lengths]), 'Error: Lengths of MIDs are not equal'
+        self.MIDlength = lengths[0]
+
+        # Setup filter functions 
+        self.filter_functions = []
+        
+        if 'fi' in args:
+            # Ilumina Machine filtering 
+            self.filter_functions.append(self.set_illumina_filter())
+        if 'fn' in args:
+            # Filter by proportion of Ns
+            self.filter_functions.append(self.set_propN_filter(args.fn))
+        if 'fp' in args:
+            # Filter by mean phred score
+            self.filter_functions.append(self.set_phred_filter(args.fp))
+        if 'fc' in args:
+            # Filter by target Cutsites
+            assert 'ed' in args, 'Edit distance must be specified to filter by cutsite'
+            self.cutsites = args.fc
+            
+            # Check all lengths are equal
+            cutsite_lengths = [len(cutsite) for cutsite in self.cutsites]
+            assert all([x == cutsite_lengths[0] for x in cutsite_lengths]), 'Error: Lengths of cutsites are not equal'
+            self.cutsite_length = cutsite_lengths[0]
+
+            self.filter_functions.append(self.set_cutsite_filter(target_cutsites=self.cutsites, 
+                                                                 max_edit_dist=args.ed, 
+                                                                 midtag_length=self.MIDlength))
+        if 'fo' in args:
+            # Filter by target Cutsites
+            assert 'ed' in args, 'Edit distance must be specified to filter by overhang'
+            self.filter_functions.append(self.set_overhang_filter(target_cutsites=args.fc,
+                                                                    overhang=args.fo, 
+                                                                    max_edit_dist=args.ed, 
+                                                                    midtag_length=self.MIDlength)) 
+        # Setup Error correction 
+        if 'ted' in args:
+            self.error_corrected_dist = args.ted
+                     
+            
+        
+    def runfilters(self, rec):
+        ''' Filter record based on criteria specified by a sequence of functions given
+         in self.filter_functions.
+        
+        Each functions in self.filter_functions take in a sequence record object, 
+        and returns a boolean.
+        
+        Only records that pass all filters are returned as True
+          
+        '''
+        pass
+    
+    def write_summary_output(self, path):
+        ''' Write the results of the filtering and cleaning to a summary output file'''
+    
+        filepath = os.path.join(path, "filtering_summary.log")
+        
+        if os.exists(filepath):
+            var = raw_input("Summary file already exists. Overwrite? [y/n]")
+            if var == 'y':
+                file_handle = open(filepath, 'wb'):
+            else:
+                count = 0 
+                while os.exists(filepath):
+                    count += 1
+                    filepath = os.path.join(path, "filtering_summary%.log" % str(count))
+                
+                
+                file_handle = open(filepath, 'wb')
+    
+        # Write the summary to a file 
+        with open(os.path.join(path, "filtering_summary_" + self.c.root_name + 
+                               '_params-' + str(self.c.filterparam_id) + ".log"), 'wb') as f:
+            f.write("Filter parameters:\n") 
+            f.write("------------------\n")
+            p = self.db.get_binary(col='params', target='filtering_parameterID',
+                                    value = c.filterparam_id, table = 'filtering_parameters')
+            f.write(str(p) + "\n")
+            f.write("\n")
+            f.write('Filter stats:\n')
+            f.write("-------------------------------------------\n")
+            f.write('Filter\t\t\tHits\n')    
+            f.write("-------------------------------------------\n")
+            for i, x in enumerate(self.filter_functions):
+                percent = preprocessor.filterfail_counter[i] / float(sum(preprocessor.filterfail_counter.values())) 
+                f.write('%s\t\t%s\t(%.2f %%)\n' % (x.__name__, preprocessor.filterfail_counter[i], percent * 100))
+            f.write('\nTotal No. Reads Processed:  \t%s\n' % preprocessor.total_read_count)
+            f.write('Total No. filtered:  \t\t%s (%.2f %%)\n' % (sum(preprocessor.filterfail_counter.values()), 
+                                                        100 * (sum(preprocessor.filterfail_counter.values())/ 
+                                                               float(preprocessor.total_read_count))))
+            f.write('Total No. Passed: \t\t%s (%.2f %%)\n' % (preprocessor.total_read_count - sum(preprocessor.filterfail_counter.values()), 
+                                                        100 * ((preprocessor.total_read_count - sum(preprocessor.filterfail_counter.values()))/ 
+                                                               float(preprocessor.total_read_count))))
+            self.db.update('filtering_parameters SET filtering_summary=? WHERE filtering_parameterId=?', 
+                           (os.path.split(f.name)[1], c.filterparam_id))
+            
+        # Clean up
+        if c.log_fails:     
+            logfile.flush()
+            logfile.close()
+        
+        total_t = time.time() - toc    
+        print 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+                                                            time.gmtime(total_t)))
+        os.chdir(starting_dir)
+
+        # Update internal Variables
+        self.next_input_files = outnames
+        self.next_input_path = outpath
+    
+    
+
+
+    def make_processing_gen(self, recgen):
+        ''' A generator to only yield records that pass all filter functions
+         specified
+         
+         Plus if error_corrected_dist argument is set, the MIDtag and cutsite will 
+         be error corrected up this number of edits. 
+         '''
+        
+        filterfuncs = self.filter_functions
+        
+        MIDtagslist = self.barcode_dict.keys()
+        
+        goto_next_rec = False
+        
+        for rec in recgen:
+        
+            for n, func in enumerate(filterfuncs):
+                #===============================================================
+                # Run filter functions on record       
+                #===============================================================
+                if func(rec) == False:
+                    self.filterfail_counter.update([n])
+                    self.total_read_count += 1 
+                    goto_next_rec = True
+                    break # move on to next record and don't do else:
+            
+            if goto_next_rec:
+                goto_next_rec = False
+                continue
+                
+            else: # if runs through all filterfuncs and pased, run this too. 
+                self.total_read_count += 1 
+                    
+                # RECORD HAS PASSED ALL FILTERS
+            
+                if hasattr('error_corrected_dist', self):
+                    
+                    MID_corrected = False
+            
+                    #===============================================================
+                    # Analise MID tag section
+                    #===============================================================
+                    recMID = str(rec.seq[:self.MIDlength])
+                    
+                    if recMID not in self.barcode_dict:
+                        # Sequencing error in the tag. Work out nearest candidate.
+                        distvec = [editdist.distance(recMID, tag) for tag in MIDtagslist]
+                        
+                        distvec_min = min(distvec)
+                        count_distvec_min = distvec.count(distvec_min)
+                        
+                        if distvec_min > self.error_corrected_dist:
+                            self.skipped_count += 1
+                            continue
+                            
+                        count_distvec_min = distvec.count(distvec_min)
+                        if count_distvec_min > 1:
+                            # Muliple candidates. True MID is Ambiguous 
+                            self.skipped_count += 1
+                            continue
+                    
+                        elif count_distvec_min == 1:
+                            
+                            correct_MIDtag = MIDtagslist[distvec.index(distvec_min)]
+                            
+                            # Correct the erroneous tag with the candidate.
+                            # Letter annotations must be removed before editing rec.seq
+                            temp_var = rec.letter_annotations
+                            rec.letter_annotations = {}
+                            # Change seq to mutableseq
+                            rec.seq = rec.seq.tomutable()
+                            rec.seq[:self.MIDlength] = correct_MIDtag
+                            rec.seq = rec.seq.toseq()
+                            rec.letter_annotations.update(temp_var)
+                            self.MIDtag_corrected_count += 1
+                            self.read_corrected_count += 1
+                            MID_corrected = True
+                            
+                    #===============================================================
+                    # Analise Cut site section
+                    #===============================================================
+                    # Must allow for multiple possible cutsites
+                    rec_cutsite = str(rec.seq[self.MIDlength: self.MIDlength + len(self.cutsite_length)])
+                    if rec_cutsite not in self.cutsites:
+                        # Sequencing error in the cutsite. Correct if less than max_edit_dist
+                        
+                        cutsite_dists = [editdist.distance(rec_cutsite, cutsite) for cutsite in self.cutsites]
+    
+                        min_cutsite_dist = min(cutsite_dists)
+                        
+                        if min_cutsite_dist > self.error_corrected_dist:
+                            # Amount of error in cut site is too large to correct 
+                            # May also be from contaminants. So read is skipped altogether 
+                            self.skipped_count += 1
+                            if MID_corrected:
+                                # Roll back counters
+                                self.MIDtag_corrected_count -= 1
+                                self.read_corrected_count -= 1
+                            continue
+                        
+                        min_cutsite_dist_count = cutsite_dists.count(min_cutsite_dist)
+                        
+                        if cutsite_dists.count(min_cutsite_dist_count) > 1:
+                            # Muliple candidates. True cutsite is Ambiguous 
+                            self.skipped_count += 1
+                            if MID_corrected:
+                                # Roll back counters
+                                self.MIDtag_corrected_count -= 1
+                                self.read_corrected_count -= 1
+                            continue
+                            
+                            
+                        elif cutsite_dists.count(min_cutsite_dist_count) == 1:
+                            
+                            corrected_cutsite = self.cutsites[cutsite_dists.index(min_cutsite_dist)]
+                            
+                            # Correct the erroneous cutsite with the actual cutsite.
+                            # Letter annotations must be removed before editing rec.seq
+                            temp_var = rec.letter_annotations
+                            rec.letter_annotations = {}
+                            # Change seq to mutableseq
+                            rec.seq = rec.seq.tomutable()
+                            rec.seq[self.MIDlength: self.MIDlength + len(self.cutsite)] = corrected_cutsite
+                            rec.seq = rec.seq.toseq()
+                            rec.letter_annotations.update(temp_var)
+                            self.cutsite_corrected_count += 1
+                            if not MID_corrected:
+                                self.read_corrected_count += 1
+                        else:
+                            # Amount of error in cut site is too large to correct 
+                            # May also be from contaminants. So read is skipped altogether 
+                            self.skipped_count += 1
+                            if MID_corrected:
+                                # Roll back counters
+                                self.MIDtag_corrected_count -= 1
+                                self.read_corrected_count -= 1
+                            continue
+        
+                # Note: rec only yielded if the read passes all filters, and if specified,
+                # only if the MIDtag and cutsites are cleaned sucessfully.   
+                yield rec
+                
+
+    def set_illumina_filter(self):
+        ''' Returns filtering function based on illumina machine filter         
+        N = was not pickup up by machine filter i.e. passed
+        Y = was flagged by machine filter i.e. fail 
+        '''
+        # Define filter function
+        def illumina_filter(rec):
+            ''' filter function for phred '''
+            return rec.description.split()[1].split(':')[1] == 'N'
+        return illumina_filter  
+    
+    def set_propN_filter(self, value):
+        ''' Returns a filter function based on the proportion of Ns in the read.
+    
+        If a read has a higher proportion of Ns than the given value, the filter 
+        returns false.
+        '''
+        # Define filter function
+        def propN_filter(rec):
+            ''' Filter function for propN'''
+            return float(rec.seq.count('N')) / len(rec.seq) < value
+        return propN_filter
+    
+    def set_phred_filter(self, value):
+        ''' Returns a filtering function based on the mean phred of each read.
+        
+        If a read has a mean phred of less than the given value, the filter returns
+         false.   
+        '''
+        # Define filter function
+        def phred_filter(rec):
+            ''' filter function for phred '''
+            return np.array(rec.letter_annotations['phred_quality']).mean() > value
+        return phred_filter  
+    
+    def set_cutsite_filter(self, target_cutsites=None, max_edit_dist=None, midtag_length=None):
+        ''' Returns a filter function based on the match of the read cutsite to the 
+        target_cutsite given.
+        
+        Reads that differ in edit distance by more than mindist, cause filter to 
+        return false 
+        
+        '''
+        cutsite_length = len(target_cutsites[0])
+    
+        # Define filterfunc
+        def cutsite_filter(rec):
+            ''' Filter function for cutsite '''
+            
+            cutsite = rec.seq[midtag_length: midtag_length + cutsite_length].tostring()
+            
+            for target_site in target_cutsites:
+                cutsite_dist = editdist.distance(target_site, cutsite)
+                if cutsite_dist <= max_edit_dist:
+                    return True
+                
+            return False
+        
+        return cutsite_filter
+        
+    def set_overhang_filter(self, target_cutsites=None, overhang=None, midtag_length=None, max_edit_dist=0):
+        ''' Returns a filter function based on the overhang part of the cutsite. 
+        
+        The cut site should end with the specified overhang. Those that dont are likely 
+        to be genetic contaminants which have been inadvertantly sequenced, and 
+        therefore should be discarded. 
+           
+        Reads that mismatch in the overhang region by more than mindist, cause the 
+        filter to return false. 
+        
+        '''   
+        overhang_patterns = [target_cutsites[-overhang:] for i in target_cutsites]
+        cutsite_length = len(target_cutsites[0])
+        
+        # Define filterfunc
+        def overhang_filter(rec):
+            ''' Filter function for cutsite'''
+            
+            cutsite = rec.seq[midtag_length: midtag_length + cutsite_length].tostring()
+
+            for i, pat in enumerate(overhang_patterns):
+                
+                dist = editdist.distance(target_cutsites[i], cutsite)
+                if dist <= max_edit_dist:
+                    if cutsite.endswith(pat):
+                        return True
+            
+            return False
+            
+        return overhang_filter
+
+
+
+
+
+
+
+
+
+
+
+
+
+#===============================================================================
+
     
 parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
-parser.add_argument('-i', '--input', action='store', type=int, help='Input file(s) to process. (/path/filename) Will accept a glob')
-parser.add_argument('-o', '--output', action='store', type=int, help='Output path/file to write reads to. Missing dirs will be created.')
-parser.add_argument('-b', '--barcodes', action='store', type=int, help='Barcodes accociated with input file(s). Will accept a glob')
+parser.add_argument('-i', '--input', action='store', type=int, dest='input',
+                    help='Input file(s) to process. (/path/filename) Will accept a glob')
+parser.add_argument('-o', '--output_postfix', action='store', type=int, dest='output_postfix',
+                    help='Output file postfix to use when writing to file.')
+parser.add_argument('-p', '--output_path', action='store', type=int, dest='output_path', default='',
+                    help='Output path to write reads to. Missing dirs will be created.')
+parser.add_argument('-b', '--barcodes', action='store', type=int, dest='barcodes',
+                    help='Barcodes accociated with input file(s). Will accept a glob')
 
 parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 
-parser.add_argument('-fn', '--filterNs', action='store', help='Threshold maximum for filtering by proportion of Ns in the read.')
-parser.add_argument('-fp', '--filterphred', action='store', help='Threshold minimum for filtering by mean phred of the read.')
 
+# Filter Parameters
+parser.add_argument('-d', '--filterdefaults', action='store_true', dest='fd',
+                    help='Use default values for all filters. n = 0.1, p = 20, l=True, c=TGCAGG, e=2, r=2, f=1')
+parser.add_argument('-n', '--filterNs', action='store', dest='fn', type=float,
+                    help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
+parser.add_argument('-p', '--filterphred', action='store', dest='fp', type=int,
+                    help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
+parser.add_argument('-l', '--filterillumina', action='store_true', dest='fi', default=False, 
+                    help='Filter out reads that failed the Illumina machine filter. Default = True.')
 
+parser.add_argument('-c', '--filtercutsite', action='append', dest='fc',
+                    help='Filter reads that do not have one of the cutsites specified. May be used repeatedly for multiple cutsites.')
+parser.add_argument('-e', '--filtercutsite_editdist', action='append', dest='ed',
+                    help='Max edit distance allowed between target cutsite and read.')
+parser.add_argument('-r', '--filteroverhang', action='store', dest='fo', type=int, 
+                    help=('Number of bases in cutsite that make up the overhang. Reads are filtered out which' 
+                    'have errors in the overhang of the cute site.'))
 
-parser.add_argument('-lf', '--logfails', action='store', help='Whether to log the Sequence IDs of reads that fail the filtering')
+# parser.add_argument('-m', '--midtaglength', action='append', dest='ml',
+#                     help='Length of MIDtag for all reads. Needed to filter by cutsite and overhang')
 
+parser.add_argument('-f', '--corrected_editdist', action='append', dest='ted',
+                    help='Max edit distance that is corrected between target MIDtag/cutsite and actual read.'
+                    'If matched to more than one candidate barcode, the read is discarded due to abiguity of identity.')
 
+# For displaying filter results to stderr 
+parser.add_argument('-v', '--verbose', action='store_true', default=False, 
+                    help='Whether to log the Sequence IDs of reads that fail the filtering')
 
-
+# Cleaning parameters
 parser.add_argument('-r', '--rootdir', action='store', help='Root directory where all ')
 parser.add_argument('-n', '--name', action='store', type=int, help='Name of the experiemnt, and subdirectory where data is stored.')
 
+
+# Parse args and set defaults 
 args = parser.parse_args()
+
+if 'fd' in args:
+    default_args = []
+    if 'fn' not in args:
+        default_args.extend(['-n', '0.1'])
+    if 'fp' not in args:
+        default_args.extend(['-p', '20'])
+    if 'fi' not in args:
+        default_args.extend(['-l'])
+    if 'fc' not in args:
+        default_args.extend(['-c', 'TGCAGG', '-e', '2', ])
+    if 'fo' not in args:
+        default_args.extend(['-r', '2'])
+    if 'ted' not in args:
+        default_args.extend(['-f', '1'])
+        
+    args = parser.parse_args(default_args)
+
+
+
 
 starting_dir = os.getcwd()
 # Input checks 
@@ -51,20 +508,90 @@ else:
         raise Exception('Invalid entry for data_files.')
         
 
-# Set up Filters 
+# Generator to cycle through files
+reads_generator = SeqRecCycler(data_files=files)
+
+# Initalise Class to Filter and cleanup reads
+preprocessor = RecordPreprocessor(args)
+
+# Output Path and file variables
+if 'output_path' in args:
+    outputnames = []
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path) 
+
+cum_t = 0
+toc = time.time()
 
 
+for recgen in reads_generator.seqfilegen:
 
+    print >> sys.stderr, '\nProcessing {0}'.format(reads_generator.curfilename)
+    
+    # Initialise generator
+    passes = preprocessor.make_processing_gen(recgen)
+    
+    for rec in passes:
+        # These records have passed filter and been cleaned
+        
+        # DEfine output location
+        # Output Path and file variables
+        if 'output_postfix' in args:
 
-
-# Cycle through files
-reads_generator = SeqRecCycler(data_files = files)
-
-for seqfile in reads_generator.seqfilegen:
-
-    for rec in seqfile:
-
-        # Filter 
+            # Construct file names
+            name = reads_generator.curfilename.split('.')  
+            pass_filename = '.'.join([name[0] + args.output_postfix] + name[1:]) 
+            pass_file = os.path.join(args.output_path, pass_filename)
+            name = '.'.join(name)
+            outputnames.append(pass_filename) 
+            
+            # Writes to the same filetype as the input
+            if name.endswith('.bgzf'):
+                pass_filehdl = bgzf.BgzfWriter(pass_file)
+            elif name.endswith('.fastq'):
+                pass_filehdl = open(pass_file, 'wb')
+            elif name.endswith('.gz'):
+                pass_filehdl = gzip.open(pass_file, 'wb')
+            else:
+                print >> sys.stderr, 'Input file format not supported: %s' % name
+                sys.exit()
+        
+        else:
+            # Output is written to std out
+            pass_filehdl = sys.stdout
+                     
+        print >> sys.stderr, 'Writing passes to \n{0} ....'.format(pass_filename)
+        numwritten = SeqIO.write(passes , pass_filehdl , 'fastq')
+        
+        if pass_filehdl == sys.stdout:
+            pass_filehdl.flush()
+        else:
+            pass_filehdl.close()
+        print >> sys.stderr, '{0} records Preprocessed'.format(numwritten)
+        
+        loop_t = time.time() - toc - cum_t
+        cum_t += loop_t
+        print >> sys.stderr, 'Finished file {0} after {1}'.format(reads_generator.curfilenum, 
+                                    time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
+        
+        
+        if args.verbose:
+            print >> sys.stderr, '\nFilter stats'
+            print >> sys.stderr, '\nFilter No.\tHits'    
+            for n in range(len(preprocessor.filter_functions)):
+                print >> sys.stderr, '%s\t\t%s' % (n,preprocessor.filterfail_counter[n])
+        
+            print >> sys.stderr, '\nTotal No. Reads Processed:  %s' % preprocessor.total_read_count
+            print >> sys.stderr, '\nTotal No. filtered:  %s (%.2f %%)' % (sum(preprocessor.filterfail_counter.values()), 
+                                                            100 * (sum(preprocessor.filterfail_counter.values())/ 
+                                                                    float(preprocessor.total_read_count)))
+        
+        preprocessor.write_summary_output(path)
+        
+        
+        
+        
+        
 
 
         # Clean 
@@ -74,25 +601,7 @@ for seqfile in reads_generator.seqfilegen:
         # Write 
 
 
-
-
-
-
-p = {'filtering' : {'propN': 0.1,
-                    'phred': 25,
-                    'cutsite_edit_dist' : 2,
-                    'overhang_edit_dist' : 0},
-     'cleaning' : {'max_edit_dist' : 1 }}
-
-# Insert into filter_parameters table
-c.filterparam_id = db.insert_binary(p, col='params', table='filtering_parameters')
-
-Preprocess.filter_functions = [
-                Preprocess.make_propN_filter(p['filtering']['propN']),
-                Preprocess.make_phred_filter(p['filtering']['phred']),
-                Preprocess.make_cutsite_filter(max_edit_dist=p['filtering']['cutsite_edit_dist']),
-                Preprocess.make_overhang_filter('TCGAGG', 'GG', p['filtering']['overhang_edit_dist'])
-                ]
+#===============================================================================
 
 
 
@@ -104,8 +613,9 @@ Preprocess.filter_functions = [
 
 
 
-class ConfigClass(object):
-    pass
+
+
+
 
 class Preprocessor(object):
     ''' Holds all functions in preprocessing pipeline. 
@@ -151,7 +661,7 @@ class Preprocessor(object):
         logfile example:
         
         (rec.id) <TAB> (enumeration of filter failed from list given)  
-        e.g.
+        e.g.read_count
         HWI-ST0747:233:C0RH3ACXX:6:2109:3962:10857    2
         HWI-ST0747:233:C0RH3ACXX:6:1159:3231:10224    0
         ...
@@ -542,472 +1052,6 @@ class Preprocessor(object):
         self.next_input_path = outpath
         
         return (outnames, outpath)
-
-    def split_by_tags(self, infiles=None, inpath=None, outpath=None, out_filename=None):
-        ''' Split the file into separate files based on MID tags '''
-        
-        c = self.c
-        
-        if outpath is None:
-            outpath = c.tag_splitby_sample_outpath
-        
-        if out_filename is None:
-            out_filename = c.experiment_name
-             
-        # Setup Record Cycler        
-        if infiles is None:
-            infiles = self.next_input_files
-        if inpath is None:
-            inpath = self.next_input_path
-        
-        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-         
-        print ('\nSpliting {0} file(s) based on MID tags'
-               '').format(RecCycler.numfiles)
-        
-        outfiles_dict = {}
-        
-        first_run = 1
-        
-        # Running through all records in all passed files 
-        for recordgen in RecCycler.seqfilegen:
-            
-            # Set / reset Counter
-            tag_counter = Counter()
-            
-            dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
-            # tags is returned as a list of tuples for each record            
-            MID_length = len(dbtags[0][0])
-            # as tuple of descriptions then tuple of MIDtags
-            tups = zip(*dbtags)
-            # Check using MIDtags as keys would be unique
-            assert len(set(tups[1])) == len(tups[1]), 'Duplicate MIDtags returned for file {0}'.format(RecCycler.curfilename) 
-
-            # Convert to dictionary  {'MIDtag': 'description'} 
-            dbtags = dict(dbtags)
-            
-            # Open Files for Writing for each tag  
-            for tag, desc in dbtags.iteritems():
-                
-                fname = '-'.join([out_filename, tag, desc]) + '.bgzf'
-                fnamevar = 'f_' + desc
-
-                # Check that files don't already exist
-                if first_run:
-                    # If file already exists, overwrite it.
-                    if os.path.isfile(os.path.join(outpath, fname)):
-                        f = open(os.path.join(outpath, fname), 'w')
-                        f.close()
-                    
-                vars()[fnamevar] = bgzf.open(os.path.join(outpath, fname), 'a')
-                outfiles_dict[fnamevar] = fname
-    
-            first_run = 0
-            
-            for rec in recordgen:
-        
-                recMIDtag = rec.seq[:MID_length].tostring()
-                
-                if recMIDtag not in dbtags:
-                    raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
-                else:                   
-                    fnamevar = 'f_' + dbtags[recMIDtag]           
-                    SeqIO.write(rec, vars()[fnamevar], 'fastq');
-                    tag_counter[recMIDtag] += 1
-
-            # Flush and Close Files for each tag  
-            for tag, desc in dbtags.iteritems():
-
-                fnamevar = 'f_' + desc
-                vars()[fnamevar].flush()
-                vars()[fnamevar].close()
-                
-                # Update datafiles in database
-                filename = outfiles_dict[fnamevar]
-                self.db.add_datafile(filename, [desc], datafile_type='1sample')
-
-            print 'Finished Splitting MIDtags for input file: {0}'.format(RecCycler.curfilename)
-            
-            # Update counts
-            for tag, desc in dbtags.iteritems():
-                  
-                row = self.db.select('''read_count FROM samples WHERE description=? ''', (desc,))
-                current_value = row[0]['read_count']
-                
-                if current_value is None:
-                    current_value = 0
-                    
-                self.db.update('''samples SET read_count=? WHERE description=?''',
-                                ( current_value + tag_counter[tag], desc))
-
-        # Store file names 
-        for outfile in outfiles_dict.itervalues():
-
-            # Find sample description            
-            fname = os.path.split(outfile)[1]
-            if fname.endswith('.bgzf'):
-                fname = fname[:-5]
-            fname_parts = fname.split('-') 
-            desc = fname_parts[-1]
-            
-            self.db.update('''samples SET read_file=? WHERE description=?''',
-                                (outfile, desc))
-            
-        # Outputs return / update next inputs
-        self.next_input_path = outpath
-        self.next_input_files = outfiles_dict.values()
-        
-        return (outfiles_dict.values(), outpath)
-    
-    def split_by_subgroups(self, subgroups=None, infiles=None, inpath=None, outpath=None, 
-                           out_filename=None ):
-        ''' Split the file into separate files based on MID tags '''
-        
-        if subgroups is None:
-            # Dictionary of regular expressions to match sample discription
-            subgroups = { 'zebra'  : '.*zebra.*',
-                         'gazelle' : '.*gazelle.*'}
-        
-        # Compile regexes
-        for k,v in subgroups.iteritems():
-            subgroups[k] = re.compile(v)
-        
-        c = self.c
-        
-        if outpath is None:
-            outpath = c.tag_splitby_subgroup_outpath
-        if out_filename is None:
-            out_filename = c.experiment_name
-        
-        if not os.path.exists(outpath):
-            os.makedirs(outpath)
-        
-        # Setup Record Cycler        
-        if infiles is None:
-            infiles = self.next_input_files
-        if inpath is None:
-            inpath = self.next_input_path
-        
-        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-         
-        print ('\nSpliting {0} file(s) into zebras and gazelles'
-               '').format(RecCycler.numfiles)
-        
-        outfiles_dict = {}
-        
-        first_run = 1
-        
-        for recordgen in RecCycler.seqfilegen:
-            
-            # Set / reset Counter
-            tag_counter = Counter()
-            
-            dbtags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag', 'description'])
-            # tags is returned as a list of tuples for each record            
-            MID_length = len(dbtags[0][0])
-            # Convert to dictionary  {'MIDtag' : 'description' }
-            dbtags = dict(dbtags)
-            
-            # Open Files for Writing for each subgroup  
-            for group in subgroups.iterkeys():
-                
-                fname = '-'.join([out_filename, group]) + '.bgzf'
-                fnamevar = 'f_' + group
-
-                # Check that files don't already exist
-                if first_run:
-                    # If file already exists, overwrite it.
-                    if os.path.isfile(os.path.join(outpath, fname)):
-                        f = open(os.path.join(outpath, fname), 'w')
-                        f.close()
-                    
-                vars()[fnamevar] = bgzf.open(os.path.join(outpath, fname), 'a')
-                outfiles_dict[fnamevar] = fname
-    
-            first_run = 0
-            
-            for rec in recordgen:
-        
-                recMIDtag = rec.seq[:MID_length].tostring()
-                
-                if recMIDtag not in dbtags:
-                    raise Exception('MID tag not found in database for file {0}'.format(RecCycler.curfilename))
-                else:
-                    # Get description
-                    desc = dbtags[recMIDtag]
-                    # Write to approprite file if it matches the regex
-                    for group in subgroups.iterkeys():
-                        if subgroups[group].match(desc):
-                            
-                            fnamevar = 'f_' + group                
-                            SeqIO.write(rec, vars()[fnamevar], 'fastq');
-                            tag_counter[recMIDtag] += 1
-                            
-            # Flush and Close Files for each tag  
-            for group in subgroups.iterkeys():
-
-                fnamevar = 'f_' + group
-                vars()[fnamevar].flush()
-                vars()[fnamevar].close()
-                
-                # Update datafiles in database
-                filename = outfiles_dict[fnamevar]
-                
-                desc_list = filter(subgroups[group].match ,dbtags.values())
-                
-                self.db.add_datafile(filename, desc_list, datafile_type='group')
-
-            print 'Finished Splitting reads for input file: {0}'.format(RecCycler.curfilename)
-            
-        # Outputs return / update next inputs
-        self.next_input_path = outpath
-        self.next_input_files = outfiles_dict.values()
-        
-        return (outfiles_dict.values(), outpath)
-                        
-    def trim_reads(self, infiles=None, inpath=None, out_filename=None, outpath=None, n=1, mode='grouped'):
-        ''' Trims off the MID tag of each read, as well as the last 'n' bases.
-        
-        mode    = grouped
-                Writes all trimmed reads from the list of infiles to one large 
-                output fasta file for clustering. Returns one file.
-        
-                = separate
-                Writes all trimmed reads from the list of infiles to separate 
-                fasta files for clustering. Returns a list of files. 
-        '''
-        
-        c = self.c
-        
-        if outpath is None:
-            if mode == 'grouped':
-                outpath = c.tag_processed_outpath
-            elif mode == 'separate':
-                outpath = c.tag_processed_outpath
-        if out_filename is None:
-            out_filename = c.experiment_name + '_all_preprocessed.fasta'
-        
-        start_dir = os.getcwd() 
-
-        # Setup Record Cycler        
-        if infiles is None:
-            infiles = self.next_input_files
-        if inpath is None:
-            inpath = self.next_input_path
-        
-        RecCycler = Cycler(infiles=infiles, filepattern=False, data_inpath=inpath)
-        
-        count = 0
-        outfile_list = []
-    
-        print ('\nRemoving MID tags, trimming reads and converting {0} files to'
-               ' fasta format\n').format(RecCycler.numfiles)
-    
-        # Generator to trim off MID tag and end of read.
-        for seqfilegen in RecCycler.seqfilegen:
-                       
-            tags = self.get_data4file(RecCycler.curfilename, fields=['MIDtag'])
-            # tags is returned as a list of tuples for each record            
-            tags = zip(*tags)[0]
-            # tags is now a tuple of all the first elements in each record              
-            lenMIDs = len(tags[0])
-            read_start_idx = len(c.cutsite) + lenMIDs  
-
-            read_gen = (rec[read_start_idx:-n] for rec in seqfilegen)
-            # File name
-            
-            fname = RecCycler.curfilename
-            if fname.endswith('.bgzf') or fname.endswith('.fastq') or fname.endswith('.fasta'):
-                outfile_i = '.'.join(RecCycler.curfilename.split('.')[:-1])
-                
-            outfile_i = outfile_i + '.fasta'
-            outfile_list.append(outfile_i)
-            count += 1
-
-            with open(os.path.join(outpath, outfile_i), 'wb') as f:
-                write_count = SeqIO.write(read_gen, f, 'fasta')
-                print 'Wrote {0} records to file\n{1}'.format(write_count, outfile_i)
-
-        if mode == 'grouped':
-            # Combine output parts into one big file
-            if outpath:
-                os.chdir(outpath)
-            cmd = ['cat'] + outfile_list 
-            with open(os.path.join(outpath, out_filename), 'wb') as f:
-                print 'Running "{0}" and saving to\n{1}'.format(cmd, os.path.join(outpath, out_filename))
-                call(cmd, stdout=f) 
-            print 'Done, cleaning up temp files ....'
-            for f in outfile_list:
-                os.remove(f)   
-            os.chdir(start_dir)
-
-            print '\nPreprocessing Complete.'
-            self.next_input_files = out_filename
-            self.next_input_path = outpath
-            return (out_filename, outpath)
-            
-        elif mode == 'separate':
-            
-            print '\nPreprocessing Complete.'
-            self.next_input_files = outfile_list
-            self.next_input_path = outpath
-            return (outfile_list, outpath)
-                
-    def cleanup_files(self, *args):
-        ''' Remove intermediate files that are not needed '''      
-        # Choices of 'filtered', 'tag_processed', 'all'
-        # Raw inputs are always unchanged, and output .fasta is always kept
-             
-        import fnmatch
-        import os
-        
-        files2remove = []
-          
-        if 'filtered' in args or 'all' in args:
-            pattern = os.path.join(self.c.filtered_outpath, 
-                                   '*' + self.c.filtered_files_postfix + ".fastq.bgzf") 
-            files2remove.extend(glob.glob(pattern))
-        elif 'tag_processed' in args or 'all' in args:
-            pattern = os.path.join(self.c.tag_processed_outpath, 
-                                   '*' + self.c.filtered_files_postfix + 
-                                   self.c.tag_processed_files_postfix + 
-                                   ".fastq.bgzf") 
-            files2remove.extend(glob.glob(pattern))
-        elif 'fasta' in args or 'all' in args:
-            pattern = os.path.join(self.c.current_tag_split_outpath, "*" + ".fasta")
-            files2remove.extend(glob.glob(pattern))
-        
-        # Remove files
-        for f in files2remove:
-            try:
-                os.remove(f)   
-            except OSError:
-                pass   
-
- 
-   
-    def make_illumina_filter(self):
-        ''' Returns filtering function based on illumina machine filter         
-        N = was not pickup up by machine filter i.e. passed
-        Y = was flagged by machine filter i.e. fail 
-        '''
-        # Define filter function
-        def illumina_filter(rec):
-            ''' filter function for phred '''
-            return rec.description.split()[1].split(':')[1] == 'N'
-        return illumina_filter  
-        
-    def make_phred_filter(self, value):
-        ''' Returns a filtering function based on the mean phred of each read.
-        
-        If a read has a mean phred of less than the given value, the filter returns
-         false.   
-        '''
-        # Define filter function
-        def phred_filter(rec):
-            ''' filter function for phred '''
-            return np.array(rec.letter_annotations['phred_quality']).mean() > value
-        return phred_filter  
-        
-    def make_propN_filter(self, value):
-        ''' Returns a filter function based on the proportion of Ns in the read.
-    
-        If a read has a higher proportion of Ns than the given value, the filter 
-        returns false.
-        '''
-        # Define filter function
-        def propN_filter(rec):
-            ''' Filter function for propN'''
-            return float(rec.seq.count('N')) / len(rec.seq) < value
-        return propN_filter
-                
-    def make_cutsite_filter(self, target_cutsite=None, max_edit_dist=None):
-        ''' Returns a filter function based on the match of the read cutsite to the 
-        target_cutsite given.
-        
-        Reads that differ in edit distance by more than mindist, cause filter to 
-        return false 
-        
-        '''
-        if target_cutsite is None:
-            target_cutsite = self.c.cutsite
-
-        if max_edit_dist is None:
-            max_edit_dist = self.c.max_edit_dist
-
-        cutsite_length = len(target_cutsite)
-    
-        # Define filterfunc
-        def cutsite_filter(rec):
-            ''' Filter function for cutsite '''
-            
-            fname = self.current_file
-            
-            if cutsite_filter.target_file is None or cutsite_filter.target_file != fname:
-                cutsite_filter.target_file = fname
-                tags = self.get_data4file(fname, fields=['MIDtag'])
-                cutsite_filter.MIDlength =  len(tags[0][0])
-            
-            cutsite = rec.seq[cutsite_filter.MIDlength: cutsite_filter.MIDlength + cutsite_length].tostring()
-            cutsite_dist = ed.distance(target_cutsite, cutsite)
-            
-            return cutsite_dist <= max_edit_dist
-        
-        cutsite_filter.target_file = None
-        cutsite_filter.MIDlength = None
-        
-        return cutsite_filter
-        
-    def make_overhang_filter(self, target_cutsite=None, overhang=None, max_edit_dist=0):
-        ''' Returns a filter function based on the overhang part of the cutsite. 
-        
-        The cut site should end with the specified overhang. Those that dont are likely 
-        to be genetic contaminants which have been inadvertantly sequenced, and 
-        therefore should be discarded. 
-           
-        Reads that mismatch in the overhang region by more than mindist, cause the 
-        filter to return false. 
-        
-        '''   
-    
-        if target_cutsite is None:
-            target_cutsite = self.c.cutsite
-            overhang = target_cutsite[-2:]
-        
-        cutsite_length = len(target_cutsite)
-        overhang_length = len(overhang)
-        # Define filterfunc
-        def overhang_filter(rec):
-            ''' Filter function for cutsite'''
-            
-            # Must calculate MIDlength, but this may vary between files
-            fname = self.current_file
-#            fname = self.current_file.split('.')[0].split('-')[0]
-            
-            if overhang_filter.target_file is None or overhang_filter.target_file != fname:
-                overhang_filter.target_file = fname
-                tags = self.get_data4file(fname, fields=['MIDtag'])
-                overhang_filter.MIDlength =  len(tags[0][0])
-            
-            cutsite = rec.seq[overhang_filter.MIDlength: overhang_filter.MIDlength + cutsite_length].tostring()
-            if cutsite.endswith(overhang):
-                return True
-            else:
-                overhang_dist = ed.distance(cutsite[-overhang_length:], overhang)
-                return overhang_dist <= max_edit_dist
-            
-        overhang_filter.MIDlength = None
-        overhang_filter.target_file = None
-                  
-        return overhang_filter
-
-
-
-
-
-
-
-
 
 
 
