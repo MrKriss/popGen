@@ -25,10 +25,10 @@ class SeqRecCycler(object):
     INPUTS
     data_files - Single file as string or list of files to process as strings with
               full extensions. If data_files is a string, it is treated as a glob to 
-              the data_inpath. e.g. glob.glob('*.fastq') for all files ending in .fastq
-    data_inpath - directory data files are stored in, will change to this at start
-               of script.
-
+              the specified path. e.g. glob.glob('*.fastq') for all files ending in .fastq
+              
+              data files contail the full path to the file + filename
+              
     METHODS
     __init_files_gen - initiate files generator
     __init_rec_gen - initiate record generator
@@ -46,33 +46,38 @@ class SeqRecCycler(object):
 
     '''
 
-    def __init__(self, data_files=None, data_inpath='', maxnumseq=None):
+    def __init__(self, data_files=None, maxnumseq=None):
         ''' Constructor '''
 
-        # Remember data_inpath 
-        self.input_path = data_inpath
-                
-        # Handle multiple types of input for infiles
+        # Handle multiple types of input for data_files
         if type(data_files) is str:
+            
+            # Check for path head included in data_files
+            if not os.path.split(data_files)[0]:
+                # Append the abs path to current directory 
+                current_dir = os.getcwd()
+                data_files = os.path.join(current_dir, data_files)
+            
             # Glob the file pattern 
-            if data_inpath:
-                os.chdir(data_inpath)
             files = glob.glob(data_files)
             assert files, "No files returned from glob"
             files.sort()
             self.input_files = files
-            self.input_path = os.getcwd()
+            
         elif type(data_files) is list or type(data_files) is tuple:
-            self.input_path = data_inpath
+            
+            if not os.path.split(data_files[0])[0]:
+                current_dir = os.getcwd()
+                data_files = [os.path.join(current_dir, x) for x in data_files]
             self.input_files = data_files
         else:
             raise Exception('Invalid entry for data_files.')
 
         print '\nGenerator initiated to process the following files...'
-        for f in files:
+        for f in self.input_files:
             print f
 
-        self.numfiles = len(files)
+        self.numfiles = len(self.input_files)
         
         # Max number of record to run the generator for (default = all)
         self.maxnumseq = maxnumseq
@@ -95,17 +100,15 @@ class SeqRecCycler(object):
             self.curfilenum = filenum
             self.curfilename = filename
 
-            next_data_file_loc = os.path.join(self.input_path, filename)
-
             # Check file extensions
             if (filename.endswith('.gz') or filename.endswith('.bgzf') or
                                             filename.endswith('.fastq')):
                 try:
-                    yield SeqIO.parse(smartopen(next_data_file_loc), format='fastq')
+                    yield SeqIO.parse(smartopen(filename), format='fastq')
                 except IOError as e:
                     print e
                     raise Exception(('Invalid file name {0},'
-                     ' or path {1} may not exist.').format(filename, next_data_file_loc))
+                     ' or path {1} may not exist.').format(filename, os.path.basename(filename)))
             else:
                 print 'File extension for {0} currently unsupported.'.format(filename) 
                 print 'Accepted formats for cycling through all records = .gz .bgzf and .fastq'

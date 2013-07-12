@@ -23,21 +23,13 @@ from utils.fileIO import SeqRecCycler
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
-    
     '''
 
     def __init__(self, db_file="test.db", recbyname=True, new=False):
        
-        create_tables = 0
-        if not os.path.exists(db_file) or new:
-            create_tables = 1
-
         SQLdatabase.__init__(self, db_file, recbyname) 
-    
-        if create_tables:
-            self.create_tables()
        
-    def create_tables(self, overwrite=True):
+    def create_tables(self, table_name='seqs', overwrite=False):
 
         with self.con as con:
     
@@ -47,8 +39,6 @@ class Reads_db(SQLdatabase):
             # Currently only does Casava 1.8 format
 
             # Create Tables
-            if overwrite:
-                curs.execute('DROP TABLE IF EXISTS seqs')
 #             curs.execute(''' CREATE TABLE seqs (
 #             seqId INTEGER PRIMARY KEY NOT NULL,
 #             
@@ -74,7 +64,9 @@ class Reads_db(SQLdatabase):
 #             indexSeq TEXT) ''')
 #             self.tables.append('seqs')
             
-            curs.execute(''' CREATE TABLE seqs (
+            if overwrite:
+                curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
+            curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
             seqId INTEGER PRIMARY KEY NOT NULL,
             
             MIDseq TEXT NOT NULL,
@@ -91,22 +83,22 @@ class Reads_db(SQLdatabase):
             pairedEnd INTEGER,
             illuminaFilter TEXT,
             controlBits INTEGER,
-            indexSeq TEXT) ''')
-            self.tables.append('seqs')
+            indexSeq TEXT) '''.format(table_name))
+            self.tables.append('{0}'.format(table_name))
             
-            if overwrite:
-                curs.execute('DROP TABLE IF EXISTS meta')
-            curs.execute(''' CREATE TABLE meta (
-            Id INTEGER PRIMARY KEY NOT NULL,
-            tableId TEXT,
-            RADseqType TEXT,
-            MIDlength INTEGER NOT NULL,
-            Cutsite1 TEXT, 
-            Cutsite2 TEXT)''')
-            self.tables.append('meta')
-            
+#             if overwrite:
+#                 curs.execute('DROP TABLE IF EXISTS meta')
+#             curs.execute(''' CREATE TABLE meta (
+#             Id INTEGER PRIMARY KEY NOT NULL,
+#             tableId TEXT,
+#             RADseqType TEXT,
+#             MIDlength INTEGER NOT NULL,
+#             Cutsite1 TEXT, 
+#             Cutsite2 TEXT)''')
+#             self.tables.append('meta')
+#             
 
-    def load_seqs(self, data_files=None, data_inpath=None, barcode_files=None, barcode_inpath=None):
+    def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs'):
         ''' Load in all sequences in the specified files to the database 
         
         Barcodes for the MIDtag samples are added to the database if given.
@@ -124,13 +116,22 @@ class Reads_db(SQLdatabase):
         if barcode_files:
             # input checks
             if type(barcode_files) is str:
-                if data_inpath:
-                    os.chdir(data_inpath)
-                barcode_files = glob.glob(os.path.join(barcode_inpath, barcode_files))
-                assert barcode_files, "No barcode files returned from glob"
+                
+                # Check for path head included in data_files
+                if not os.path.split(barcode_files)[0]:
+                    # Append the abs path to current directory 
+                    current_dir = os.getcwd()
+                    barcode_files = os.path.join(current_dir, barcode_files)
+                
+                # Glob the file pattern 
+                barcode_files = glob.glob(barcode_files)
+                assert barcode_files, "No barcode files found at destination"
                 barcode_files.sort()
+
             elif type(barcode_files) is list or type(barcode_files) is tuple:
-                pass
+                if not os.path.split(barcode_files[0])[0]:
+                    current_dir = os.getcwd()
+                    barcode_files = [os.path.join(current_dir, x) for x in barcode_files]
             else:
                 raise Exception('Invalid entry for barcode_files.')
 
@@ -138,7 +139,7 @@ class Reads_db(SQLdatabase):
             MIDs = []
             individuals = []
             for barcode_file in barcode_files:
-                with open(os.path.join(barcode_inpath, barcode_file), 'rb') as f: 
+                with open(barcode_file, 'rb') as f: 
                     for line in f:
                         parts = line.strip().split()
                         MIDs.append(parts[0])
@@ -150,14 +151,18 @@ class Reads_db(SQLdatabase):
                     else:
                         barcode_dict = dict(zip(MIDs, individuals))
                         MIDlength = len(MIDs[0])
-                
+               
         # Setup Files generator
-        SeqRecGen = SeqRecCycler(data_files=data_files, data_inpath=data_inpath)
+        print type(data_files) is file
+        if type(data_files) is file:
+            recgen = SeqIO.parse(data_files, 'fastq')
+        else: 
+            SeqRecGen = SeqRecCycler(data_files=data_files)
+            recgen = SeqRecGen.recgen
         
         with self.con as con:
             curs = con.cursor()
-        
-            for rec in SeqRecGen.recgen:
+            for rec in recgen:
                 
                 # TODO: Write function to infer description format and use this to create specific tables.
                 # Currently only does Casava 1.8 format
@@ -207,10 +212,10 @@ class Reads_db(SQLdatabase):
 #                  (seq, phred, MIDseq, MIDphred, individualId, medianPhred, length, instrument, runId, flowcellId, laneId, tileNo, 
 #                  xcoord, ycoord, pairedEnd, illuminaFilter, controlBits, indexSeq));
                 
-                curs.execute('''INSERT INTO seqs
+                curs.execute('''INSERT INTO {0}
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?);''', 
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
                 

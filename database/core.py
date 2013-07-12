@@ -37,7 +37,7 @@ class SQLdatabase(object):
         """ 
         recbyname - sets returned records by select to be callable by column names 
         """        
-        if os.path.exists(dbfile):
+        if  os.path.exists(dbfile):
             print 'Database found with matching file name.'
             print 'Connecting to database {0}'.format(dbfile)
         else:
@@ -48,6 +48,13 @@ class SQLdatabase(object):
         self.dbfile = os.path.abspath(dbfile) 
         self.recbyname = recbyname
         self.tables = []
+
+        # Update list of tables
+        results = self.con.execute("select name from sqlite_master where type = 'table';")
+        # Get list of tables         
+        x = results.fetchall()
+        x = [i[0] for i in x]
+        self.tables = x
 
         if recbyname: 
             self.con.row_factory = sqlite3.Row
