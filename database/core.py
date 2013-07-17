@@ -89,16 +89,16 @@ class SQLdatabase(object):
 #             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
 #             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
         
-    def select(self,cmd, *args):
-        """ Select records from the database returned as tuple of Row Objects. """
-        
-        with self.con as con:        
-            cur = con.cursor()
-            # SELECT column_name(s) FROM table_name
-            cur.execute("SELECT " + cmd, *args)
-            records = cur.fetchall()
-        
-        return records
+#     def select(self,cmd, *args):
+#         """ Select records from the database returned as tuple of Row Objects. """
+#         
+#         with self.con as con:        
+#             cur = con.cursor()
+#             # SELECT column_name(s) FROM table_name
+#             cur.execute("SELECT " + cmd, *args)
+#             records = cur.fetchall()
+#         
+#         return records
 
     def display(self, cmd, num=0, *args):
         """ Print out the records returned from the database querry 
@@ -135,23 +135,23 @@ class SQLdatabase(object):
                 tuples.append(row)
         return tuples
     
-    def insert(self,cmd):
-        """ insert a new record to database and return the new primary key """
-        newID = 0
-        with self.con as con:        
-            cur = con.cursor()
-            cur.execute("INSERT " + cmd)
-            newID = cur.lastrowid
-        
-        return newID
-        
-    def update(self, cmd, *args):
-        """ Set values in a table """        
-
-        with self.con as con:        
-            cur = con.cursor()
-            # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-            cur.execute("UPDATE " + cmd, *args)
+#     def insert(self,cmd):
+#         """ insert a new record to database and return the new primary key """
+#         newID = 0
+#         with self.con as con:        
+#             cur = con.cursor()
+#             cur.execute("INSERT " + cmd)
+#             newID = cur.lastrowid
+#         
+#         return newID
+#         
+#     def update(self, cmd, *args):
+#         """ Set values in a table """        
+# 
+#         with self.con as con:        
+#             cur = con.cursor()
+#             # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
+#             cur.execute("UPDATE " + cmd, *args)
         
     def update_binary(self, obj, col, target, value, table):
         """ Store a binary object to the database 
@@ -189,18 +189,3 @@ class SQLdatabase(object):
             data = pkl.loads(pickled_data)
         
         return data   
-        
-    def execute(self,sql, *args):
-        """ execute any SQL statement and return all records """
-        
-        with self.con as con:        
-            cur = con.cursor()
-            cur.execute(sql, *args)
-
-    def executescript(self,sql, *args):
-        """ execute any SQL statement but no return value given """
-        
-        with self.con as con:        
-            cur = con.cursor()
-            cur.executescript(sql, *args)
-        

@@ -153,7 +153,6 @@ class Reads_db(SQLdatabase):
                         MIDlength = len(MIDs[0])
                
         # Setup Files generator
-        print type(data_files) is file
         if type(data_files) is file:
             recgen = SeqIO.parse(data_files, 'fastq')
         else: 
