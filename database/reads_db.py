@@ -29,7 +29,7 @@ class Reads_db(SQLdatabase):
        
         SQLdatabase.__init__(self, db_file, recbyname) 
        
-    def create_tables(self, table_name='seqs', overwrite=False):
+    def create_seqs_table(self, table_name='seqs', overwrite=False):
 
         with self.con as con:
     
@@ -217,7 +217,11 @@ class Reads_db(SQLdatabase):
                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
-                
+    
+    def write_fasta(self, sql_query):
+        pass
+    
+    
 
 if __name__ == '__main__':
     pass

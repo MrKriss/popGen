@@ -1,4 +1,4 @@
-#! /space/musselle/EPD7-3/bin/python
+#! /usr/bin/env python 
 '''
 Created on 3 Jul 2013
 

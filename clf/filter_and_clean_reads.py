@@ -1,4 +1,4 @@
-#! /space/musselle/EPD7-3/bin/python 
+#! /usr/bin/env python 
 
 '''
 Created on 3 Jul 2013
@@ -44,6 +44,7 @@ sys.path.append(os.path.join(work_prefix, 'popGen/clf'))
 
 del work_prefix
 del data_prefix
+
 
 from utils.fileIO import SeqRecCycler
 
