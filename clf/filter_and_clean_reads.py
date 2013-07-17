@@ -148,20 +148,20 @@ class RecordPreprocessor(object):
     
         filepath = os.path.join(path, "filtering_summary.log")
         
-        
         if overwrite:
             file_handle = open(filepath, 'wb')
         else:
             # Take care of files already present
-            count = 1
-            while os.path.exists(filepath):
-                name = "filtering_summary{0:d}.log".format(count)
-                filepath = os.path.join(path, name)
-                count += 1
-                    
-            print >> sys.stderr, 'Filter summary file already present. Saving as ', name
+            if os.path.exists(filepath):
+                count = 1
+                while os.path.exists(filepath):
+                    name = "filtering_summary{0:d}.log".format(count)
+                    filepath = os.path.join(path, name)
+                    count += 1
+                print >> sys.stderr, 'Filter summary file already present. Saving as ', filepath
+            
             file_handle = open(filepath, 'wb')
-    
+            
         # Write the filtering part of summary to a file 
         with file_handle as f:
             f.write("Filtering and Cleaning Parameters:\n") 
