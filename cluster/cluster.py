@@ -149,7 +149,7 @@ class ClusterDictionary(dict):
         ''' Update/insert all clusters into database with members. Then flush dictionary '''
         
         
-        processing_msg = ['.', '..', '...', '....', '.....']
+        processing_msg = ['10%', '25%', '...', '....', '.....']
         
         # Make table if not present
         if clust_table_name not in db.tables:
@@ -158,6 +158,7 @@ class ClusterDictionary(dict):
         with db.con as con:
             # Update Clusterids
             for clustid in range(self.max_cluster_id):
+                
                 
                 repseqid = self[clustid][0][0]['repid']
                 members_size = len(self[clustid][1])    
