@@ -145,7 +145,7 @@ class ClusterDictionary(dict):
         self.aprox_memsize += (4 * num_members)
 
         
-    def flush2db(self, db, seq_table_name='seqs',  clust_table_name='clusters'):
+    def flush2db(self, db, flush_thresh = 1000,  seq_table_name='seqs',  clust_table_name='clusters'):
         ''' Update/insert all clusters into database with members. Then flush dictionary '''
         
         
@@ -154,14 +154,20 @@ class ClusterDictionary(dict):
         # Make table if not present
         if clust_table_name not in db.tables:
             db.create_cluster_table(clust_table_name, overwrite=True)
-        
+            
         with db.con as con:
             # Update Clusterids
             for clustid in range(self.max_cluster_id):
                 
-                
-                repseqid = self[clustid][0][0]['repid']
                 members_size = len(self[clustid][1])    
+                
+                if members_size < flush_thresh:
+                    continue
+                
+                if not clustid % 1000:
+                    print 'done 1000'
+
+                repseqid = self[clustid][0][0]['repid']
                 
                 records = con.execute(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), (clustid,) )
                 row = records.fetchone()
