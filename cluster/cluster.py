@@ -134,39 +134,45 @@ class ClusterDictionary(dict):
     def add_cluster(self, repid, repseq):
         ''' Add a new cluster with the given sequence and id as the representative sequence '''
         self[self.max_cluster_id] = [np.array([( repid , repseq )], dtype=self.repseq_dtype), 
-                                     np.zeros(1, dtype = self.members_dtype)]
-        self.max_cluster_id += 1
+                                     np.zeros(0, dtype = self.members_dtype)]
         self.aprox_memsize += self[self.max_cluster_id][0].nbytes
+        self.max_cluster_id += 1
         
         
-    def add_member(self, clusterid, memberid):
-        self[clusterid][1] = np.concatenate(self[clusterid][1], np.array([memberid], self.members_dtype))
-        self.aprox_memsize += 4
+    def add_member(self, clusterid, memberids):
+        num_members = len(memberids)
+        self[clusterid][1] = np.append(self[clusterid][1], np.array([memberids], dtype=self.members_dtype))
+        self.aprox_memsize += (4 * num_members)
 
         
     def flush2db(self, db, seq_table_name='seqs',  clust_table_name='clusters'):
         ''' Update/insert all clusters into database with members. Then flush dictionary '''
         
+        
+        processing_msg = ['.', '..', '...', '....', '.....']
+        
         # Make table if not present
-        if clust_table_name not in db.clusters:
+        if clust_table_name not in db.tables:
             db.create_cluster_table(clust_table_name, overwrite=True)
         
         with db.con as con:
             # Update Clusterids
             for clustid in range(self.max_cluster_id):
                 
-                repseqid = self[clustid][0][0]
+                repseqid = self[clustid][0][0]['repid']
                 members_size = len(self[clustid][1])    
                 
-                records = con.select(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), clustid )
+                records = con.execute(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), (clustid,) )
                 row = records.fetchone()
     
                 # Process clusterid 
                 if row is None:
                     # Cluster id does not yet exist, Insert new cluster
+                    clust_size = members_size + 1
+
                     con.execute(''' INSERT INTO {0}
                     (clusterid, repseqid, size) VALUES (?,?,?)'''.format(clust_table_name), 
-                    ( clustid , repseqid , 1 + members_size ) )
+                    ( clustid , int(repseqid) , clust_size ) )
                 else: 
                     # Cluster id exists, update cluster size.
                     con.execute(''' UPDATE {0} SET
@@ -177,11 +183,11 @@ class ClusterDictionary(dict):
                 for member in self[clustid][1]:
                     con.execute(''' UPDATE {0} SET
                         clusterId = ? WHERE seqId = ?'''.format(seq_table_name), 
-                        ( clustid, member))
+                        ( clustid, int(member)))
                 
                 # Clear members
-            
-                
+                self[clustid][1] = np.zeros(0, dtype = self.members_dtype)
+                self.aprox_memsize -= (members_size * 4)
             
 #     def keys(self):
 #         return self.itemlist
