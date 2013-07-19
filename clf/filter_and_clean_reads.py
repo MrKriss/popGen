@@ -441,159 +441,161 @@ class RecordPreprocessor(object):
 
 #===============================================================================
 
+if __name__ == '__main__':
     
-parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
-parser.add_argument('-i',  dest='input', required=True, nargs='+',
-                    help='Input file(s) to process. (/path/filename) Will accept a glob')
-parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
-                    help='Barcodes accociated with input file(s). Will accept a glob')
-
-# Output parameters
-parser.add_argument('-o',  dest='output_postfix',
-                    help='Output file postfix to use when writing to file.')
-parser.add_argument('-p',  dest='output_path', default='.',
-                    help='Output path to write reads to. Missing dirs will be created.')
-
-parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-
-# Filter Parameters
-parser.add_argument('-d', action='store_true', dest='filter_defaults',
-                    help='Use default values for all filters. n = 0.1, f = 20, c=TGCAGG, e=2, r=2, f=1')
-
-parser.add_argument('-n', dest='n_thresh', type=float,
-                    help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
-parser.add_argument('-f',  dest='phred_thresh', type=int,
-                    help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
-
-parser.add_argument('-l', action='store_false', dest='illumina_filter', default=True, 
-                    help='Do not use the Illumina machine filter. On by Default.')
-
-parser.add_argument('-c', dest='cutsites', nargs = '*',  default=[],
-                    help='Filter reads that do not have one of the cutsites specified.')
-parser.add_argument('-e', dest='cutsite_editdist', default=1,
-                    help='Max edit distance allowed between target cutsite and read.')
-
-# Cleanup parameters
-parser.add_argument('-r', dest='overhang_idx', type=int, 
-                    help=('Number of bases in cutsite that make up the overhang. Reads are filtered out which' 
-                    'have errors in the overhang of the cut site.'))
-
-parser.add_argument('-g', dest='errorcorrecting_editdist', type=int,
-                    help='Max edit distance that is corrected between target MIDtag/cutsite and actual read.'
-                    'If matched to more than one candidate barcode, the read is discarded due to abiguity of identity.')
-
-# For displaying filter results to stderr 
-parser.add_argument('-v', '--verbose', action='store_true', default=False, 
-                    help='Whether to log the Sequence IDs of reads that fail the filtering')
-
-#===============================================================================
-# Main Fucntion loop
-#===============================================================================
-
-# Parse args and set defaults 
-args = parser.parse_args()
-
-starting_dir = os.getcwd()
         
-# Generator to cycle through files
-reads_generator = SeqRecCycler(data_files=args.input)
-
-# Initalise Class to Filter and cleanup reads
-preprocessor = RecordPreprocessor(args)
-
-# Output Path and file variables
-args.output_path = os.path.abspath(args.output_path)
-outputnames = []
-if not os.path.exists(args.output_path):
-    os.makedirs(args.output_path) 
-
-cum_t = 0
-toc = time.time()
-
-total_read_passes = 0
-
-for recgen in reads_generator.seqfilegen:
-
-    print >> sys.stderr, '\nProcessing {0}'.format(reads_generator.curfilename)
+    parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
+    parser.add_argument('-i',  dest='input', required=True, nargs='+',
+                        help='Input file(s) to process. (/path/filename) Will accept a glob')
+    parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
+                        help='Barcodes accociated with input file(s). Will accept a glob')
     
-    # Initialise generator
-    passes = preprocessor.make_processing_gen(recgen)
+    # Output parameters
+    parser.add_argument('-o',  dest='output_postfix',
+                        help='Output file postfix to use when writing to file.')
+    parser.add_argument('-p',  dest='output_path', default='.',
+                        help='Output path to write reads to. Missing dirs will be created.')
     
-    # DEfine output location
+    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+    
+    # Filter Parameters
+    parser.add_argument('-d', action='store_true', dest='filter_defaults',
+                        help='Use default values for all filters. n = 0.1, f = 20, c=TGCAGG, e=2, r=2, f=1')
+    
+    parser.add_argument('-n', dest='n_thresh', type=float,
+                        help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
+    parser.add_argument('-f',  dest='phred_thresh', type=int,
+                        help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
+    
+    parser.add_argument('-l', action='store_false', dest='illumina_filter', default=True, 
+                        help='Do not use the Illumina machine filter. On by Default.')
+    
+    parser.add_argument('-c', dest='cutsites', nargs = '*',  default=[],
+                        help='Filter reads that do not have one of the cutsites specified.')
+    parser.add_argument('-e', dest='cutsite_editdist', default=1,
+                        help='Max edit distance allowed between target cutsite and read.')
+    
+    # Cleanup parameters
+    parser.add_argument('-r', dest='overhang_idx', type=int, 
+                        help=('Number of bases in cutsite that make up the overhang. Reads are filtered out which' 
+                        'have errors in the overhang of the cut site.'))
+    
+    parser.add_argument('-g', dest='errorcorrecting_editdist', type=int,
+                        help='Max edit distance that is corrected between target MIDtag/cutsite and actual read.'
+                        'If matched to more than one candidate barcode, the read is discarded due to abiguity of identity.')
+    
+    # For displaying filter results to stderr 
+    parser.add_argument('-v', '--verbose', action='store_true', default=False, 
+                        help='Whether to log the Sequence IDs of reads that fail the filtering')
+    
+    #===============================================================================
+    # Main Fucntion loop
+    #===============================================================================
+    
+    # Parse args and set defaults 
+    args = parser.parse_args()
+    
+    starting_dir = os.getcwd()
+            
+    # Generator to cycle through files
+    reads_generator = SeqRecCycler(data_files=args.input)
+    
+    # Initalise Class to Filter and cleanup reads
+    preprocessor = RecordPreprocessor(args)
+    
     # Output Path and file variables
-    if args.output_postfix:
-
-        # Construct file names
-        name = reads_generator.curfilename.split('.')  
-        pass_filename = '.'.join([name[0] + args.output_postfix] + name[1:]) 
-        pass_file = os.path.join(args.output_path, pass_filename)
-        name = '.'.join(name)
-        outputnames.append(pass_filename) 
+    args.output_path = os.path.abspath(args.output_path)
+    outputnames = []
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path) 
+    
+    cum_t = 0
+    toc = time.time()
+    
+    total_read_passes = 0
+    
+    for recgen in reads_generator.seqfilegen:
+    
+        print >> sys.stderr, '\nProcessing {0}'.format(reads_generator.curfilename)
         
-        # Writes to the same filetype as the input
-        if name.endswith('.bgzf'):
-            pass_filehdl = bgzf.BgzfWriter(pass_file)
-        elif name.endswith('.fastq'):
-            pass_filehdl = open(pass_file, 'wb')
-        elif name.endswith('.gz'):
-            pass_filehdl = gzip.open(pass_file, 'wb')
+        # Initialise generator
+        passes = preprocessor.make_processing_gen(recgen)
+        
+        # DEfine output location
+        # Output Path and file variables
+        if args.output_postfix:
+    
+            # Construct file names
+            name = reads_generator.curfilename.split('.')  
+            pass_filename = '.'.join([name[0] + args.output_postfix] + name[1:]) 
+            pass_file = os.path.join(args.output_path, pass_filename)
+            name = '.'.join(name)
+            outputnames.append(pass_filename) 
+            
+            # Writes to the same filetype as the input
+            if name.endswith('.bgzf'):
+                pass_filehdl = bgzf.BgzfWriter(pass_file)
+            elif name.endswith('.fastq'):
+                pass_filehdl = open(pass_file, 'wb')
+            elif name.endswith('.gz'):
+                pass_filehdl = gzip.open(pass_file, 'wb')
+            else:
+                print >> sys.stderr, 'Input file format not supported: %s' % name
+                sys.exit()
+            
         else:
-            print >> sys.stderr, 'Input file format not supported: %s' % name
-            sys.exit()
+            # Output is written to std out
+            pass_filehdl = sys.stdout
         
-    else:
-        # Output is written to std out
-        pass_filehdl = sys.stdout
-    
-    if args.output_postfix:          
-        print >> sys.stderr, 'Writing passes to \n{0} ....'.format(pass_filename)
-    else:
-        print >> sys.stderr, 'Writing to stdout ....'
-    numwritten = SeqIO.write(passes , pass_filehdl , 'fastq')
-    preprocessor.total_read_passes += numwritten
-    
-    if pass_filehdl == sys.stdout:
-        pass_filehdl.flush()
-    else:
-        pass_filehdl.close()
-    print >> sys.stderr, '{0} records Preprocessed'.format(numwritten)
-    
-    loop_t = time.time() - toc - cum_t
-    cum_t += loop_t
-    print >> sys.stderr, 'Finished file {0} after {1}'.format(reads_generator.curfilenum, 
-                                time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
-
-
-if args.verbose:
-    print >> sys.stderr, '\nFilter stats'
-    print >> sys.stderr, '\nFilter No.\tHits'    
-    for n in range(len(preprocessor.filter_functions)):
-        print >> sys.stderr, '%s\t\t%s' % (n,preprocessor.filterfail_counter[n])
-
-    print >> sys.stderr, '\nTotal No. Reads Processed:  %s' % preprocessor.total_read_count
-    
-    print >> sys.stderr, '\nTotal No. filtered out:  %s (%.2f %%)' % (sum(preprocessor.filterfail_counter.values()), 
-                                                    100 * (sum(preprocessor.filterfail_counter.values())/ 
-                                                            float(preprocessor.total_read_count)))
-    
-    print >> sys.stderr, '\nTotal reads skipped in cleaning: \t{0} ({1:.2%})'.format(
-                    preprocessor.skipped_count, float(preprocessor.skipped_count) / preprocessor.total_read_count)
-    
-    print >> sys.stderr, '\nTotal reads corrected: \t\t\t{0} ({1:.2%})'.format(
-                    preprocessor.read_corrected_count, float(preprocessor.read_corrected_count) / preprocessor.total_read_count)
-    
-    print >> sys.stderr, '\nTotal No. reads passed: \t\t{0} ({1:.2%})'.format(
-                    preprocessor.total_read_passes, float(preprocessor.total_read_passes) / preprocessor.total_read_count)
+        if args.output_postfix:          
+            print >> sys.stderr, 'Writing passes to \n{0} ....'.format(pass_filename)
+        else:
+            print >> sys.stderr, 'Writing to stdout ....'
+        numwritten = SeqIO.write(passes , pass_filehdl , 'fastq')
+        preprocessor.total_read_passes += numwritten
+        
+        if pass_filehdl == sys.stdout:
+            pass_filehdl.flush()
+        else:
+            pass_filehdl.close()
+        print >> sys.stderr, '{0} records Preprocessed'.format(numwritten)
+        
+        loop_t = time.time() - toc - cum_t
+        cum_t += loop_t
+        print >> sys.stderr, 'Finished file {0} after {1}'.format(reads_generator.curfilenum, 
+                                    time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
     
     
-# Write summary file
-preprocessor.write_summary_output(args.output_path)
-
-total_t = time.time() - toc    
-print >> sys.stderr, 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
-                                                            time.gmtime(total_t)))
-os.chdir(starting_dir)
-
-
+    if args.verbose:
+        print >> sys.stderr, '\nFilter stats'
+        print >> sys.stderr, '\nFilter No.\tHits'    
+        for n in range(len(preprocessor.filter_functions)):
+            print >> sys.stderr, '%s\t\t%s' % (n,preprocessor.filterfail_counter[n])
+    
+        print >> sys.stderr, '\nTotal No. Reads Processed:  %s' % preprocessor.total_read_count
+        
+        print >> sys.stderr, '\nTotal No. filtered out:  %s (%.2f %%)' % (sum(preprocessor.filterfail_counter.values()), 
+                                                        100 * (sum(preprocessor.filterfail_counter.values())/ 
+                                                                float(preprocessor.total_read_count)))
+        
+        print >> sys.stderr, '\nTotal reads skipped in cleaning: \t{0} ({1:.2%})'.format(
+                        preprocessor.skipped_count, float(preprocessor.skipped_count) / preprocessor.total_read_count)
+        
+        print >> sys.stderr, '\nTotal reads corrected: \t\t\t{0} ({1:.2%})'.format(
+                        preprocessor.read_corrected_count, float(preprocessor.read_corrected_count) / preprocessor.total_read_count)
+        
+        print >> sys.stderr, '\nTotal No. reads passed: \t\t{0} ({1:.2%})'.format(
+                        preprocessor.total_read_passes, float(preprocessor.total_read_passes) / preprocessor.total_read_count)
+        
+        
+    # Write summary file
+    preprocessor.write_summary_output(args.output_path)
+    
+    total_t = time.time() - toc    
+    print >> sys.stderr, 'Processed all files in {0}'.format(time.strftime('%H:%M:%S', 
+                                                                time.gmtime(total_t)))
+    os.chdir(starting_dir)
     
     
+        
+        

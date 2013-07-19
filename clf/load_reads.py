@@ -59,7 +59,7 @@ if args.input == '-':
 db = Reads_db(db_file=args.database_filepath, recbyname=True)
 
 if (args.table_name not in db.tables) or (args.force_overwrite == True):
-    db.create_tables(table_name=args.table_name, overwrite=args.force_overwrite)
+    db.create_seqs_table(table_name=args.table_name, overwrite=args.force_overwrite)
 
 db.load_seqs(data_files=args.input, barcode_files=args.barcodes, table_name=args.table_name)
 

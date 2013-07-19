@@ -16,7 +16,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1358857088644</id>
+			<id>1366197885799</id>
 			<name></name>
 			<type>21</type>
 			<matcher>
@@ -24,26 +24,13 @@
 			</matcher>
 		</filter>
 		<filter>
-			<id>1350507598442</id>
+			<id>1365585378550</id>
 			<name>utils</name>
 			<type>21</type>
 			<matcher>
-				<id>org.eclipse.ui.ide.andFilterMatcher</id>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-name-matches-false-false-*</arguments>
 			</matcher>
 		</filter>
 	</filteredResources>
-	<variableList>
-		<variable>
-			<name>runscripts</name>
-			<value>file:/home/pgrad/musselle/ubuntu/workspace/popGen/runscripts</value>
-		</variable>
-		<variable>
-			<name>tests</name>
-			<value>file:/home/pgrad/musselle/ubuntu/workspace/popGen/tests</value>
-		</variable>
-		<variable>
-			<name>utils</name>
-			<value>file:/home/pgrad/musselle/ubuntu/workspace/popGen/utils</value>
-		</variable>
-	</variableList>
 </projectDescription>

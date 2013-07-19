@@ -98,6 +98,24 @@ class Reads_db(SQLdatabase):
 #             self.tables.append('meta')
 #             
 
+    def create_cluster_table(self, table_name='clusters', overwrite=False):
+        ''' Make cluster table in database '''
+        
+        with self.con as con:
+    
+            curs = con.cursor()
+
+            if overwrite:
+                curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
+            
+            curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
+            clusterId INTEGER PRIMARY KEY NOT NULL,
+            repseqid INTEGER NOT NULL,
+            size INTEGER NOT NULL) '''.format(table_name))
+            self.tables.append('{0}'.format(table_name))
+
+
+
     def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs'):
         ''' Load in all sequences in the specified files to the database 
         

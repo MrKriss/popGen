@@ -46,32 +46,6 @@ del data_prefix
 
 from database.reads_db import Reads_db
 
-# Parse arguments
-
-parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
-parser.add_argument('-i',  dest='input', required=True, nargs='+',
-                    help='Database file where reads are stored (/path/filename)')
-parser.add_argument('-q',  dest='query', required=True, nargs='+',
-                    help='Querry to fetch records with.')
-parser.add_argument('-s',  dest='similarity', required=True, nargs='+',
-                    help='Threshold for percentage similarity between clusters.')
-
-args = parser.parse_args()
-
-
-# Fetch records 
-db = Reads_db(args.input, recbyname=True)
-
-records = db.con.execute(args.query)
-
-
-# Run clustering 
-
-
-
-
-# Store results 
-
 
 class ClusterReadsObj():
     
@@ -125,38 +99,96 @@ class ClusterReadsObj():
                     
                     if ((len_seq - dist_vec[first_min_idx]) / len_seq) >= args.similarity:
                         # Add read to the membership of that cluster 
-                    
+                        pass
                     else:
+                        pass
                         # Start a new seed
         
         
         
         
+class ClusterDictionary(dict):
+    def __init__(self, *args, **kw):
         
-        # Run 
+        if 'seqlen' in kw:
+            seqlen = 'a' + str(kw['seqlen'])
+            self.repseq_dtype = np.dtype([('repid', 'u4'), 
+                                          ('repseq', seqlen)]) 
+        else:
+            self.repseq_dtype = np.dtype([('repid', 'u4'), 
+                                          ('repseq', 'a88')]) 
+            
+        self.members_dtype = np.dtype(np.uint32)
+        self.aprox_memsize = 0
+        
+        super(ClusterDictionary,self).__init__(*args, **kw)
+        
+        self.max_cluster_id = len(super(ClusterDictionary,self).keys())
+        
+#     def __setitem__(self, key, value):
+#         super(ClusterDictionary,self).__setitem__(key, value)
+#     
+#     def __iter__(self):
+#         return super(ClusterDictionary,self).__iter__()
+    
+    def add_cluster(self, repid, repseq):
+        ''' Add a new cluster with the given sequence and id as the representative sequence '''
+        self[self.max_cluster_id] = [np.array([( repid , repseq )], dtype=self.repseq_dtype), 
+                                     np.zeros(1, dtype = self.members_dtype)]
+        self.max_cluster_id += 1
+        self.aprox_memsize += self[self.max_cluster_id][0].nbytes
         
         
-    class ClusterDictionary(dict):
+    def add_member(self, clusterid, memberid):
+        self[clusterid][1] = np.concatenate(self[clusterid][1], np.array([memberid], self.members_dtype))
+        self.aprox_memsize += 4
 
-
         
-class odict(dict):
-         def __init__(self, *args, **kw):
-             super(odict,self).__init__(*args, **kw)
-             self.itemlist = super(odict,self).keys()
-         def __setitem__(self, key, value):
-              # TODO: what should happen to the order if
-              #       the key is already in the dict       
-             self.itemlist.append(key)
-             super(odict,self).__setitem__(key, value)
-         def __iter__(self):
-             return iter(self.itemlist)
-         def keys(self):
-             return self.itemlist
-         def values(self):
-             return [self[key] for key in self]  
-         def itervalues(self):
-             return (self[key] for key in self)
+    def flush2db(self, db, seq_table_name='seqs',  clust_table_name='clusters'):
+        ''' Update/insert all clusters into database with members. Then flush dictionary '''
+        
+        # Make table if not present
+        if clust_table_name not in db.clusters:
+            db.create_cluster_table(clust_table_name, overwrite=True)
+        
+        with db.con as con:
+            # Update Clusterids
+            for clustid in range(self.max_cluster_id):
+                
+                repseqid = self[clustid][0][0]
+                members_size = len(self[clustid][1])    
+                
+                records = con.select(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), clustid )
+                row = records.fetchone()
+    
+                # Process clusterid 
+                if row is None:
+                    # Cluster id does not yet exist, Insert new cluster
+                    con.execute(''' INSERT INTO {0}
+                    (clusterid, repseqid, size) VALUES (?,?,?)'''.format(clust_table_name), 
+                    ( clustid , repseqid , 1 + members_size ) )
+                else: 
+                    # Cluster id exists, update cluster size.
+                    con.execute(''' UPDATE {0} SET
+                        size = ? WHERE clusterid = ?'''.format(clust_table_name), 
+                        ( row['size'] + members_size, clustid))
+                    
+                # Process members
+                for member in self[clustid][1]:
+                    con.execute(''' UPDATE {0} SET
+                        clusterId = ? WHERE seqId = ?'''.format(seq_table_name), 
+                        ( clustid, member))
+                
+                # Clear members
+            
+                
+            
+#     def keys(self):
+#         return self.itemlist
+#     def values(self):
+#         return [self[key] for key in self]  
+#     def itervalues(self):
+#         return (self[key] for key in self)
 
 
 
@@ -165,4 +197,31 @@ class odict(dict):
 
 
 if __name__ == '__main__':
-    pass
+    
+    # Parse arguments
+
+    parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
+    parser.add_argument('-i',  dest='input', required=True, nargs='+',
+                        help='Database file where reads are stored (/path/filename)')
+    parser.add_argument('-q',  dest='query', required=True, nargs='+',
+                        help='Querry to fetch records with.')
+    parser.add_argument('-s',  dest='similarity', required=True, nargs='+',
+                        help='Threshold for percentage similarity between clusters.')
+    
+    args = parser.parse_args()
+    
+    
+    # Fetch records 
+    db = Reads_db(args.input, recbyname=True)
+    
+    records = db.con.execute(args.query)
+    
+    
+    # Run clustering 
+    
+    
+    
+    # Store results 
+
+    
+    
