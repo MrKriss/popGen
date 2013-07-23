@@ -3,23 +3,24 @@ Created on 27 Jun 2013
 
 @author: musselle
 '''
-import os
-import sys
+import os, sys
 import cPickle as pkl
 from subprocess import PIPE, Popen
 import glob
 
 import gzip
 import numpy as np
+
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 import sqlite3
 from utils import get_path_prefix
-from general_utilities import set_trace
+from utils.general_utilities import set_trace
 
 from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler
-
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
@@ -236,9 +237,34 @@ class Reads_db(SQLdatabase):
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
     
-    def write_fasta(self, sql_query):
-        pass
-    
+    def write_reads(self, sql_query, filename, format='fasta'):
+        """ Write records returned by the querry to one large fasta or fastq """
+        
+        with self.con as con:
+            
+            if os.path.exists(filename):
+                print >> sys.stderr, 'Output file alread exists. Overwriting...'
+                f = open(filename, 'w')
+                f.close()
+            f = open(filename, 'a')
+            
+            record_curs = con.execute(sql_query)
+            
+            for rec in record_curs:
+                seq_rec = SeqRecord(Seq(rec['seq']), id=rec['seqid'])
+                
+                SeqIO.write(seq_rec, f, format=format)
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
     
 
 if __name__ == '__main__':

@@ -5,46 +5,17 @@ Created on 3 Jul 2013
 
 @author: musselle
 '''
-import os 
-import sys 
-import glob
-import time
-import socket
+import os, sys, time, glob, gzip, argparse
 import StringIO
 import pprint
  
 import numpy as np 
-
-import gzip
-import argparse
-
 import editdist
 
 from Bio import SeqIO, bgzf 
 from collections import Counter
 
-# Work out where data is stored
-if socket.gethostname() == 'yildun':
-    data_prefix = '/space/musselle/data'
-    work_prefix = '/home/pgrad/musselle/ubuntu/workspace/'
-        
-elif socket.gethostname() == 'luca':
-    data_prefix = '/home/musselle/san/data'
-    work_prefix = '/home/musselle/'
-       
-elif socket.gethostname() == 'gg-pc6':
-    data_prefix = '/home/musselle/data'
-    work_prefix = '/home/musselle/'
-
-sys.path.append(os.path.join(work_prefix, 'popGen'))
-sys.path.append(os.path.join(work_prefix, 'popGen/utils'))
-sys.path.append(os.path.join(work_prefix, 'popGen/plotscripts'))
-sys.path.append(os.path.join(work_prefix, 'popGen/runscripts'))
-sys.path.append(os.path.join(work_prefix, 'popGen/clf'))
-
-del work_prefix
-del data_prefix
-
+import _addpaths
 
 from utils.fileIO import SeqRecCycler
 

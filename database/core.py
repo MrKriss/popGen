@@ -17,7 +17,7 @@ from Bio import SeqIO
 
 import sqlite3
 from utils import get_path_prefix
-from general_utilities import set_trace
+from utils.general_utilities import set_trace
 
 class SQLdatabase(object):
     """ Class to handle all python communication with a sqlite database file 
