@@ -54,7 +54,7 @@ args = parser.parse_args()
 if not os.path.exists(args.ouputdir):
     os.makedirs(args.ouputdir)
 
-lookup_db = SeqIO.index_db(args.indexfilepath)
+db = SeqIO.index_db(args.indexfilepath)
 
 idx_file_dir = os.path.split(args.indexfilepath)[0]
 
@@ -75,9 +75,9 @@ for cluster in cluster_gen:
     seqs = []
     if os.getcwd() != idx_file_dir:
         os.chdir(idx_file_dir)
-    seqs.append(lookup_db[cluster.rep_seq_desc])
-    for member in cluster.members_desc:
-        seqs.append(lookup_db[member])
+    seqs.append(db[cluster.rep_seq_id])
+    for member in cluster.members_id:
+        seqs.append(db[member])
     
     if os.getcwd() != self.output_dirpath:
         os.chdir(self.output_dirpath)

@@ -67,7 +67,7 @@ with open('clusters.temp', 'wb') as clust_file:
         
         if seq_similarity_ranking[0][0] != '100.00':
             # Work out which sequence is most representative 
-            cluster.get_unique_seq(ignoreup2=6, lookup_db=seqrec_lookup)
+            cluster.get_unique_seq(ignoreup2=6, db=seqrec_lookup)
             most_common_seq = cluster.unique_seq.most_common()[0][0]
             
             # Find the id of first sequence with the most common sequence and update rep seq
@@ -77,23 +77,23 @@ with open('clusters.temp', 'wb') as clust_file:
                     
                     # store temps
                     old_rep_seq = cluster.rep_seq
-                    old_rep_seq_desc = cluster.rep_seq_desc
+                    old_rep_seq_desc = cluster.rep_seq_id
                     
                     # update new rep seq
                     cluster.rep_seq = mem
-                    cluster.rep_seq_desc = cluster.members_desc[idx]
+                    cluster.rep_seq_id = cluster.members_id[idx]
 
                     # Remove from members and add old rep seq
-                    del cluster.members_desc[idx]
+                    del cluster.members_id[idx]
                     del cluster.members_seq[idx]
-                    cluster.members_desc.append(old_rep_seq_desc)
+                    cluster.members_id.append(old_rep_seq_desc)
                     cluster.members_seq.append(old_rep_seq)
                     
                     rep_seq_correction_count += 1
                     break
             
         # Write new .clstr file
-        cluster.write2clstr(clust_file, lookup_db=seqrec_lookup)
+        cluster.write2clstr(clust_file, db=seqrec_lookup)
         clusters_count += 1
         
     print 'Wrote {0} Clusters and corrected {1} ({2:.2f}%)'.format(clusters_count, rep_seq_correction_count, 
