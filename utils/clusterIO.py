@@ -685,18 +685,13 @@ def sortby(handle, reverse=True, mode='cluster_size', outfile_postfix=None,
     return sorted_cluster_file
 
     
-def getfromdb(cluster_list, items, db=None, path2idxfile=None,):
-    """ Adds the specified items to each cluster in list, looked up from the indexed db.
+def getfromdb(cluster_list, items, db=None):
+    """ Adds the specified items to each cluster in list, looked up from the main db.
     
     items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
             'rep' will fetch just the seq and phred info for the representative sequence.
             
     """
-
-    if db is None:
-        assert path2idxfile, 'No lookup data base parsed or index file specified'
-        db = SeqIO.index_db(path2idxfile)  
-    
     for cluster in cluster_list:
         cluster.getfromdb(items, db)
         
@@ -845,5 +840,3 @@ if __name__ == '__main__':
 
     output_dir = '/space/musselle/data/RAD-seq/gazelles-zebras/clusters/gz_allg_allz_95g1_clustered_reads_c95_g1/gazellles_filtered/'
 
-    filter_clusters(gaz_clustf, idx_filepath=idx_file, size_range=(300,300), output_dirpath=output_dir)
-#     filter_clusters2(gaz_clustf, idx_filepath=idx_file, size_range=(300,310), output_dirpath=output_dir)

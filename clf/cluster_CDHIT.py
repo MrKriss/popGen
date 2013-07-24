@@ -38,15 +38,17 @@ class CDHIT_ClusteringClass(object):
                 path, name = os.path.split(filepath)
                 name_parts = name.split('.')
                 while os.path.exists(filepath):
+                    name_parts[0] = name_parts[0].rstrip('0123456789')
                     new_name = name_parts[0] + "{0:d}".format(count)
-                    new_name = ''.join(new_name, name_parts[1:])
+                    name_parts[0] = new_name
+                    new_name = '.'.join(name_parts)
                     filepath = os.path.join(path, new_name)
                     count += 1
-                print >> sys.stderr, 'cluster file already present. Saving as ', filepath
+                print >> sys.stderr, 'Cluster file already present. Saving as ', filepath
         
         return filepath
 
-    def cluster_cdhit(self, file_handle, outfile_path=''):
+    def run(self, infile_handle):
         ''' Run CD-HIT in parallel on list of fasta files. Each file is clustered seperately.
         
         Other flags used:
@@ -54,8 +56,8 @@ class CDHIT_ClusteringClass(object):
         -r 0   --> DO Only +/+ and not -/+ alignment comparisons as reads are done in both directions but on different strands. 
         -s 0.8 --> If shorter sequence is less than 80% of the representative sequence, dont cluster. 
         
-        file_handle -- Takes file object or string of the file path/filename
-        outfile_path -- Defines output location and file name.
+        infile_handle -- Takes file object or string of the file path/filename
+        ouput -- Defines output location and file name.
         
         Writes stdout to console.
         Counter dictionary and summary logfile are generated after each run. 
@@ -63,26 +65,21 @@ class CDHIT_ClusteringClass(object):
         '''
 
         # input checks        
-        if type(file_handle) == str:
-            if os.path.exists(file_handle):
-                file_handle = open(file_handle, 'rb')
+        if type(infile_handle) == str:
+            if os.path.exists(infile_handle):
+                infile_handle = open(infile_handle, 'rb')
             else:
-                raise Exception('file_handle is a string to a non existing file.')
-        elif type(file_handle) == file:
-            if file_handle.closed:
-                file_handle = open(file_handle.name, 'rb')
+                raise Exception('infile_handle is a string to a non existing file.')
+        elif type(infile_handle) == file:
+            if infile_handle.closed:
+                infile_handle = open(infile_handle.name, 'rb')
         
-        if not outfile_path:
-            outfile_path = 'clusterfile'
-        
-        logfile_path = os.path.join(os.path.split(outfile_path)[0], 'clusterfile.log')
+        logfile_path = os.path.join(os.path.split(self.args.output)[0], 'clusterfile.log')
             
         # setup internal vars        
-        counters = []
         start_time = time.time()
         
-        infile_path = os.path.abspath(file_handle.name)
-        outfile_path = self.check_filepath(outfile_path)
+        infile_path = os.path.abspath(infile_handle.name)
         logfile_path = self.check_filepath(logfile_path)
     
         #=======================================================================
@@ -90,7 +87,7 @@ class CDHIT_ClusteringClass(object):
         #=======================================================================
     
         cmd = ('cd-hit-est -i {0} -o {1} -c {2} -n {3} -d 0 -r 0 -s 0.8 -M {4} '
-            '-T {5}').format(infile_path, outfile_path, 
+            '-T {5}').format(infile_path, self.args.output, 
                              self.args.similarity, 
                              self.args.n_gram, 
                              self.args.maxmemory, 
@@ -101,8 +98,10 @@ class CDHIT_ClusteringClass(object):
         if self.args.allvall:
             cmd = cmd + ' -g 1'
         
+        cdhitpath = os.path.expanduser(self.args.cdhitpath)
+        
         # Spawn Process to run CD-HIT
-        subprocess.check_call(shlex.split(os.path.join(self.c.cdhit_path, cmd)))
+        subprocess.check_call(shlex.split(os.path.join(cdhitpath, cmd)))
         
         finish_time = time.time()
         
@@ -112,18 +111,18 @@ class CDHIT_ClusteringClass(object):
         #=======================================================================
         
         # Get cluster size summary counter 
-        total_counter, by_seqlen_counter = self.cluster_summary_counter(infile_path=outfile_path,
+        total_counter, by_seqlen_counter = self.cluster_summary_counter(infile_path=self.args.output,
                                                                         mode='both', report=True)    
         st_idx = cmd.find('-c ')
         CDHIT_parameters = cmd[st_idx:]
         
         # Write summary logfile 
         with open(logfile_path, 'wb') as f:
-            program_name = os.path.join(self.c.cdhit_path, cmd).split(' -i ')[0]
+            program_name = os.path.join(self.args.cdhitpath, cmd).split(' -i ')[0]
             f.write('=========================================================\n')
             f.write('Program     : {0}\n'.format(program_name))
             f.write('Input File  : {0}\n'.format(infile_path))
-            f.write('Output File : {0}\n'.format(outfile_path))
+            f.write('Output File : {0}\n'.format(self.args.output))
             f.write('Commands    : {0}\n'.format(CDHIT_parameters))
             f.write('\n')
             f.write('Started     : {0}\n'.format(time.strftime('%a, %d %b %Y, %H:%M:%S', 
@@ -159,13 +158,9 @@ class CDHIT_ClusteringClass(object):
                       clust_size=tup[0], num_clust=total_counter[tup[0]], total_reads=tup[1], 
                       percentage=perc))
 
+        cluster_file_handle = open(self.args.output, 'rb')
         
-        cluster_file_handle = open(outfile_path, 'rb')
-        
-        return cluster_file_handle
-        
-    return (returned_outfiles_list, outpath, counters) 
-        
+        return cluster_file_handle, total_counter
 
 
     def cluster_summary_counter(self, infile_path, mode='total', report=True):
@@ -276,8 +271,6 @@ class CDHIT_ClusteringClass(object):
 
 
 
-
-
 if __name__ == '__main__':
     
     # Parse arguments
@@ -287,37 +280,52 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
     parser.add_argument('-i',  dest='input', required=True,
                         help='Database file where reads are stored (/path/filename)')
+    parser.add_argument('-o',  dest='output', default='clusterfile',
+                        help='Filename for output clusters (/path/filename)')
     parser.add_argument('-q',  dest='query', default=None,
                         help='Querry to fetch records with. Default will cycle through all records in database.')
-    parser.add_argument('-s',  dest='similarity', required=True,
+    parser.add_argument('-s',  dest='similarity', required=True, type=float,
                         help='Threshold for percentage similarity between clusters.')
-    parser.add_argument('-n',  dest='n_gram', required=True,
+    parser.add_argument('-n',  dest='n_gram', required=True, type=int,
                         help='N gram pattern to use for similarity calculation between reads.')
-    parser.add_argument('-m',  dest='maxmemory', default=0,
+    parser.add_argument('-m',  dest='maxmemory', default=0, type=int,
                         help='Maximum memory to use for the hash table. Default = 0 (unlimited)')
-    parser.add_argument('-t',  dest='threads', default=1,
+    parser.add_argument('-t',  dest='threads', default=1, type=int,
                         help='Number of threads to use for the clustering. Default = 1')
     parser.add_argument('-g',  dest='allvall', action = 'store_true', 
                         help='Whether to compare a new read to all previous seeds when growing clusters. Default = False')
     
+    
+    parser.add_argument('-p',  dest='cdhitpath', default='~/bin/cdhit',
+                        help='Path to where cd-hit is installed. Default is ~/bin/cdhit/')
+    parser.add_argument('--maskN',  dest='maskN', action = 'store_true', 
+                        help='Whether to mask any Ns in the DNA sequence. Default = False')
+    
+    print sys.argv
     args = parser.parse_args()
+    
     
     # Fetch records and convert to fasta
     if args.query is None:
         args.query = '''SELECT * FROM seqs''' 
     fastafilename = 'reads_temp.fasta'
     db = Reads_db(args.input, recbyname=True)
-    file_handle = db.write_reads(args.query, filename=fastafilename, format='fasta')
+    infile_handle = db.write_reads(args.query, filename=fastafilename, format='fasta')
     
-    
-    # Run clustering 
+    # Setup and Run clustering 
     clustering =  CDHIT_ClusteringClass(args)
+    outfile_handle, total_cluster_counter = clustering.run(infile_handle)
     
-    clustering.run(file_handle, db)
+    total_records = 0
+    for clustsize, number in total_cluster_counter.iteritems():
+        total_records += int(clustsize) * number
+        
+    
+    total_clusters =  sum(total_cluster_counter.values())
     
     total_t = time.time() - toc    
     print >> sys.stderr, 'Clustered {0} records into {1} clusters in {2}'.format(
-              clustering.record_count, len(clustering.cluster_dict),
+              total_records, total_clusters,
               time.strftime('%H:%M:%S', time.gmtime(total_t)))
     
     

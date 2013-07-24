@@ -239,8 +239,13 @@ class Reads_db(SQLdatabase):
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
     
-    def write_reads(self, sql_query, filename, format='fasta'):
-        """ Write records returned by the querry to one large fasta or fastq """
+    def write_reads(self, sql_query, filename, format='fasta', ignoreup2=0):
+        """ Write records returned by the querry to one large fasta or fastq 
+        
+         ignoreup2 -- starting index of sequence that are written, used to miss out 
+         cutsite if necessary. 
+         
+         """
         
         with self.con as con:
             
@@ -253,7 +258,7 @@ class Reads_db(SQLdatabase):
             record_curs = con.execute(sql_query)
             
             for rec in record_curs:
-                seq_rec = SeqRecord(Seq(rec['seq']), id=rec['seqid'])
+                seq_rec = SeqRecord(Seq(rec['seq'][ignoreup2:]), id=str(rec['seqid']))
                 SeqIO.write(seq_rec, f, format=format)
                 
             f.close()
