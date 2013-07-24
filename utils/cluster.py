@@ -332,53 +332,6 @@ class ClusterClass(object):
     
 
 
-
-
-#def plot_counter( bins,cluster_length_bins=None, mincutoff=10, bins=5000, report=True, plot_hist=True,):
-#    
-#    
-#    # Process ds to extract needed data for histergrams
-#    if cluster_length_bins is not None:
-#        # Update counters for each bin in cluster_length_bins
-#        for cluster_size, seq_len_c in ds.iteritems():
-#
-#            for tup in cluster_length_bins:   
-#                name = 'Length-' + str(tup)
-#                 
-#                if len(tup) == 1:
-#                    # single number bin
-#                    target_key = str(tup[0])
-#                    if seq_len_c.has_key(target_key):
-#                        vars()[name][cluster_size] += seq_len_c[target_key]
-#        
-#                elif len(tup) == 2:
-#                    # range bin
-#                    for seq_length in seq_len_c.iterkeys():
-#                        if int(seq_length) >= tup[0] and int(seq_length) <= tup[1]:
-#                            vars()[name][cluster_size] += seq_len_c[seq_length]
-#    
-#    #===============================================================================
-#    # Plot results
-#    #===============================================================================
-#    
-#    # TODO Add a level of input checking so if Counter is empty, an empty histogram is plotted
-#    
-#    if plot_hist:
-#    
-#        plt.figure()
-#        if cluster_length_bins is not None:   
-#            for tup in cluster_length_bins:   
-#                name = 'Length-' + str(tup)
-#                
-#                hist_counter(vars()[name], bins=bins, label=name, range=(mincutoff, 10000))
-#         
-#        hist_counter(cluster_size_counter, bins=bins, label='All Seq Lengths', range=(mincutoff, 10000))   
-#        plt.title("Cluster Size Distribution")
-#        plt.xlabel("Value")
-#        plt.ylabel("Frequency")
-#        plt.legend()
-#        plt.show()
-#    
     
 
 if __name__ == '__main__':

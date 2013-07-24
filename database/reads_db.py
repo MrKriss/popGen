@@ -16,11 +16,13 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 import sqlite3
-from utils import get_path_prefix
-from utils.general_utilities import set_trace
+from utils.general_utilities import set_trace, get_path_prefix
 
 from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler
+from utils.clusterIO import ClusterObj, parse, sortby
+from clusterIO import input_check
+
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
@@ -29,7 +31,7 @@ class Reads_db(SQLdatabase):
     def __init__(self, db_file="test.db", recbyname=True, new=False):
        
         SQLdatabase.__init__(self, db_file, recbyname) 
-       
+        
     def create_seqs_table(self, table_name='seqs', overwrite=False):
 
         with self.con as con:
@@ -86,6 +88,7 @@ class Reads_db(SQLdatabase):
             controlBits INTEGER,
             indexSeq TEXT) '''.format(table_name))
             self.tables.append('{0}'.format(table_name))
+            self.seqs_table_name = table_name
             
 #             if overwrite:
 #                 curs.execute('DROP TABLE IF EXISTS meta')
@@ -114,7 +117,6 @@ class Reads_db(SQLdatabase):
             repseqid INTEGER NOT NULL,
             size INTEGER NOT NULL) '''.format(table_name))
             self.tables.append('{0}'.format(table_name))
-
 
 
     def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs'):
@@ -243,7 +245,7 @@ class Reads_db(SQLdatabase):
         with self.con as con:
             
             if os.path.exists(filename):
-                print >> sys.stderr, 'Output file alread exists. Overwriting...'
+                print >> sys.stderr, 'Output file already exists. Overwriting...'
                 f = open(filename, 'w')
                 f.close()
             f = open(filename, 'a')
@@ -252,20 +254,60 @@ class Reads_db(SQLdatabase):
             
             for rec in record_curs:
                 seq_rec = SeqRecord(Seq(rec['seq']), id=rec['seqid'])
-                
                 SeqIO.write(seq_rec, f, format=format)
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
+            f.close()
+        return f 
     
+    def load_cluster_file(self, cluster_file_handle):
+        ''' Load in a clustering file into the database '''
+          
+        print >> sys.stderr, 'Importing cluster file %s  to database...' % (cluster_file_handle.name)
+    
+        # Filter out singletons and sort clusters in accending order
+        sorted_cluster_file = sortby(cluster_file_handle, reverse=True, 
+                                     mode='cluster_size', outfile_postfix=None, cutoff=2)
+        
+        sorted_cluster_file = input_check(sorted_cluster_file)
+            
+        cluster_gen = parse(sorted_cluster_file)
+        
+        for cluster in cluster_gen:
+            self.load_single_clusterobj(cluster)
+        
+        
+    def load_single_clusterobj(self, clusterobj, overwrite=False):
+        ''' Load in a single cluster object to the database. 
+        
+        if overwrite = True --> previous entries for clusterid and size are overwritten
+        '''
+        
+        clust_table_name = 'clusters'
+        seq_table_name = 'seqs'
+        
+        with self.con as con:
+            
+            records = con.execute(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), (clusterobj.id,) )
+            row = records.fetchone()
+    
+            # Process clusterid 
+            if row is None:
+                # Cluster id does not yet exist, Insert new cluster
+                con.execute(''' INSERT INTO {0}
+                    (clusterid, repseqid, size) VALUES (?,?,?)'''.format(clust_table_name), 
+                    ( clusterobj.id, int(clusterobj.rep_seq_id) , clusterobj.size) )
+            else: 
+                # Cluster id exists, update cluster size.
+                con.execute(''' UPDATE {0} SET
+                        size = ? WHERE clusterid = ?'''.format(clust_table_name), 
+                        ( clusterobj.size, clusterobj.id))
+                    
+            # Process members
+            for seqid in clusterobj.members_id :
+                con.execute(''' UPDATE {0} SET
+                    clusterId = ? WHERE seqId = ?'''.format(seq_table_name), 
+                    (clusterobj.id, int(seqid)))
+        
 
 if __name__ == '__main__':
     pass

@@ -18,6 +18,186 @@ import editdist as ed
 
 from utils import Cycler
 
+#===============================================================================
+# Cluster IO file 
+
+#===============================================================================
+# Possibly usefull
+#===============================================================================
+
+def get_desc(self, cluster, items):
+        """ Scan back over cluster and get all details """
+        
+        # Input checks  
+        handle = input_check(self.handle)  
+
+        # Store flag info
+#         do_rep = 'rep' in items
+#         do_phred = 'phred' in items
+#         do_seq = 'seq' in items
+#         do_dist = 'dist' in items
+
+        # Update info 
+        cluster.idx_file_path = self.idx_file_path
+
+        with handle as cluster_file:
+             
+            # Load cluster 
+            cluster_file.seek(cluster.start_loc)
+            
+            first = True
+            for line in cluster_file:              
+                line = line.strip() # Remove white space at start and end
+                
+                if line.startswith('>'):
+                    # This is start of new cluster
+                    
+                    # yield this cluster
+                    if first:
+                        cluster.id = line.split()[1]
+                        first = False
+                    else: 
+                        break
+                    
+                elif line.endswith('*'): 
+                    # This is the representative sequence for the cluster
+                    cluster.rep_seq_id = line.split()[2].strip('>.')
+                    
+#                     # Fill in info
+#                     if do_seq or do_rep:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.rep_seq = self.lookup_db[cluster.rep_seq_id].seq.tostring()
+#                     if do_phred or do_rep:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.rep_phred = np.array(self.lookup_db[cluster.rep_seq_id].letter_annotations['phred_quality'])
+                else: 
+                    
+                    line_parts = line.split()
+                    
+                    next_desc = line_parts[2].strip('>.')
+                    cluster.members_id.append(next_desc)
+#                     if do_seq:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.members_seq.append(self.lookup_db[next_desc].seq.tostring())
+#                     if do_phred:
+#                         if os.getcwd() != self.idx_file_dir:
+#                             os.chdir(self.idx_file_dir)
+#                         cluster.members_phred.append(np.array(self.lookup_db[next_desc].letter_annotations['phred_quality']))
+#                     if do_dist: 
+#                         similarity = line_parts[4].strip('+/%')
+#                         seq_len = line_parts[1].strip('nt,')
+#                         cluster.edit_dists.append(percentage2mismatch(100 - float(similarity), seq_len))
+                    
+            if os.getcwd() != self.output_dirpath:
+                os.chdir(self.output_dirpath)
+                    
+            return cluster    
+
+def filter_clusters(cluster_filepath, idx_filepath, size_range, output_dirpath):
+    """ Writes a subset of cluster sizes to FastQ files 
+    
+    The representative sequence is the first sequence record written.
+    
+    """
+    starting_dir = os.getcwd()
+    idx_dir = os.path.split(idx_filepath)[0]
+    
+    # Check and create directory 
+    if not os.path.exists(output_dirpath):
+        os.makedirs(output_dirpath)
+        
+    cluster_gen = parse(cluster_filepath, idx_filepath)
+    seqrec_lookup = SeqIO.index_db(idx_filepath)
+    
+    size_counter = Counter()
+    
+    for cluster in cluster_gen:
+        # Check if cluster size is within defined range
+        if cluster.size >= size_range[0] and cluster.size < size_range[1]:
+            
+            size_counter[cluster.size] += 1
+            
+            # Get the sequence records for the cluster 
+            seqs = []
+            if os.getcwd() != idx_dir:
+                os.chdir(idx_dir)
+            seqs.append(seqrec_lookup[cluster.rep_seq_id])
+            for member in cluster.members_id:
+                seqs.append(seqrec_lookup[member])
+            
+            if os.getcwd() != output_dirpath:
+                os.chdir(output_dirpath)
+            # Write cluster to a file 
+            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
+            output_handle = open(fname, "wb")
+            SeqIO.write(seqs, output_handle, "fastq")
+        
+def filter_clusters2(cluster_filepath, idx_filepath, size_range, output_dirpath):
+    """ Writes a subset of cluster sizes to FastQ files 
+    
+    The representative sequence is the first sequence record written.
+    
+    make the sequence record instead of passing it.
+    
+    """
+    
+    starting_dir = os.getcwd()
+    idx_dir = os.path.split(idx_filepath)[0]
+    
+    # Check and create directory 
+    if not os.path.exists(output_dirpath):
+        os.makedirs(output_dirpath)
+        
+    cluster_gen = parse(cluster_filepath, idx_filepath)
+    seqrec_lookup = SeqIO.index_db(idx_filepath)
+    
+    size_counter = Counter()
+    
+    for cluster in cluster_gen:
+        # Check if cluster size is within defined range
+        if cluster.size > size_range[0] and cluster.size < size_range[1]:
+            
+            size_counter[cluster.size] += 1
+            
+            # Get the sequence records for the cluster 
+            if os.getcwd() != idx_dir:
+                os.chdir(idx_dir)
+            # Representative sequence first 
+            seqrecord = seqrec_lookup[cluster.rep_seq_id]
+            
+            if os.getcwd() != output_dirpath:
+                os.chdir(output_dirpath)
+            # Write cluster to a file 
+            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
+            
+            if os.path.isfile(fname):
+                output_handle = open(fname, "wb")
+                output_handle.close()
+            
+            output_handle = open(fname, "a")
+            SeqIO.write(seqrecord, output_handle, "fastq")
+            
+            for member in cluster.members_id :
+                
+                if os.getcwd() != idx_dir:
+                    os.chdir(idx_dir)
+                # Representative sequence first 
+                seqrecord = seqrec_lookup[member]
+            
+                if os.getcwd() != output_dirpath:
+                    os.chdir(output_dirpath)
+                # Write sequence record to file 
+                SeqIO.write(seqrecord, output_handle, "fastq")
+                
+    if os.getcwd() != starting_dir: 
+        os.chdir(starting_dir)
+
+
+#===============================================================================
+
 
 def filter_reads(infiles=None, filepattern='', data_inpath='', filterfunc=None, 
                  outdir='filtered_reads', keepfails=False ):

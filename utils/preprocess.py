@@ -18,7 +18,7 @@ import editdist as ed
 
 from general_utilities import set_trace
 
-from utils.__init__ import smartopen, Cycler
+from utils.fileIO import smartopen, SeqRecCycler
 
 class ConfigClass(object):
     pass

@@ -174,7 +174,7 @@ if __name__ == '__main__':
 
     toc = time.time()
 
-    parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
+    parser = argparse.ArgumentParser(description='Run CDHIT clustering on reads in the database.')
     parser.add_argument('-i',  dest='input', required=True,
                         help='Database file where reads are stored (/path/filename)')
     parser.add_argument('-q',  dest='query', default=None,
@@ -182,8 +182,8 @@ if __name__ == '__main__':
     parser.add_argument('-s',  dest='similarity', required=True,
                         help='Threshold for percentage similarity between clusters.')
     parser.add_argument('-m',  dest='maxmemory', default=0,
-                        help='Maximum memory to use for the hash table. Default = 0 (unlimited)')
-    
+                        help='Maximum memory to use for the clustering. Default = 0 (unlimited)')
+
     args = parser.parse_args()
     
     # Fetch records 

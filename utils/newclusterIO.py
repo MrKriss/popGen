@@ -41,32 +41,28 @@ Sample Cluster File:
 9    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:13547:22466... at +/98.86%
 10    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:20059:45463... at +/97.73%
 
+IMPROVEMENT
+-----------
+
+seqid is now an integer not the long text description. The seqid can be 
+looked up in the main database to retrieve the information contained in 
+the description if necessaery. 
+
+No longer need a index file to lookup the file positions in compressed .bgzf files. 
+All seq info is contained within a single database.  
+
 '''
-"""IDEAS:
 
-Representative sequence record
-
-member descriptions 
-index file to lookup sequence records of members
-
-counter of unique clusters 
-
-method to plot frequency of site 
-
-Object tied to file or clusters within file? 
-
-"""
-
-class Cluster(object):
+class ClusterObj(object):
     """ Holds all cluster based information. """
     
     def __init__(self):
         
         # Cluster vars
-        self.rep_seq_desc = ""      
+        self.rep_seq_id = ""      
         self.rep_seq = ""
         self.rep_phred = None
-        self.members_desc = []    
+        self.members_id = []    
         self.members_seq = []
         self.members_phred = []
         self.size = 0  
@@ -76,65 +72,96 @@ class Cluster(object):
         # Start and end Locations on the cluster file in bytes from the beginning  
         self.start_loc = 0
         self.end_loc = 0
-            
-        self.idx_file_path = ""
         
-    def getfromdb(self, items, lookup_db=None):
-        """ Lookup to indexed db to retrieve and store the specified items.
+    def getfromdb(self, items, db):
+        """ Lookup to main db to retrieve and store the specified items.
         
         items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
                 'rep' will fetch just the seq and phred info for the representative sequence.
+        
+        db    - Reference to a Reads_db database object.
         """
         
         assert 'seq' in items or 'phred' in items or 'rep' in items, "Invalid values for items to lookup"
         
-        if not self.idx_file_path:
-            raise Exception('No idx_file_path specified.')
-        
-        if lookup_db is None: 
-            print "Loading {} ...".format(os.path.split(self.idx_file_path)[1])
-            lookup_db = SeqIO.index_db(self.idx_file_path)  
-            print "Loading complete"
-        
         start_dir = os.getcwd()
-        path = os.path.split(self.idx_file_path)[0]
+        path = os.path.split(db.dbfilepath)[0]
         
         if start_dir != path:
             os.chdir(path) 
 
+        # Setup query
+        sql_query = """ SELECT (seq, phred) FROM seqs WHERE seqid = ? """
         if 'seq' in items and 'phred' in items:
-            self.rep_seq = lookup_db[self.rep_seq_desc].seq.tostring()
-            self.rep_phred = np.array(lookup_db[self.rep_seq_desc].letter_annotations['phred_quality'])
-            for elem in self.members_desc:
-                self.members_seq.append(lookup_db[elem].seq.tostring())
-                self.members_phred.append(np.array(lookup_db[elem].letter_annotations['phred_quality']))
+            
+            # Get rep seq and phred
+            record_curs = db.execute(sql_query, (self.rep_seq_id,))
+            record = record_curs.fetchone()
+            
+            self.rep_seq = record['seq']
+            phred_ascii = record['phred']
+            phred_list = [ord(c) - 33 for c in phred_ascii]
+            self.rep_phred = np.array(phred_list)
+
+            # get members seq and phred
+            for seqid in self.members_id:
+                
+                record_curs = db.execute(sql_query, (seqid,))
+                record = record_curs.fetchone()
+                
+                self.members_seq.append(record['seq'])
+                phred_ascii = record['phred']
+                phred_list = [ord(c) - 33 for c in phred_ascii]
+                self.members_phred.append(np.array(phred_list))
 
         if 'seq' in items:
-            self.rep_seq = lookup_db[self.rep_seq_desc].seq.tostring()
-            for elem in self.members_desc:
-                self.members_seq.append(lookup_db[elem].seq.tostring())
+            # Get rep seq
+            record_curs = db.execute(sql_query, (self.rep_seq_id,))
+            record = record_curs.fetchone()
+            self.rep_seq = record['seq']
+            
+            # get members seq 
+            for seqid in self.members_id:
+                record_curs = db.execute(sql_query, (seqid,))
+                record = record_curs.fetchone()
+                self.members_seq.append(record['seq'])
 
         if 'phred' in items:
-            self.rep_phred = np.array(lookup_db[self.rep_seq_desc].letter_annotations['phred_quality'])
-            for elem in self.members_desc:
-                self.members_phred.append(np.array(lookup_db[elem].letter_annotations['phred_quality']))
+           
+            # Get rep phred
+            record_curs = db.execute(sql_query, (self.rep_seq_id,))
+            record = record_curs.fetchone()
+            phred_ascii = record['phred']
+            phred_list = [ord(c) - 33 for c in phred_ascii]
+            self.rep_phred = np.array(phred_list)
+
+            # get members phred
+            for seqid in self.members_id:
+                record_curs = db.execute(sql_query, (seqid,))
+                record = record_curs.fetchone()
+                phred_ascii = record['phred']
+                phred_list = [ord(c) - 33 for c in phred_ascii]
+                self.members_phred.append(np.array(phred_list))
 
         if 'rep' in items: # Just fetch the representitive sequence info 
-            self.rep_seq = lookup_db[self.rep_seq_desc].seq.tostring()
-            self.rep_phred = np.array(lookup_db[self.rep_seq_desc].letter_annotations['phred_quality'])
+            # Get rep seq and phred
+            record_curs = db.execute(sql_query, (self.rep_seq_id,))
+            record = record_curs.fetchone()
+            
+            self.rep_seq = record['seq']
+            phred_ascii = record['phred']
+            phred_list = [ord(c) - 33 for c in phred_ascii]
+            self.rep_phred = np.array(phred_list)
         
-        if os.getcwd() != start_dir:
-            os.chdir(start_dir)
-                    
-    def get_unique_seq(self, ignoreup2=6, lookup_db=None):
+    def get_unique_seq(self, ignoreup2=6, db=None):
         """ Work out the counts for unique reads within a cluster """
         
         if not self.members_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['seq'], lookup_db=lookup_db)
+            self.getfromdb(['seq'], db=db)
         if not self.rep_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['rep'], lookup_db=lookup_db)
+            self.getfromdb(['rep'], db=db)
         
         unique_seq_counter = Counter()
         unique_seq_counter[self.rep_seq[ignoreup2:]] += 1
@@ -143,16 +170,16 @@ class Cluster(object):
         unique_seq_counter.update(Counter(seqs))
         self.unique_seq = unique_seq_counter
     
-    def get_basefraction(self, lookup_db=None):
+    def get_basefraction(self, db=None):
         """ Calculate the fraction of nucleotide bases per base location """
         
         # Make sure seq data is available
         if not self.members_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['seq'], lookup_db=lookup_db)
+            self.getfromdb(['seq'], db=db)
         if not self.rep_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['rep'], lookup_db=lookup_db)
+            self.getfromdb(['rep'], db=db)
         
         self.basefrac = {} 
         self.basefrac['A'] = np.zeros(len(self.rep_seq)) 
@@ -218,7 +245,12 @@ class Cluster(object):
         plt.ylabel(ylab)
         plt.show()
         
-    def write2clstr(self, handle, lookup_db=None):
+        
+    def write2db(self, db):
+        ''' Call the db method to load cluster into database. '''
+        db.load_single_clusterobj(self)
+        
+    def write2clstr(self, handle, db=None):
         """ Write cluster to a .clstr file format like CD-HIT. 
         
         e.g.
@@ -244,10 +276,10 @@ class Cluster(object):
         # Make sure seq data is available
         if not self.members_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['seq'], lookup_db=lookup_db)
+            self.getfromdb(['seq'], db=db)
         if not self.rep_seq:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['rep'], lookup_db=lookup_db)
+            self.getfromdb(['rep'], db=db)
         
         # Derived vars
         seq_len = str(len(self.rep_seq) - 13)
@@ -258,11 +290,11 @@ class Cluster(object):
             clust_file.write('>Cluster {0}\n'.format(self.id))
             
             # Write representative sequence
-            clust_file.write('0\t{length}nt, >{rep_seq_desc}... *\n'.format(length=seq_len , rep_seq_desc=self.rep_seq_desc))
+            clust_file.write('0\t{length}nt, >{rep_seq_id}... *\n'.format(length=seq_len , rep_seq_desc=self.rep_seq_id))
             
             count = 0
             # Write rest of cluster members
-            for idx, desc in enumerate(self.members_desc):
+            for idx, desc in enumerate(self.members_id):
                 
                 count += 1
 
@@ -283,7 +315,7 @@ class ClusterFilter(object):
     2. If size passes, go back and rescan file to get detailed info for that cluster.
     """
     
-    def __init__(self, handle, idx_file_path, lookup_db, filter_params,
+    def __init__(self, handle, idx_file_path, db, filter_params,
                  reads_per_cluster_size_counter, output_dirpath=None):
 
         # IO
@@ -301,7 +333,7 @@ class ClusterFilter(object):
         # Store internal params        
         self.idx_file_path = idx_file_path
         self.idx_file_dir = os.path.split(idx_file_path)[0]
-        self.lookup_db = lookup_db
+        self.db = db
         self.filter_params = filter_params
         self.reads_per_cluster_size_counter = reads_per_cluster_size_counter
         # Setup generator
@@ -311,7 +343,7 @@ class ClusterFilter(object):
         
         first = True
         # Setup Data structure
-        cluster = Cluster()        
+        cluster = ClusterObj()        
         # Cycle through file 
         seq_count = 0    
         try:
@@ -335,7 +367,7 @@ class ClusterFilter(object):
                             yield cluster
                             
                             # Reset Cluster and counter
-                            cluster = Cluster()
+                            cluster = ClusterObj()
                             seq_count = 0
                             cluster.start_loc = start_of_line_position
                         else: 
@@ -379,11 +411,11 @@ class ClusterFilter(object):
                 
             elif line.endswith('*'): 
                 # This is the representative sequence for the cluster
-                cluster.rep_seq_desc = line.split()[2].strip('>.')
+                cluster.rep_seq_id = line.split()[2].strip('>.')
             else: 
                 line_parts = line.split()
                 next_desc = line_parts[2].strip('>.')
-                cluster.members_desc.append(next_desc)
+                cluster.members_id.append(next_desc)
                 
         if os.getcwd() != self.output_dirpath:
             os.chdir(self.output_dirpath)
@@ -413,9 +445,9 @@ class ClusterFilter(object):
                 seqs = []
                 if os.getcwd() != self.idx_file_dir:
                     os.chdir(self.idx_file_dir)
-                seqs.append(self.lookup_db[cluster.rep_seq_desc])
-                for member in cluster.members_desc:
-                    seqs.append(self.lookup_db[member])
+                seqs.append(self.db[cluster.rep_seq_id])
+                for member in cluster.members_id:
+                    seqs.append(self.db[member])
                 
                 if os.getcwd() != self.output_dirpath:
                     os.chdir(self.output_dirpath)
@@ -463,29 +495,24 @@ def percentage2mismatch(percentage, seq_length):
     seq_length = int(seq_length)
     return  int(round( (percentage / 100.) * seq_length))
                    
-def parse(handle, idx_file_path="", edit_dist=False, similarity_count=False):
+def parse(handle, db=None, edit_dist=False, similarity_count=False):
     """ Reads in a CDHIT cluster file and returns a generator for the clusters. 
     
      - handle   - handle to the file, or the filename as a string
-     - idx_file - full path to file containing the index to the original sequence records.
-                  If given, the file is stored and passed to each Cluster object generated
-                  for possible future lookup. 
-    - edit_dist - Only calculated if set to true.
+     - db       - a Reads_db database object. If present 
+     - edit_dist - Only calculated if set to true.
+     - similarity_count - Will return a counter for similarity to rep seq 
 
     Currently iterates in the order the file is read. 
-    Typical usage, opening a file to read in, and looping over the record(s):
+    Typical usage, opening a file to read in, and looping over all record(s):
     """
     
     # input checks    
     handle = input_check(handle)
         
-    if idx_file_path:
-        assert type(idx_file_path) is str and os.path.exists(idx_file_path), 'Invalid path.'
-    
     first = True
     # Setup Data structure
-    cluster = Cluster()
-    cluster.idx_file_path = idx_file_path
+    cluster = ClusterObj()
     
     if similarity_count:
         cluster.similarity_counter = Counter()
@@ -501,7 +528,7 @@ def parse(handle, idx_file_path="", edit_dist=False, similarity_count=False):
                     # This is start of new cluster
                     
                     # Claculate stats for last cluster
-                    cluster.size = len(cluster.members_desc) + 1
+                    cluster.size = len(cluster.members_id) + 1
                     
                     # Store number for next yield 
                     next_cluster_num = line.split()[1]
@@ -513,20 +540,19 @@ def parse(handle, idx_file_path="", edit_dist=False, similarity_count=False):
                     else: 
                         yield cluster
                         # Reset Cluster
-                        cluster = Cluster()
-                        cluster.idx_file_path = idx_file_path
+                        cluster = ClusterObj()
                         cluster.id = next_cluster_num
                         if similarity_count:
                             cluster.similarity_counter = Counter()
                     
                 elif line.endswith('*'): 
                     # This is the representative sequence for the cluster
-                    cluster.rep_seq_desc = line.split()[2].strip('>.')
+                    cluster.rep_seq_id = line.split()[2].strip('>.')
                 else:
                     
                     line_parts = line.split()
                     
-                    cluster.members_desc.append(line_parts[2].strip('>.'))
+                    cluster.members_id.append(line_parts[2].strip('>.'))
                     if edit_dist:
                         similarity = line_parts[4].strip('+/%')
                         seq_len = line_parts[1].strip('nt,')
@@ -536,7 +562,7 @@ def parse(handle, idx_file_path="", edit_dist=False, similarity_count=False):
                         cluster.similarity_counter[similarity] += 1
                     
             # Got to end of file but still one more cluster to add
-            cluster.size = len(cluster.members_desc) + 1
+            cluster.size = len(cluster.members_id) + 1
             yield cluster
     
     except IOError:
@@ -659,7 +685,7 @@ def sortby(handle, reverse=True, mode='cluster_size', outfile_postfix=None,
     return sorted_cluster_file
 
     
-def getfromdb(cluster_list, items, lookup_db=None, path2idxfile=None,):
+def getfromdb(cluster_list, items, db=None, path2idxfile=None,):
     """ Adds the specified items to each cluster in list, looked up from the indexed db.
     
     items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
@@ -667,12 +693,12 @@ def getfromdb(cluster_list, items, lookup_db=None, path2idxfile=None,):
             
     """
 
-    if lookup_db is None:
+    if db is None:
         assert path2idxfile, 'No lookup data base parsed or index file specified'
-        lookup_db = SeqIO.index_db(path2idxfile)  
+        db = SeqIO.index_db(path2idxfile)  
     
     for cluster in cluster_list:
-        cluster.getfromdb(items, lookup_db)
+        cluster.getfromdb(items, db)
         
     return cluster_list
 
@@ -686,7 +712,6 @@ def summary_counter(handle, mode='cluster_size', report=True):
         'by_seqlen'         = { 'sequence_length' : Counter(cluster_size) }
         'cluster_size'      = Counter(cluster_sizes_for_all_sequence_lengths)
         'reads_per_cluster' = { 'cluster size'  : cluster_size * Num clusters }
-    
     '''
 
     # input checks    
@@ -811,182 +836,6 @@ def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", *
 
     plt.legend(numpoints=1, markerscale=8)
     plt.show()
-
-
-
-#===============================================================================
-# Possibly usefull
-#===============================================================================
-
-def get_desc(self, cluster, items):
-        """ Scan back over cluster and get all details """
-        
-        # Input checks  
-        handle = input_check(self.handle)  
-
-        # Store flag info
-#         do_rep = 'rep' in items
-#         do_phred = 'phred' in items
-#         do_seq = 'seq' in items
-#         do_dist = 'dist' in items
-
-        # Update info 
-        cluster.idx_file_path = self.idx_file_path
-
-        with handle as cluster_file:
-             
-            # Load cluster 
-            cluster_file.seek(cluster.start_loc)
-            
-            first = True
-            for line in cluster_file:              
-                line = line.strip() # Remove white space at start and end
-                
-                if line.startswith('>'):
-                    # This is start of new cluster
-                    
-                    # yield this cluster
-                    if first:
-                        cluster.id = line.split()[1]
-                        first = False
-                    else: 
-                        break
-                    
-                elif line.endswith('*'): 
-                    # This is the representative sequence for the cluster
-                    cluster.rep_seq_desc = line.split()[2].strip('>.')
-                    
-#                     # Fill in info
-#                     if do_seq or do_rep:
-#                         if os.getcwd() != self.idx_file_dir:
-#                             os.chdir(self.idx_file_dir)
-#                         cluster.rep_seq = self.lookup_db[cluster.rep_seq_desc].seq.tostring()
-#                     if do_phred or do_rep:
-#                         if os.getcwd() != self.idx_file_dir:
-#                             os.chdir(self.idx_file_dir)
-#                         cluster.rep_phred = np.array(self.lookup_db[cluster.rep_seq_desc].letter_annotations['phred_quality'])
-                else: 
-                    
-                    line_parts = line.split()
-                    
-                    next_desc = line_parts[2].strip('>.')
-                    cluster.members_desc.append(next_desc)
-#                     if do_seq:
-#                         if os.getcwd() != self.idx_file_dir:
-#                             os.chdir(self.idx_file_dir)
-#                         cluster.members_seq.append(self.lookup_db[next_desc].seq.tostring())
-#                     if do_phred:
-#                         if os.getcwd() != self.idx_file_dir:
-#                             os.chdir(self.idx_file_dir)
-#                         cluster.members_phred.append(np.array(self.lookup_db[next_desc].letter_annotations['phred_quality']))
-#                     if do_dist: 
-#                         similarity = line_parts[4].strip('+/%')
-#                         seq_len = line_parts[1].strip('nt,')
-#                         cluster.edit_dists.append(percentage2mismatch(100 - float(similarity), seq_len))
-                    
-            if os.getcwd() != self.output_dirpath:
-                os.chdir(self.output_dirpath)
-                    
-            return cluster    
-
-def filter_clusters(cluster_filepath, idx_filepath, size_range, output_dirpath):
-    """ Writes a subset of cluster sizes to FastQ files 
-    
-    The representative sequence is the first sequence record written.
-    
-    """
-    starting_dir = os.getcwd()
-    idx_dir = os.path.split(idx_filepath)[0]
-    
-    # Check and create directory 
-    if not os.path.exists(output_dirpath):
-        os.makedirs(output_dirpath)
-        
-    cluster_gen = parse(cluster_filepath, idx_filepath)
-    seqrec_lookup = SeqIO.index_db(idx_filepath)
-    
-    size_counter = Counter()
-    
-    for cluster in cluster_gen:
-        # Check if cluster size is within defined range
-        if cluster.size >= size_range[0] and cluster.size < size_range[1]:
-            
-            size_counter[cluster.size] += 1
-            
-            # Get the sequence records for the cluster 
-            seqs = []
-            if os.getcwd() != idx_dir:
-                os.chdir(idx_dir)
-            seqs.append(seqrec_lookup[cluster.rep_seq_desc])
-            for member in cluster.members_desc:
-                seqs.append(seqrec_lookup[member])
-            
-            if os.getcwd() != output_dirpath:
-                os.chdir(output_dirpath)
-            # Write cluster to a file 
-            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
-            output_handle = open(fname, "wb")
-            SeqIO.write(seqs, output_handle, "fastq")
-        
-def filter_clusters2(cluster_filepath, idx_filepath, size_range, output_dirpath):
-    """ Writes a subset of cluster sizes to FastQ files 
-    
-    The representative sequence is the first sequence record written.
-    
-    make the sequence record instead of passing it.
-    
-    """
-    
-    starting_dir = os.getcwd()
-    idx_dir = os.path.split(idx_filepath)[0]
-    
-    # Check and create directory 
-    if not os.path.exists(output_dirpath):
-        os.makedirs(output_dirpath)
-        
-    cluster_gen = parse(cluster_filepath, idx_filepath)
-    seqrec_lookup = SeqIO.index_db(idx_filepath)
-    
-    size_counter = Counter()
-    
-    for cluster in cluster_gen:
-        # Check if cluster size is within defined range
-        if cluster.size > size_range[0] and cluster.size < size_range[1]:
-            
-            size_counter[cluster.size] += 1
-            
-            # Get the sequence records for the cluster 
-            if os.getcwd() != idx_dir:
-                os.chdir(idx_dir)
-            # Representative sequence first 
-            seqrecord = seqrec_lookup[cluster.rep_seq_desc]
-            
-            if os.getcwd() != output_dirpath:
-                os.chdir(output_dirpath)
-            # Write cluster to a file 
-            fname = "clustersize{0}-No{1}.fastq".format(str(cluster.size), str(size_counter[cluster.size]))
-            
-            if os.path.isfile(fname):
-                output_handle = open(fname, "wb")
-                output_handle.close()
-            
-            output_handle = open(fname, "a")
-            SeqIO.write(seqrecord, output_handle, "fastq")
-            
-            for member in cluster.members_desc :
-                
-                if os.getcwd() != idx_dir:
-                    os.chdir(idx_dir)
-                # Representative sequence first 
-                seqrecord = seqrec_lookup[member]
-            
-                if os.getcwd() != output_dirpath:
-                    os.chdir(output_dirpath)
-                # Write sequence record to file 
-                SeqIO.write(seqrecord, output_handle, "fastq")
-                
-    if os.getcwd() != starting_dir: 
-        os.chdir(starting_dir)
 
 
 if __name__ == '__main__':

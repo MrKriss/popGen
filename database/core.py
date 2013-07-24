@@ -16,8 +16,7 @@ import numpy as np
 from Bio import SeqIO
 
 import sqlite3
-from utils import get_path_prefix
-from utils.general_utilities import set_trace
+from utils.general_utilities import set_trace, get_path_prefix
 
 class SQLdatabase(object):
     """ Class to handle all python communication with a sqlite database file 
@@ -45,7 +44,7 @@ class SQLdatabase(object):
                 
         # Stored Vars
         self.con = sqlite3.connect(dbfile)
-        self.dbfile = os.path.abspath(dbfile) 
+        self.dbfilepath = os.path.abspath(dbfile) 
         self.recbyname = recbyname
         self.tables = []
 
