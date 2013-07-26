@@ -149,6 +149,79 @@ def smartopen(filename,*args,**kwargs):
         return gzip.open(filename,*args,**kwargs)
     else:
         return open(filename,*args,**kwargs)
+    
+def inputfile_check(handle):
+    """ Check if input is a valid file object or a string for a file name.
+    
+    Always returns a handle for an open file.
+    
+    Usage:
+    handle = input_check(handle)
+    
+    """
+    
+    if type(handle) is file:
+        # Check if handle is stdin
+        if handle.name == '<stdin>' :
+            return handle
+        if handle.closed:
+            handle = open(handle.name, 'rb')
+        if handle.mode not in ['r', 'rb']:
+            print >> sys.stderr, "File not opened for reading. Mode = ".format(handle.mode)
+    
+    elif type(handle) is str:
+        # Check file exists and open it
+        try:
+            handle = open(handle, 'rb')
+        except IOError as e: 
+            print  >> sys.stderr, "I/O error({0}): {1}".format(e.errno, e.strerror)
+            raise
+    else:
+        raise Exception('Invalid file handle.')
+
+    return handle 
+
+def outputfile_check(handle, overwrite=False, mode='wb'):
+    ''' Checks for valid file object or if a string, checks if a file already exists
+     at that location and generates a new file name or overwrites if so.
+    
+    overwrite -- If set to true will overwrite any previouse files. Default is to 
+                 append an integer at the end of main filename. 
+    '''
+
+    if type(handle) is file:
+        # Check if handle is stdin
+        if handle.name in ['<stdout>', '<stderr>'] :
+            return handle
+        if handle.closed:
+            handle = open(handle.name, mode)
+        if handle.mode not in ['a', 'a+', 'w', 'wb']:
+            print >> sys.stderr, "File not opened for Writing. Mode = ".format(handle.mode)
+
+    elif type(handle) is str:
+        # Check if a file already exists with the name
+        if os.path.exists(handle):
+            if overwrite:
+                print >> sys.stderr, 'File {0} already present.\nOverwriting... '.format(handle)
+            else:
+                count = 1
+                path, name = os.path.split(handle)
+                name_parts = name.split('.')
+                while os.path.exists(handle):
+                    name_parts[0] = name_parts[0].rstrip('0123456789')
+                    new_name = name_parts[0] + "{0:d}".format(count)
+                    name_parts[0] = new_name
+                    new_name = '.'.join(name_parts)
+                    handle = os.path.join(path, new_name)
+                    count += 1
+                print >> sys.stderr, 'File already present. Saving as ', handle
+
+        handle = open(handle, mode)
+    else:
+        raise Exception('Invalid file handle.')
+
+    return handle 
+    
 
 def find_numrec(filename):
     ''' Find number of records in a fastq file. 
