@@ -41,7 +41,6 @@ import argparse
 
 from utils.ClusterIO import sortby
 
-
 parser = argparse.ArgumentParser(description='Procedure to Filter a CDHIT.clstr file, writing a copy that only contains passes.')
 parser.add_argument('filename', action='store', help='Name of CD-HIT output cluster file.')
 parser.add_argument('min', action='store', type=int, help='Minimum value of threshold for cluster size')
