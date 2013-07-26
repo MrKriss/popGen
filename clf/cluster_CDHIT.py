@@ -16,6 +16,7 @@ from editdist import distance
 from Bio import SeqIO, bgzf 
 from collections import Counter, defaultdict
 
+from utils.fileIO import inputfile_check, outputfile_check
 from database.reads_db import Reads_db
 
 
@@ -25,28 +26,6 @@ class CDHIT_ClusteringClass(object):
     def __init__(self, args):
 
         self.args = args
-    
-    def check_filepath(self, filepath, overwrite=False):
-        """ Checks if file exists and generates a new file name or overwrites if so. """
-        # Take care of files already present
-        
-        if os.path.exists(filepath):
-            if overwrite:
-                print >> sys.stderr, 'Cluster filename {0} already present.\nOverwriting... '.format(filepath)
-            else:
-                count = 1
-                path, name = os.path.split(filepath)
-                name_parts = name.split('.')
-                while os.path.exists(filepath):
-                    name_parts[0] = name_parts[0].rstrip('0123456789')
-                    new_name = name_parts[0] + "{0:d}".format(count)
-                    name_parts[0] = new_name
-                    new_name = '.'.join(name_parts)
-                    filepath = os.path.join(path, new_name)
-                    count += 1
-                print >> sys.stderr, 'Cluster file already present. Saving as ', filepath
-        
-        return filepath
 
     def run(self, infile_handle):
         ''' Run CD-HIT in parallel on list of fasta files. Each file is clustered seperately.
@@ -64,15 +43,8 @@ class CDHIT_ClusteringClass(object):
         
         '''
 
-        # input checks        
-        if type(infile_handle) == str:
-            if os.path.exists(infile_handle):
-                infile_handle = open(infile_handle, 'rb')
-            else:
-                raise Exception('infile_handle is a string to a non existing file.')
-        elif type(infile_handle) == file:
-            if infile_handle.closed:
-                infile_handle = open(infile_handle.name, 'rb')
+        # input checks    
+        infile_handle = inputfile_check(infile_handle)
         
         logfile_path = os.path.join(os.path.split(self.args.output)[0], 'clusterfile.log')
             
@@ -80,7 +52,7 @@ class CDHIT_ClusteringClass(object):
         start_time = time.time()
         
         infile_path = os.path.abspath(infile_handle.name)
-        logfile_path = self.check_filepath(logfile_path)
+        logfile_path = outputfile_check(logfile_path)
     
         #=======================================================================
         # Run CDHIT
@@ -278,12 +250,11 @@ if __name__ == '__main__':
     toc = time.time()
 
     parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
-    parser.add_argument('-i',  dest='input', required=True,
-                        help='Database file where reads are stored (/path/filename)')
+    parser.add_argument('-i',  dest='input', 
+                        required=True,
+                        help='Fasta file where reads are stored (/path/filename)')
     parser.add_argument('-o',  dest='output', default='clusterfile',
                         help='Filename for output clusters (/path/filename)')
-    parser.add_argument('-q',  dest='query', default=None,
-                        help='Querry to fetch records with. Default will cycle through all records in database.')
     parser.add_argument('-s',  dest='similarity', required=True, type=float,
                         help='Threshold for percentage similarity between clusters.')
     parser.add_argument('-n',  dest='n_gram', required=True, type=int,
@@ -295,7 +266,6 @@ if __name__ == '__main__':
     parser.add_argument('-g',  dest='allvall', action = 'store_true', 
                         help='Whether to compare a new read to all previous seeds when growing clusters. Default = False')
     
-    
     parser.add_argument('-p',  dest='cdhitpath', default='~/bin/cdhit',
                         help='Path to where cd-hit is installed. Default is ~/bin/cdhit/')
     parser.add_argument('--maskN',  dest='maskN', action = 'store_true', 
@@ -304,23 +274,18 @@ if __name__ == '__main__':
     print sys.argv
     args = parser.parse_args()
     
-    
-    # Fetch records and convert to fasta
-    if args.query is None:
-        args.query = '''SELECT * FROM seqs''' 
-    fastafilename = 'reads_temp.fasta'
-    db = Reads_db(args.input, recbyname=True)
-    infile_handle = db.write_reads(args.query, filename=fastafilename, format='fasta')
+    # check if cdhit is in default path 
+    if not os.path.exists(args.cdhitpath):
+        raise Exception('CDHIT program not found on the default path of {0}'.format(args.cdhitpath))
     
     # Setup and Run clustering 
     clustering =  CDHIT_ClusteringClass(args)
-    outfile_handle, total_cluster_counter = clustering.run(infile_handle)
+    outfile_handle, total_cluster_counter = clustering.run(args.input)
     
     total_records = 0
     for clustsize, number in total_cluster_counter.iteritems():
         total_records += int(clustsize) * number
         
-    
     total_clusters =  sum(total_cluster_counter.values())
     
     total_t = time.time() - toc    

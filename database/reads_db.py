@@ -3,12 +3,10 @@ Created on 27 Jun 2013
 
 @author: musselle
 '''
-import os, sys
+import os, sys, time, glob, gzip 
 import cPickle as pkl
 from subprocess import PIPE, Popen
-import glob
 
-import gzip
 import numpy as np
 
 from Bio import SeqIO
@@ -19,10 +17,8 @@ import sqlite3
 from utils.general_utilities import set_trace, get_path_prefix
 
 from database.core import SQLdatabase
-from utils.fileIO import SeqRecCycler
+from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
 from utils.clusterIO import ClusterObj, parse, sortby
-from clusterIO import input_check
-
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
@@ -239,30 +235,44 @@ class Reads_db(SQLdatabase):
                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
     
-    def write_reads(self, sql_query, filename, format='fasta', ignoreup2=0):
+    def write_reads(self, sql_query, file_handle, format='fasta', ignoreup2=0):
         """ Write records returned by the querry to one large fasta or fastq 
+        
+         file_handle -- A file object or string specifying a filename. 
         
          ignoreup2 -- starting index of sequence that are written, used to miss out 
          cutsite if necessary. 
          
          """
         
+        # Output check
+        file_handle = outputfile_check(file_handle)
+        
         with self.con as con:
             
-            if os.path.exists(filename):
-                print >> sys.stderr, 'Output file already exists. Overwriting...'
-                f = open(filename, 'w')
-                f.close()
-            f = open(filename, 'a')
-            
+            tic = time.time()
+            print >> sys.stderr, 'Executing sql querry....', 
             record_curs = con.execute(sql_query)
+            print >> sys.stderr, ' Done!'
+            print >> sys.stderr, 'Records returned in {0}'.format(
+                time.strftime('%H:%M:%S', time.gmtime(time.time() - tic))) 
             
+            toc = time.time()
+            print >> sys.stderr, 'Writing records to {0} format....'.format(format), 
+            
+            rec_count = 0
             for rec in record_curs:
                 seq_rec = SeqRecord(Seq(rec['seq'][ignoreup2:]), id=str(rec['seqid']))
-                SeqIO.write(seq_rec, f, format=format)
+                rec_count += SeqIO.write(seq_rec, file_handle, format=format)
+            
+            print >> sys.stderr, ' Done!'
+            print >> sys.stderr, '\n{0} records written successfully to {1}\nin {2}'.format(rec_count,
+                file_handle.name, time.strftime('%H:%M:%S', time.gmtime(time.time() - toc))) 
+            
+            if file_handle.name not in ['<stdout>', '<stderr>']:
+                file_handle.close()
                 
-            f.close()
-        return f 
+        return file_handle 
     
     def load_cluster_file(self, cluster_file_handle):
         ''' Load in a clustering file into the database '''
@@ -273,7 +283,7 @@ class Reads_db(SQLdatabase):
         sorted_cluster_file = sortby(cluster_file_handle, reverse=True, 
                                      mode='cluster_size', outfile_postfix=None, cutoff=2)
         
-        sorted_cluster_file = input_check(sorted_cluster_file)
+        sorted_cluster_file = inputfile_check(sorted_cluster_file)
             
         cluster_gen = parse(sorted_cluster_file)
         
