@@ -47,12 +47,12 @@ class CDHIT_ClusteringClass(object):
         infile_handle = inputfile_check(infile_handle)
         
         logfile_path = os.path.join(os.path.split(self.args.output)[0], 'clusterfile.log')
+        infile_path = os.path.abspath(infile_handle.name)
             
+        logfile = outputfile_check(logfile_path)
+
         # setup internal vars        
         start_time = time.time()
-        
-        infile_path = os.path.abspath(infile_handle.name)
-        logfile_path = outputfile_check(logfile_path)
     
         #=======================================================================
         # Run CDHIT
@@ -89,7 +89,7 @@ class CDHIT_ClusteringClass(object):
         CDHIT_parameters = cmd[st_idx:]
         
         # Write summary logfile 
-        with open(logfile_path, 'wb') as f:
+        with logfile as f:
             program_name = os.path.join(self.args.cdhitpath, cmd).split(' -i ')[0]
             f.write('=========================================================\n')
             f.write('Program     : {0}\n'.format(program_name))

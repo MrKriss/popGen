@@ -536,7 +536,6 @@ if __name__ == '__main__':
         print >> sys.stderr, 'Finished file {0} after {1}'.format(reads_generator.curfilenum, 
                                     time.strftime('%H:%M:%S', time.gmtime(loop_t))) 
     
-    
     if args.verbose:
         print >> sys.stderr, '\nFilter stats'
         print >> sys.stderr, '\nFilter No.\tHits'    

@@ -263,7 +263,8 @@ class Reads_db(SQLdatabase):
             rec_count = 0
             for rec in record_curs:
                 seq_rec = SeqRecord(Seq(rec['seq'][ignoreup2:]), id=str(rec['seqid']))
-                rec_count += SeqIO.write(seq_rec, file_handle, format=format)
+                SeqIO.write(seq_rec, file_handle, format=format)
+                rec_count += 1 
             
             print >> sys.stderr, ' Done!'
             print >> sys.stderr, '\n{0} records written successfully to {1}\nin {2}'.format(rec_count,
