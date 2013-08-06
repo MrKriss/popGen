@@ -557,7 +557,6 @@ if __name__ == '__main__':
         print >> sys.stderr, '\nTotal No. reads passed: \t\t{0} ({1:.2%})'.format(
                         preprocessor.total_read_passes, float(preprocessor.total_read_passes) / preprocessor.total_read_count)
         
-        
     # Write summary file
     preprocessor.write_summary_output(args.output_path)
     
