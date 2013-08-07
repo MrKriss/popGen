@@ -472,7 +472,6 @@ def input_check(handle):
     Always returns a ahndle for an an open file.
     
     handle = input_check(handle)
-    
     """
     if type(handle) is str:
         handle = open(handle, 'rb')

@@ -86,18 +86,29 @@ class Reads_db(SQLdatabase):
             self.tables.append('{0}'.format(table_name))
             self.seqs_table_name = table_name
             
+    def create_meta_table(self, overwrite=False):
+        
+        with self.con as con:   
+        
+            con.execute(''' ''')
+        
+        
             if overwrite:
-                curs.execute('DROP TABLE IF EXISTS meta')
-            curs.execute(''' CREATE TABLE meta (
+                con.execute('DROP TABLE IF EXISTS meta')
+            con.execute(''' CREATE TABLE meta (
             Id INTEGER PRIMARY KEY NOT NULL,
             lastclusterid INTEGER )''')
-#             tableId TEXT,
-#             RADseqType TEXT,
-#             MIDlength INTEGER NOT NULL,
-#             Cutsite1 TEXT, 
-#             Cutsite2 TEXT)''')
-#             self.tables.append('meta')
-#             
+    
+            self.tables.append('meta')
+            
+            # Initialise
+            con.execute(''' INSERT INTO meta (lastclusterid) Values (0); ''')
+    
+    #             tableId TEXT,
+    #             RADseqType TEXT,
+    #             MIDlength INTEGER NOT NULL,
+    #             Cutsite1 TEXT, 
+    #             Cutsite2 TEXT)''')
 
     def create_cluster_table(self, table_name='clusters', overwrite=False):
         ''' Make cluster table in database '''
@@ -276,66 +287,87 @@ class Reads_db(SQLdatabase):
                 
         return file_handle 
     
-    def load_cluster_file(self, cluster_file_handle, cluster_table_name='clusters', overwrite=False):
-        ''' Load in a clustering file into the database '''
+    def load_cluster_file(self, cluster_file_handle, cluster_table_name='clusters', 
+                          overwrite=False, fmin=2, fmax=None, skipsort=False):
+        ''' Load in a clustering file into the database 
+        
+        By default singletons are not loaded as cutoff = 2
+        
+        can also set a fmin and fmax threshold if only clusters of a certain 
+        size are to be added.
+        
+        '''
+        if type(cluster_file_handle) == str:
+            if not cluster_file_handle.endswith('.clstr'):
+                cluster_file_handle = cluster_file_handle + '.clstr'
         
         cluster_file_handle = inputfile_check(cluster_file_handle)
         
+        if not skipsort:
+            # Filter out singletons and sort clusters in accending order
+            print >> sys.stderr, 'Sorting cluster file %s ...' % (cluster_file_handle.name)
+            sorted_cluster_file = sortby(cluster_file_handle, reverse=True, 
+                                         mode='cluster_size', outfile_postfix='-subset', cutoff=fmin)
+            cluster_file_handle = inputfile_check(sorted_cluster_file)
+
+        
         print >> sys.stderr, 'Importing cluster file %s  to database...' % (cluster_file_handle.name)
+
+        cluster_gen = parse(cluster_file_handle)
         
-        # Filter out singletons and sort clusters in accending order
-        sorted_cluster_file = sortby(cluster_file_handle, reverse=True, 
-                                     mode='cluster_size', outfile_postfix=None, cutoff=2)
-        
-        sorted_cluster_file = inputfile_check(sorted_cluster_file)
-        
-        cluster_gen = parse(sorted_cluster_file)
+        if overwrite:
+            with self.con as con:
+                con.execute(''' DROP TABLE IF EXISTS {0} '''.format(cluster_table_name))
+                con.execute(''' UPDATE seqs SET clusterid = NULL''')
         
         # Create clusters table if necessary
         self.create_cluster_table(cluster_table_name)
         
-        for cluster in cluster_gen:
-            self.load_single_clusterobj(cluster, cluster_table_name, overwrite)
+        if fmax:
+            for cluster in cluster_gen:
+                if cluster.size <= fmax and cluster.size >= fmin:
+                    self.load_single_clusterobj(cluster, cluster_table_name, overwrite)
+        else:    
+            for cluster in cluster_gen:
+                self.load_single_clusterobj(cluster, cluster_table_name, overwrite)
         
         
     def load_single_clusterobj(self, clusterobj, cluster_table_name, overwrite=False):
-        ''' Load in a single cluster object to the database. 
-        
-        if clusterid already present entries for size are overwritten.
-        '''
+        ''' Load in a single cluster object to the database. '''
         
         seq_table_name = 'seqs'
         
         with self.con as con:
             
-            records = con.execute(''' SELECT size FROM {0} WHERE clusterId = ?'''.format(clust_table_name), (clusterobj.id,) )
-            row = records.fetchone()
-    
-            # Process clusterid 
-            if row is None:
-                # Cluster id does not yet exist, Insert new cluster
+            # Just insert cluster into clusters table and incriment id 
+            curs = con.cursor()
+            
+            curs.execute(''' INSERT INTO {0}
+                    (repseqid, size) VALUES (?,?)'''.format(cluster_table_name), 
+                    (int(clusterobj.rep_seq_id) , clusterobj.size) )
                 
+            last_clusterid = curs.lastrowid
                 
-                # I GOT TO HERE ISH IN EDDITING 
-                
-                curs = con.()
-                con.execute(''' INSERT INTO {0}
-                    (clusterid, repseqid, size) VALUES (?,?,?)'''.format(clust_table_name), 
-                    ( clusterobj.id, int(clusterobj.rep_seq_id) , clusterobj.size) )
-            else:
-                if overwrite: 
-                    # Cluster id exists, update cluster size.
-                    con.execute(''' UPDATE {0} SET
-                            size = ? WHERE clusterid = ?'''.format(clust_table_name), 
-                            ( clusterobj.size, clusterobj.id))
-                    
-                        
             # Process members
             for seqid in clusterobj.members_id :
                 con.execute(''' UPDATE {0} SET
                     clusterId = ? WHERE seqId = ?'''.format(seq_table_name), 
-                    (clusterobj.id, int(seqid)))
-        
+                    (last_clusterid, int(seqid)))
+
+#             # Just insert cluster into clusters table and incriment id 
+#             curs = con.cursor()
+#             curs.execute(''' INSERT INTO {0}
+#                     (clusterid, repseqid, size) VALUES (?,?,?)'''.format(cluster_table_name), 
+#                     ( clusterobj.id, int(clusterobj.rep_seq_id) , clusterobj.size) )
+#                 
+#             last_clusterid = curs.lastrowid
+#
+#             # Process members
+#             for seqid in clusterobj.members_id :
+#                 con.execute(''' UPDATE {0} SET
+#                     clusterId = ? WHERE seqId = ?'''.format(seq_table_name), 
+#                     (clusterobj.id, int(seqid)))
+                
 
 if __name__ == '__main__':
     pass

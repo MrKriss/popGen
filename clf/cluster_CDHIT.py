@@ -239,14 +239,11 @@ class CDHIT_ClusteringClass(object):
 
         plt.legend()
         plt.show()
-    
-
 
 
 if __name__ == '__main__':
     
     # Parse arguments
-
     toc = time.time()
 
     parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
@@ -257,10 +254,6 @@ if __name__ == '__main__':
                         help='Fasta file where reads are stored (/path/filename)')
     parser.add_argument('-o',  dest='output', default='clusterfile',
                         help='Filename for output clusters (/path/filename).')
-    
-    # Database parameters
-    parser.add_argument('-d',  dest='database', default='',
-                        help='Database to update with Filename for output clusters (/path/filename).')
     
     # Clustering parameters
     parser.add_argument('-s',  dest='similarity', required=True, type=float,
@@ -286,12 +279,6 @@ if __name__ == '__main__':
     if not os.path.exists(args.cdhitpath):
         raise Exception('CDHIT program not found on the default path of {0}'.format(args.cdhitpath))
     
-    
-    # Check if output is to a database or a file
-    if os.path.exists(args.output) and 
-    
-    
-    
     # Setup and Run clustering 
     clustering = CDHIT_ClusteringClass(args)
     outfile_handle, total_cluster_counter = clustering.run(args.input)
@@ -306,10 +293,3 @@ if __name__ == '__main__':
     print >> sys.stderr, 'Clustered {0} records into {1} clusters in {2}'.format(
               total_records, total_clusters,
               time.strftime('%H:%M:%S', time.gmtime(total_t)))
-    
-    
-    
-    
-    
-    
-    
