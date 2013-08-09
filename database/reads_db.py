@@ -22,6 +22,14 @@ from utils.clusterIO import ClusterObj, parse, sortby
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
+    
+    5 TABLES:
+        SEQS - all info on reads themselves
+        SAMPLES - info on individuals sampled
+        CLUSTERS - info on clusters 
+        MEMBERS - Link table for cluster-seqid membership
+        META - Other 
+    
     '''
 
     def __init__(self, db_file="test.db", recbyname=True, new=False):
@@ -73,9 +81,8 @@ class Reads_db(SQLdatabase):
             seq TEXT NOT NULL,
             phred TEXT NOT NULL, 
             length INTEGER NOT NULL,
-            individualId TEXT,
+            sampleId INTEGER,
             meanPhred INTEGER, 
-            clusterId INTEGER,
             
             description TEXT,
             
@@ -90,28 +97,18 @@ class Reads_db(SQLdatabase):
         
         with self.con as con:   
         
-            con.execute(''' ''')
-        
-        
             if overwrite:
                 con.execute('DROP TABLE IF EXISTS meta')
             con.execute(''' CREATE TABLE meta (
             Id INTEGER PRIMARY KEY NOT NULL,
-            lastclusterid INTEGER )''')
-    
+            exp_name TEXT )''')
             self.tables.append('meta')
             
-            # Initialise
-            con.execute(''' INSERT INTO meta (lastclusterid) Values (0); ''')
-    
-    #             tableId TEXT,
-    #             RADseqType TEXT,
-    #             MIDlength INTEGER NOT NULL,
-    #             Cutsite1 TEXT, 
-    #             Cutsite2 TEXT)''')
-
-    def create_cluster_table(self, table_name='clusters', overwrite=False):
+    def create_cluster_table(self, table_name=None, overwrite=False):
         ''' Make cluster table in database '''
+        
+        if table_name is None:
+            table_name = 'clusters' 
         
         with self.con as con:
     
@@ -124,8 +121,39 @@ class Reads_db(SQLdatabase):
             clusterId INTEGER PRIMARY KEY NOT NULL,
             repseqid INTEGER NOT NULL,
             size INTEGER NOT NULL) '''.format(table_name))
-            self.tables.append('{0}'.format(table_name))
-
+            self.tables.append(table_name)
+            
+    def create_samples_table(self, overwrite=False):
+        
+        with self.con as con:   
+        
+            if overwrite:
+                con.execute('DROP TABLE IF EXISTS samples')
+            con.execute(''' CREATE TABLE samples (
+            sampleId INTEGER PRIMARY KEY NOT NULL,
+            MIDtag TEXT,
+            description TEXT UNIQUE,
+            type TEXT,
+            read_count INTEGER )''')
+    
+            self.tables.append('samples')
+            
+    def create_members_table(self, table_name=None, overwrite=False):
+        
+        if table_name is None:
+            table_name = 'clusters' 
+        
+        with self.con as con:   
+        
+            if overwrite:
+                con.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
+            con.execute(''' CREATE TABLE {0} (
+            linkId INTEGER PRIMARY KEY NOT NULL,
+            clusterid INTEGER,
+            seqid INTEGER)'''.format(table_name))
+    
+            self.tables.append(table_name)
+            
 
     def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs'):
         ''' Load in all sequences in the specified files to the database 
@@ -166,21 +194,32 @@ class Reads_db(SQLdatabase):
 
             # Store barcode dictionary            
             MIDs = []
-            individuals = []
+            descriptions = []
             for barcode_file in barcode_files:
                 with open(barcode_file, 'rb') as f: 
                     for line in f:
                         parts = line.strip().split()
                         MIDs.append(parts[0])
-                        individuals.append(parts[1])
+                        descriptions.append(parts[1])
                         
                     diff = len(MIDs) - len(set(MIDs))
                     if diff > 0:
                         raise Exception('MID tags in barcode files are not unique.\n{0} duplicates found'.format(diff))
                     else:
-                        barcode_dict = dict(zip(MIDs, individuals))
+                        # Store barcodes in database 
+                        ids = []
+                        with self.con as con:
+                            curs = con.cursor()
+                            for i in range(len(MIDs)):
+                                curs.execute('''INSERT OR IGNORE INTO samples(MIDtag, description)
+                                            VALUES(?,?)''', (MIDs[i], descriptions[i]))
+                                # Find ID of last scanned Barcode                             
+                                curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (descriptions[i],))
+                                ids.append(curs.fetchone()['sampleId'])
+                                
+                        barcode_dict = dict(zip(MIDs, ids))
                         MIDlength = len(MIDs[0])
-               
+                                          
         # Setup Files generator
         if type(data_files) is file:
             recgen = SeqIO.parse(data_files, 'fastq')
@@ -199,7 +238,7 @@ class Reads_db(SQLdatabase):
                 fullseq = rec.seq.tostring()
                 MIDseq = fullseq[:MIDlength]
                 if barcode_files:
-                    individualId = barcode_dict[MIDseq]
+                    sampleId = barcode_dict[MIDseq]
 
                 # Sequence stored does not include MID tag, this is stored separately.
                 seq = fullseq[MIDlength:]
@@ -241,21 +280,20 @@ class Reads_db(SQLdatabase):
 #                  xcoord, ycoord, pairedEnd, illuminaFilter, controlBits, indexSeq));
                 
                 curs.execute('''INSERT INTO {0}
-                 (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
+                 (seq, phred, MIDphred, sampleId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
-                 (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, description,
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
+                 (seq, phred, MIDphred, sampleId, meanPhred, length, description,
                   pairedEnd, illuminaFilter, controlBits, indexSeq));
     
     def write_reads(self, sql_query, file_handle, format='fasta', ignoreup2=0):
         """ Write records returned by the querry to one large fasta or fastq 
         
-         file_handle -- A file object or string specifying a filename. 
+        file_handle -- A file object or string specifying a filename. 
         
-         ignoreup2 -- starting index of sequence that are written, used to miss out 
-         cutsite if necessary. 
-         
-         """
+        ignoreup2 -- starting index of sequence that are written, used to miss out 
+        cutsite if necessary.        
+        """
         
         # Output check
         file_handle = outputfile_check(file_handle)
@@ -297,6 +335,7 @@ class Reads_db(SQLdatabase):
         size are to be added.
         
         '''
+        
         if type(cluster_file_handle) == str:
             if not cluster_file_handle.endswith('.clstr'):
                 cluster_file_handle = cluster_file_handle + '.clstr'
