@@ -7,6 +7,7 @@ Created on 3 Jul 2013
 import sys, os
 import _addpaths
 import argparse
+import time
 
 from database.reads_db import Reads_db 
 
@@ -29,6 +30,8 @@ parser.add_argument('-f',  dest='force_overwrite', action='store_true', default=
 
 args = parser.parse_args()
 
+toc = time.time()
+
 if args.input == '-':
     args.input = sys.stdin
 
@@ -42,6 +45,10 @@ if ('samples' not in db.tables) or (args.force_overwrite == True):
     db.create_samples_table(overwrite=args.force_overwrite)
     
 db.load_seqs(data_files=args.input, barcode_files=args.barcodes, buffer_max=args.buffer_max)
+
+total_t = time.time() - toc    
+print >> sys.stderr, 'Loaded processed reads file in {0}'.format(
+              time.strftime('%H:%M:%S', time.gmtime(total_t)))
 
 if __name__ == '__main__':
     pass
