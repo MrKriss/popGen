@@ -16,12 +16,16 @@ parser.add_argument('-i',  dest='input', default = '-', nargs='+',
                     help='Input file(s) to process. (/path/filename) Will accept a glob')
 parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
                     help='Barcodes accociated with input file(s). Will accept a glob')
+parser.add_argument('--buffer',  dest='buffer_max', type=int, default=100000,
+                    help='Max number of reads that are written in batch to database. Default=1000000.')
+
 # Output parameters
 parser.add_argument('-d',  dest='database_filepath', required=True,
                     help='Path and filename of database to writ reads to.')
 
 parser.add_argument('-f',  dest='force_overwrite', action='store_true', default=False,
                     help='Overwrite previous tables with the same name.')
+
 
 args = parser.parse_args()
 
@@ -37,7 +41,7 @@ if ('seqs' not in db.tables) or (args.force_overwrite == True):
 if ('samples' not in db.tables) or (args.force_overwrite == True):
     db.create_samples_table(overwrite=args.force_overwrite)
     
-db.load_seqs(data_files=args.input, barcode_files=args.barcodes)
+db.load_seqs(data_files=args.input, barcode_files=args.barcodes, buffer_max=args.buffer_max)
 
 if __name__ == '__main__':
     pass
