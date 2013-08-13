@@ -229,7 +229,7 @@ class Reads_db(SQLdatabase):
             recgen = SeqRecGen.recgen
         
         # Setup buffer
-        data_buffer = StringIO()
+        data_buffer = []
         data_buffer_count = 0
         
         with self.con as con:
@@ -270,44 +270,27 @@ class Reads_db(SQLdatabase):
                 indexSeq = data[1][3]
                 
                 # Write data to memory file 
-                data_buffer.write(','.join([seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
-                                                pairedEnd, illuminaFilter, controlBits, indexSeq]) + '\n')
+                data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
+                                                pairedEnd, illuminaFilter, controlBits, indexSeq))
                 data_buffer_count += 1
                 
                 if data_buffer_count > buffer_max:
                     # Insert data and reset buffer
-                    data_tuples = [ tuple(x.split(',')) for x in data_buffer.getvalue().split('\n')]
-                    del data_tuples[-1] # Last one is an empty list 
-                    
-                    print len(data_tuples)
-                    print data_tuples[-1]
-                    
+
                     con.executemany('''INSERT INTO {0}
                      (seq, phred, MIDphred, sampleId, meanPhred, length, 
                      description,pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), iter(data_tuples))
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
                     
-                    del data_tuples
-                    data_buffer.close()
-                    data_buffer = StringIO()
+                    data_buffer = []
                     data_buffer_count = 0
             
             # End of generator. Flush remaining data buffer
-            data_tuples = [ x.split(',') for x in data_buffer.getvalue().split('\n')]
-            del data_tuples[-1] # Last one is an empty list 
-            
-            print data_tuples[0]
-            print data_tuples[-1]
                     
             con.executemany('''INSERT INTO {0}
              (seq, phred, MIDphred, sampleId, meanPhred, length, description,
               pairedEnd, illuminaFilter, controlBits, indexSeq) 
-             VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
-                    
-            del data_tuples
-            data_buffer.close()
-            data_buffer = StringIO()
-            data_buffer_count = 0
+             VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
             
 #                 curs.execute('''INSERT INTO {0}
 #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
