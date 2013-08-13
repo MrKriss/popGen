@@ -271,7 +271,7 @@ class Reads_db(SQLdatabase):
                 
                 for x in (seq, phred, MIDphred, sampleId, meanPhred, length, 
                           description, pairedEnd, illuminaFilter, controlBits, indexSeq):
-                    print x.__name__, ' == ',  type(x)
+                    print type(x), ' ',
                 
                 # Write data to memory file 
                 data_buffer.write(','.join([seq, phred, MIDphred, sampleId, str(meanPhred), str(length), description,
