@@ -3,9 +3,11 @@ Created on 27 Jun 2013
 
 @author: musselle
 '''
-import os, sys, time, glob, gzip 
+import os, sys, time, glob, gzip, csv
 import cPickle as pkl
 from subprocess import PIPE, Popen
+
+from cStringIO import StringIO
 
 import numpy as np
 
@@ -154,7 +156,7 @@ class Reads_db(SQLdatabase):
             self.tables.append(table_name)
             
 
-    def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs'):
+    def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs', buffer_max=100000):
         ''' Load in all sequences in the specified files to the database 
         
         Barcodes for the MIDtag samples are added to the database if given.
@@ -226,6 +228,10 @@ class Reads_db(SQLdatabase):
             SeqRecGen = SeqRecCycler(data_files=data_files)
             recgen = SeqRecGen.recgen
         
+        # Setup buffer
+        data_buffer = StringIO()
+        data_buffer_count = 0
+        
         with self.con as con:
             curs = con.cursor()
             for rec in recgen:
@@ -258,32 +264,50 @@ class Reads_db(SQLdatabase):
                 
                 description = ':'.join(data[0])
                 
-#                 instrument = data[0][0]
-#                 runId = data[0][1]
-#                 flowcellId = data[0][2]
-#                 laneId = data[0][3]
-#                 tileNo = data[0][4]
-#                 xcoord = data[0][5]
-#                 ycoord = data[0][6]
                 pairedEnd = data[1][0]
                 illuminaFilter = data[1][1]
                 controlBits = data[1][2]
                 indexSeq = data[1][3]
                 
-                # Insert record into table
-#                 curs.execute('''INSERT INTO seqs
-#                  (seq, phred, MIDseq, MIDphred, individualId, meanPhred, length, instrument, runId, flowcellId, laneId, tileNo, 
-#                  xcoord, ycoord, pairedEnd, illuminaFilter, controlBits, indexSeq) 
-#                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);''', 
-#                  (seq, phred, MIDseq, MIDphred, individualId, medianPhred, length, instrument, runId, flowcellId, laneId, tileNo, 
-#                  xcoord, ycoord, pairedEnd, illuminaFilter, controlBits, indexSeq));
+                # Write data to memory file 
+                data_buffer.write(','.join([seq, phred, MIDphred, sampleId, meanPhred, length, description,
+                                                pairedEnd, illuminaFilter, controlBits, indexSeq]) + '\n')
+                data_buffer_count += 1
                 
-                curs.execute('''INSERT INTO {0}
-                 (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-                  pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
-                 (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-                  pairedEnd, illuminaFilter, controlBits, indexSeq));
+                if data_buffer_count > buffer_max:
+                    # Insert data and reset buffer
+                    data_tuples = [ x.split(',') for x in data_buffer.getvalue().split('\n')]
+                    
+                    con.executemany('''INSERT INTO {0}
+                     (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+                      pairedEnd, illuminaFilter, controlBits, indexSeq) 
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
+                    
+                    del data_tuples
+                    data_buffer.close()
+                    data_buffer = StringIO()
+                    data_buffer_count = 0
+            
+            # End of generator. Flush remaining data buffer
+            data_tuples = [ x.split(',') for x in data_buffer.getvalue().split('\n')]
+                    
+            con.executemany('''INSERT INTO {0}
+             (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+              pairedEnd, illuminaFilter, controlBits, indexSeq) 
+             VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
+                    
+            del data_tuples
+            data_buffer.close()
+            data_buffer = StringIO()
+            data_buffer_count = 0
+            
+                
+#                 curs.execute('''INSERT INTO {0}
+#                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+#                   pairedEnd, illuminaFilter, controlBits, indexSeq) 
+#                  VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
+#                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+#                   pairedEnd, illuminaFilter, controlBits, indexSeq));
     
     def update_type(self, pattern, short_description):
         " Assiciate a symbol to a particular description pattern "
@@ -348,7 +372,7 @@ class Reads_db(SQLdatabase):
         return file_handle 
     
     def load_cluster_file(self, cluster_file_handle, exp_name=None, 
-                          overwrite=False, fmin=2, fmax=None, skipsort=False, buffer=1000000):
+                          overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
         ''' Load in a clustering file into the database 
         
         By default singletons are not loaded as cutoff = 2
@@ -408,7 +432,7 @@ class Reads_db(SQLdatabase):
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     
-                    if cumulative_cluster_size > buffer:
+                    if cumulative_cluster_size > buffer_max:
                         self.load_batch_clusterdata(data_structure, exp_name)
                         data_structure = []
 
@@ -418,7 +442,7 @@ class Reads_db(SQLdatabase):
                 clusterid += 1 
                 cumulative_cluster_size += cluster.size
                 
-                if cumulative_cluster_size > buffer:
+                if cumulative_cluster_size > buffer_max:
                     self.load_batch_clusterdata(data_structure, exp_name)
                     data_structure = []
         

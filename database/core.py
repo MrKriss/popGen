@@ -50,7 +50,7 @@ class SQLdatabase(object):
         self.recbyname = recbyname
         self.tables = []
 
-        # Update list of tables
+        # Update list of tables in database
         results = self.con.execute("select name from sqlite_master where type = 'table';")
         # Get list of tables         
         x = results.fetchall()
@@ -63,7 +63,7 @@ class SQLdatabase(object):
 
     def connect(self):
         ''' Open connection to the database '''
-        self.con = sqlite3.connect(self.dbfile)
+        self.con = sqlite3.connect(self.dbfilepath)
         if self.recbyname: 
             self.con.row_factory = sqlite3.Row
             print 'Setting Row_factory to named Rows' 
@@ -71,35 +71,6 @@ class SQLdatabase(object):
     def close(self):
         ''' Close connection to database'''
         self.con.close()
-        
-#     def new_table(self, name, headers):
-#         """ Create a table with specified headers """       
-#         self.tables.append(name)
-#         
-#         with self.con as con:        
-#             cur = con.cursor()
-#             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))        
-        
-#     def overwrite_table(self, name, headers):
-#         """ Create or overwrite a table if it already exists with specified headers """       
-#         if name not in self.tables: 
-#             self.tables.append(name)
-#         
-#         with self.con as con:        
-#             cur = con.cursor()
-#             cur.execute("DROP TABLE IF EXISTS {0}".format(name))
-#             cur.execute("CREATE TABLE {0} (id INTEGER PRIMARY KEY, {1})".format(name, headers))     
-        
-#     def select(self,cmd, *args):
-#         """ Select records from the database returned as tuple of Row Objects. """
-#         
-#         with self.con as con:        
-#             cur = con.cursor()
-#             # SELECT column_name(s) FROM table_name
-#             cur.execute("SELECT " + cmd, *args)
-#             records = cur.fetchall()
-#         
-#         return records
 
     def display(self, cmd, num=0, *args):
         """ Print out the records returned from the database querry 
@@ -135,25 +106,7 @@ class SQLdatabase(object):
             for row in records:
                 tuples.append(row)
         return tuples
-    
-#     def insert(self,cmd):
-#         """ insert a new record to database and return the new primary key """
-#         newID = 0
-#         with self.con as con:        
-#             cur = con.cursor()
-#             cur.execute("INSERT " + cmd)
-#             newID = cur.lastrowid
-#         
-#         return newID
-#         
-#     def update(self, cmd, *args):
-#         """ Set values in a table """        
-# 
-#         with self.con as con:        
-#             cur = con.cursor()
-#             # UPDATE table_name SET column1=value, column2=value,... WHERE some_column=some_value
-#             cur.execute("UPDATE " + cmd, *args)
-        
+         
     def update_binary(self, obj, col, target, value, table):
         """ Store a binary object to the database 
         Add Obj to field 'col' where field 'target' = 'value'
@@ -235,13 +188,6 @@ class SQLdatabase(object):
             os.wait()
             #Remove the named pipe file we created because its junk and we dont want a clash
             os.unlink(data_pipe)
-    
-    
-    
-    
-    
-    
-    
     
     
     

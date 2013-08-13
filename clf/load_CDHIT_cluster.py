@@ -64,7 +64,7 @@ if __name__ == '__main__':
     
     # Load cluster file 
     db.load_cluster_file(args.input, args.tableprefix, args.overwrite, args.fmin, 
-                         args.fmax, args.skipsort, buffer=args.buffer)
+                         args.fmax, args.skipsort, buffer_max=args.buffer)
     
     total_t = time.time() - toc    
     print >> sys.stderr, 'Loaded cluster file in {0}'.format(
