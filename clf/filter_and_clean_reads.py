@@ -417,9 +417,9 @@ if __name__ == '__main__':
         
     parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
     parser.add_argument('-i',  dest='input', required=True, nargs='+',
-                        help='Input file(s) to process. (/path/filename) Will accept a glob')
+                        help='Input file(s) to process (/path/filename). Will accept a glob')
     parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
-                        help='Barcodes accociated with input file(s). Will accept a glob')
+                        help='Barcodes accociated with input file(s) (/path/filename). Will accept a glob')
     
     # Output parameters
     parser.add_argument('-o',  dest='output_postfix',
@@ -497,7 +497,8 @@ if __name__ == '__main__':
         if args.output_postfix:
     
             # Construct file names
-            name = reads_generator.curfilename.split('.')  
+            tail, head =  os.path.split(reads_generator.curfilename)
+            name = head.split('.')  
             pass_filename = '.'.join([name[0] + args.output_postfix] + name[1:]) 
             pass_file = os.path.join(args.output_path, pass_filename)
             name = '.'.join(name)
