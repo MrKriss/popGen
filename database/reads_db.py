@@ -277,14 +277,13 @@ class Reads_db(SQLdatabase):
                 if data_buffer_count > buffer_max:
                     # Insert data and reset buffer
                     data_tuples = [ x.split(',') for x in data_buffer.getvalue().split('\n')]
+                    del data_tuples[-1] # Last one is an empty list 
                     
                     print data_tuples[0]
                     print data_tuples[-1]
                     
                     con.executemany('''INSERT INTO {0}
-                     (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-                      pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
+                     (seq, phred, MIDphred, sampleId, meanPhred, length, description,pairedEnd, illuminaFilter, controlBits, indexSeq) VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
                     
                     del data_tuples
                     data_buffer.close()
@@ -293,7 +292,8 @@ class Reads_db(SQLdatabase):
             
             # End of generator. Flush remaining data buffer
             data_tuples = [ x.split(',') for x in data_buffer.getvalue().split('\n')]
-                    
+            del data_tuples[-1] # Last one is an empty list 
+            
             print data_tuples[0]
             print data_tuples[-1]
                     
@@ -307,7 +307,6 @@ class Reads_db(SQLdatabase):
             data_buffer = StringIO()
             data_buffer_count = 0
             
-                
 #                 curs.execute('''INSERT INTO {0}
 #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
 #                   pairedEnd, illuminaFilter, controlBits, indexSeq) 
