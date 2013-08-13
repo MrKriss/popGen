@@ -270,7 +270,7 @@ class Reads_db(SQLdatabase):
                 indexSeq = data[1][3]
                 
                 # Write data to memory file 
-                data_buffer.write(','.join([seq, phred, MIDphred, sampleId, meanPhred, length, description,
+                data_buffer.write(','.join([seq, phred, MIDphred, sampleId, str(meanPhred), str(length), description,
                                                 pairedEnd, illuminaFilter, controlBits, indexSeq]) + '\n')
                 data_buffer_count += 1
                 
