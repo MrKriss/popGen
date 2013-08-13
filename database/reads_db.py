@@ -269,6 +269,10 @@ class Reads_db(SQLdatabase):
                 controlBits = data[1][2]
                 indexSeq = data[1][3]
                 
+                for x in (seq, phred, MIDphred, sampleId, meanPhred, length, 
+                          description, pairedEnd, illuminaFilter, controlBits, indexSeq):
+                    print x.__name__, ' == ',  type(x)
+                
                 # Write data to memory file 
                 data_buffer.write(','.join([seq, phred, MIDphred, sampleId, str(meanPhred), str(length), description,
                                                 pairedEnd, illuminaFilter, controlBits, indexSeq]) + '\n')
