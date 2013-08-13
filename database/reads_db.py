@@ -276,14 +276,16 @@ class Reads_db(SQLdatabase):
                 
                 if data_buffer_count > buffer_max:
                     # Insert data and reset buffer
-                    data_tuples = [ (x.split(',')) for x in data_buffer.getvalue().split('\n')]
+                    data_tuples = [ tuple(x.split(',')) for x in data_buffer.getvalue().split('\n')]
                     del data_tuples[-1] # Last one is an empty list 
                     
-                    print data_tuples[:4]
+                    print len(data_tuples)
                     print data_tuples[-1]
                     
                     con.executemany('''INSERT INTO {0}
-                     (seq, phred, MIDphred, sampleId, meanPhred, length, description,pairedEnd, illuminaFilter, controlBits, indexSeq) VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_tuples)
+                     (seq, phred, MIDphred, sampleId, meanPhred, length, 
+                     description,pairedEnd, illuminaFilter, controlBits, indexSeq) 
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), iter(data_tuples))
                     
                     del data_tuples
                     data_buffer.close()
