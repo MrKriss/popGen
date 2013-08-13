@@ -35,8 +35,15 @@ if __name__ == '__main__':
     parser.add_argument('-o',  dest='output', default='clusterfile',
                         help='Database with which to update/load cluster file. (/path/filename).')
     
+    parser.add_argument('-p',  dest='tableprefix', default=None,
+                        help='Database with which to update/load cluster file. (/path/filename).')
+    
+    parser.add_argument('-b',  dest='buffer', default=1000000,
+                        help='Number of sequences to read (across multiple clusters) before writing to db.')
+    
     parser.add_argument('-n',  dest='overwrite', action = 'store_true',
                         help='Overwrite all previously loaded clusters.')
+    
     
     parser.add_argument('--min',  dest='fmin', default = 2, type=int,
                         help='Minimum size of clusters to load. Default = 2 to miss out singleton clusters')
@@ -51,12 +58,13 @@ if __name__ == '__main__':
     
     if os.path.exists(args.output):
         
-        DB = Reads_db(args.output)
+        db = Reads_db(args.output)
     else:
         raise Exception('Database file not found.')
     
     # Load cluster file 
-    DB.load_cluster_file(args.input, 'clusters', args.overwrite, args.fmin, args.fmax, args.skipsort)
+    db.load_cluster_file(args.input, args.tableprefix, args.overwrite, args.fmin, 
+                         args.fmax, args.skipsort, buffer=args.buffer)
     
     total_t = time.time() - toc    
     print >> sys.stderr, 'Loaded cluster file in {0}'.format(

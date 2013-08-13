@@ -8,7 +8,8 @@ class to interface with a sqlite database
 import os
 import sys
 import cPickle as pkl
-from subprocess import PIPE, Popen
+from subprocess import PIPE, Popen, STDOUT
+import tempfile, csv
 import glob
 
 import gzip
@@ -17,6 +18,7 @@ from Bio import SeqIO
 
 import sqlite3
 from utils.general_utilities import set_trace, get_path_prefix
+
 
 class SQLdatabase(object):
     """ Class to handle all python communication with a sqlite database file 
@@ -188,3 +190,65 @@ class SQLdatabase(object):
             data = pkl.loads(pickled_data)
         
         return data   
+    
+    def fastinsert(self,data,table):
+        """
+         Function for inserting data into a SQLite database via the sqlite3 command line client using .import 
+         
+         # Roughly 5x faster at dumping data than using the Python SQLite bindings
+         
+         # Your data should be a list of equal length tuples
+         data = [(x,) for x in range(100)]
+         
+         # Source: https://gist.github.com/MattOates/6195743
+         
+        """ 
+ 
+        #Name of the pipe, use tempfile to create some random filename usually in /tmp
+        data_pipe = tempfile.mktemp('datapump')
+        #Create the actual pipe 'file' where the OS knows you wanted a pipe type thing
+        os.mkfifo( data_pipe, 0644 )
+ 
+        #Create a child process to run in parallel
+        child = os.fork()
+ 
+        #If child is 0 we are the child
+        if child == 0:
+            #Have the child send the command to sqlite3
+            #Create a forked process running sqlite3 with a pipe that we can send commands to
+            sqlite3 = Popen(['sqlite3', self.dbfilepath], stdout=PIPE, stdin=PIPE, stderr=STDOUT)
+ 
+            #Tell sqlite3 to import from our named pipe
+            db = sqlite3.communicate(input='.separator "\\t"\n.import %s %s\n.quit\n' % (data_pipe,table))[0]
+            
+            #The child exits so we stop waiting
+            sys.exit(1)
+ 
+        else:
+            #File handle to pipe to write data into table
+            data_pipe_write_handle = open(data_pipe,'w')
+            #Send data down the pipe
+            writer = csv.writer(data_pipe_write_handle, delimiter="\t")
+            writer.writerows(data)
+            data_pipe_write_handle.close()
+            #Wait for SQLite3 to finish importing, waiting on all child processes
+            os.wait()
+            #Remove the named pipe file we created because its junk and we dont want a clash
+            os.unlink(data_pipe)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

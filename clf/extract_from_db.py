@@ -30,9 +30,11 @@ if __name__ == '__main__':
     parser.add_argument('-o',  dest='output', 
                         default=sys.stdout,
                         help='Filename for output clusters (/path/filename). Default is to write to stdout.')
-    parser.add_argument('-q',  dest='query', 
-                        default='''SELECT * FROM seqs''',
-                        help='Query to fetch records with. Default will cycle through all records in database.')
+    parser.add_argument('-p',  dest='pattern', 
+                        default='*',
+                        help='Pattern to match to description for fetching records. Default will cycle through all records in database.')
+    parser.add_argument('-t',  dest='typeflag', action= 'store_true', 
+                        help='Set to match pattern against type column rather than full description column.')
     parser.add_argument('-f',  dest='format', 
                         default='fasta',
                         help='Format of file written to output.')
@@ -42,6 +44,8 @@ if __name__ == '__main__':
     
     # Write records to output
     db = Reads_db(args.input, recbyname=True)
-    fastafile_handle = db.write_reads(args.query, args.output, format='fasta')
+    
+    fastafile_handle = db.write_reads(args.pattern, args.output, 
+                                      use_type_column=args.typeflag, format='fasta')
     
     

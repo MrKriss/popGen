@@ -20,9 +20,6 @@ parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
 parser.add_argument('-d',  dest='database_filepath', required=True,
                     help='Path and filename of database to writ reads to.')
 
-
-parser.add_argument('-t',  dest='table_name', default='seqs',
-                    help='Name of the table to add the sequences too. Default = "seqs"')
 parser.add_argument('-f',  dest='force_overwrite', action='store_true', default=False,
                     help='Overwrite previous tables with the same name.')
 
@@ -34,11 +31,13 @@ if args.input == '-':
 # Connect/make database
 db = Reads_db(db_file=args.database_filepath, recbyname=True)
 
-if (args.table_name not in db.tables) or (args.force_overwrite == True):
-    db.create_seqs_table(table_name=args.table_name, overwrite=args.force_overwrite)
-
-db.load_seqs(data_files=args.input, barcode_files=args.barcodes, table_name=args.table_name)
-
+if ('seqs' not in db.tables) or (args.force_overwrite == True):
+    db.create_seqs_table(overwrite=args.force_overwrite)
+    
+if ('samples' not in db.tables) or (args.force_overwrite == True):
+    db.create_samples_table(overwrite=args.force_overwrite)
+    
+db.load_seqs(data_files=args.input, barcode_files=args.barcodes)
 
 if __name__ == '__main__':
     pass
