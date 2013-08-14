@@ -21,12 +21,9 @@ if cpu_name == 'yildun':
     data_prefix = '/space/musselle/data'
     work_prefix = '/home/pgrad/musselle/ubuntu/workspace/popGen/'
         
-elif cpu_name == 'luca':
-    data_prefix = '/home/musselle/san/data'
-    work_prefix = '/home/musselle/popGen/'
        
 elif cpu_name == 'gg-pc6':
-    data_prefix = '/home/musselle/data'
+    data_prefix = '/home/musselle/san/data'
     work_prefix = '/home/musselle/popGen/'
 
 # elif cpu_name == "Musselles-MacBook":

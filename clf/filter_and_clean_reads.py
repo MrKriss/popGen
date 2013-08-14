@@ -372,8 +372,7 @@ class RecordPreprocessor(object):
                 cutsite_dist = editdist.distance(target_site, cutsite)
                 if cutsite_dist <= max_edit_dist:
                     return True
-            
-            print 'cutsite filter fail'    
+                
             return False
         
         return cutsite_filter
