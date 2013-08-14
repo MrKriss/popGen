@@ -14,9 +14,9 @@ from database.reads_db import Reads_db
 # Load in data to SQLite database 
 parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
 parser.add_argument('-i',  dest='input', default = '-', nargs='+',
-                    help='Input file(s) to process. (/path/filename) Will accept a glob')
+                    help='Input file(s) to process (/path/filename). Will accept a glob')
 parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
-                    help='Barcodes accociated with input file(s). Will accept a glob')
+                    help='Barcodes accociated with input file(s) (/path/filename). Will accept a glob')
 parser.add_argument('--buffer',  dest='buffer_max', type=int, default=100000,
                     help='Max number of reads that are written in batch to database. Default=1000000.')
 

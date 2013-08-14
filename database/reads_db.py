@@ -361,6 +361,39 @@ class Reads_db(SQLdatabase):
                 
         return file_handle 
     
+    def calculate_reads_per_individual(self, individuals=None):
+        """ Fill in individuals table with total reads of each """
+        
+        # Get list of individuals
+        with self.con as con :
+        
+            if individuals is None:    
+                c = con.execute(''' SELECT sampleId from samples ''')
+                rows = c.fetchall()
+            
+                num = len(rows)
+                print >> sys.stderr, 'Updating read counts for {0} samples'.format(num),
+                
+                for r in rows:
+                    # for each, find the total number of reads
+                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r['sampleId']))
+                    total = c.fetchone()['count(*)'] 
+                    
+                    # Fill in table  
+                    c.con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r['sampleId'] ))
+            else:
+                assert type(individuals) is list, 'Invalid parameeter. Expected a list of sample ids'
+                rows = individuals
+
+            for r in rows:
+                # for each, find the total number of reads
+                c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r,))
+                total = c.fetchone()['count(*)'] 
+                
+                # Fill in table  
+                c.con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
+  
+    
     def load_cluster_file(self, cluster_file_handle, exp_name=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
         ''' Load in a clustering file into the database 
