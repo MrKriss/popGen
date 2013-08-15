@@ -13,6 +13,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Alphabet import IUPAC
+import pandas as pd
 
 from editdist import distance
 
@@ -62,9 +63,11 @@ class ClusterObj(object):
         self.rep_seq_id = ""      
         self.rep_seq = ""
         self.rep_phred = None
+        self.rep_sample_id = None
         self.members_id = []    
         self.members_seq = []
         self.members_phred = []
+        self.members_sample_id = []
         self.size = 0  
         self.id = 0
         self.edit_dists = []
@@ -73,87 +76,76 @@ class ClusterObj(object):
         self.start_loc = 0
         self.end_loc = 0
         
-    def getfromdb(self, items, db):
+    def getfromdb(self, items, target, db):
         """ Lookup to main db to retrieve and store the specified items.
         
-        items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
-                'rep' will fetch just the seq and phred info for the representative sequence.
+        items - string of fields to fetch for the cluster from the database. 
+                Option of 'seq', 'phred' and 'sampleId' 
+        
+        target - Whether to fetch the data for the rep seq ('rep'), or all cluster members ('all'). 
         
         db    - Reference to a Reads_db database object.
         """
         
-        assert 'seq' in items or 'phred' in items or 'rep' in items, "Invalid values for items to lookup"
-        
-        start_dir = os.getcwd()
-        path = os.path.split(db.dbfilepath)[0]
-        
-        if start_dir != path:
-            os.chdir(path) 
-
         # Setup query
-        sql_query = """ SELECT (seq, phred) FROM seqs WHERE seqid = ? """
-        if 'seq' in items and 'phred' in items:
+        sql_query = """ SELECT {0} FROM seqs WHERE seqid = ? """.format(items)
+        
+        get_seq = 0
+        get_phred = 0
+        get_sampleid = 0
+        if 'seq' in items:
+            get_seq =  True
+        if 'phred' in items:
+            get_phred = True
+        if 'sampleId' in items:
+            get_sampleid = True
             
-            # Get rep seq and phred
-            record_curs = db.execute(sql_query, (self.rep_seq_id,))
+        if target == 'rep':
+            # Get for rep seq 
+            record_curs = db.con.execute(sql_query, (self.rep_seq_id,))
             record = record_curs.fetchone()
             
-            self.rep_seq = record['seq']
-            phred_ascii = record['phred']
-            phred_list = [ord(c) - 33 for c in phred_ascii]
-            self.rep_phred = np.array(phred_list)
-
+            if get_seq: 
+                self.rep_seq = record['seq']
+            if get_phred:
+                phred_ascii = record['phred']
+                phred_list = [ord(c) - 33 for c in phred_ascii]
+                self.rep_phred = np.array(phred_list)
+            if get_sampleid:
+                self.rep_sample_id = record['sampleId']
+            
+        elif target == 'all':
+            
+            # Get for rep seq 
+            record_curs = db.con.execute(sql_query, (self.rep_seq_id,))
+            record = record_curs.fetchone()
+            
+            if get_seq: 
+                self.rep_seq = record['seq']
+            if get_phred:
+                phred_ascii = record['phred']
+                phred_list = [ord(c) - 33 for c in phred_ascii]
+                self.rep_phred = np.array(phred_list)
+            if get_sampleid:
+                self.rep_sample_id = record['sampleId']
+            
             # get members seq and phred
             for seqid in self.members_id:
                 
-                record_curs = db.execute(sql_query, (seqid,))
+                record_curs = db.con.execute(sql_query, (seqid,))
                 record = record_curs.fetchone()
                 
-                self.members_seq.append(record['seq'])
-                phred_ascii = record['phred']
-                phred_list = [ord(c) - 33 for c in phred_ascii]
-                self.members_phred.append(np.array(phred_list))
-
-        if 'seq' in items:
-            # Get rep seq
-            record_curs = db.execute(sql_query, (self.rep_seq_id,))
-            record = record_curs.fetchone()
-            self.rep_seq = record['seq']
+                if get_seq: 
+                    self.members_seq.append(record['seq'])
+                if get_phred:
+                    phred_ascii = record['phred']
+                    phred_list = [ord(c) - 33 for c in phred_ascii]
+                    self.members_phred.append(np.array(phred_list))
+                if get_sampleid:
+                    self.members_sample_id.append(record['sampleId'])
             
-            # get members seq 
-            for seqid in self.members_id:
-                record_curs = db.execute(sql_query, (seqid,))
-                record = record_curs.fetchone()
-                self.members_seq.append(record['seq'])
-
-        if 'phred' in items:
-           
-            # Get rep phred
-            record_curs = db.execute(sql_query, (self.rep_seq_id,))
-            record = record_curs.fetchone()
-            phred_ascii = record['phred']
-            phred_list = [ord(c) - 33 for c in phred_ascii]
-            self.rep_phred = np.array(phred_list)
-
-            # get members phred
-            for seqid in self.members_id:
-                record_curs = db.execute(sql_query, (seqid,))
-                record = record_curs.fetchone()
-                phred_ascii = record['phred']
-                phred_list = [ord(c) - 33 for c in phred_ascii]
-                self.members_phred.append(np.array(phred_list))
-
-        if 'rep' in items: # Just fetch the representitive sequence info 
-            # Get rep seq and phred
-            record_curs = db.execute(sql_query, (self.rep_seq_id,))
-            record = record_curs.fetchone()
-            
-            self.rep_seq = record['seq']
-            phred_ascii = record['phred']
-            phred_list = [ord(c) - 33 for c in phred_ascii]
-            self.rep_phred = np.array(phred_list)
         
-    def get_unique_seq(self, ignoreup2=6, db=None):
+    def get_unique_seq(self, seq_start_idx=6, db=None):
         """ Work out the counts for unique reads within a cluster """
         
         if not self.members_seq:
@@ -164,11 +156,63 @@ class ClusterObj(object):
             self.getfromdb(['rep'], db=db)
         
         unique_seq_counter = Counter()
-        unique_seq_counter[self.rep_seq[ignoreup2:]] += 1
+        unique_seq_counter[self.rep_seq[seq_start_idx:]] += 1
         
-        seqs = [s[ignoreup2:] for s in self.members_seq]        
+        seqs = [s[seq_start_idx:] for s in self.members_seq]        
         unique_seq_counter.update(Counter(seqs))
-        self.unique_seq = unique_seq_counter
+        self.unique_seqs = unique_seq_counter
+        
+    def get_unique_seq_by_individual(self, db, min_seq_count = 1):
+        """ Show the breakdown on sequence counts per individual in the cluster """
+            
+        # Either 
+        # ds = { sampleId : { unique_seq : count } }
+        ds = defaultdict(Counter)
+        
+        if not self.members_seq or not self.members_sample_id:
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb('seq, sampleId', target='all', db=db)
+
+        # Add representative seq
+        ds[self.rep_sample_id][self.rep_seq] += 1
+
+        max_i = 0
+        # Run over all memebrs        
+        for i in range(len(self.members_seq)):
+            ds[self.members_sample_id[i]][self.members_seq[i]] += 1
+            if i+1 > max_i: max_i = i+1
+        
+        # Rank Unique sequences
+        all_seq_counter = Counter()
+        for c in ds.itervalues():
+            all_seq_counter.update(c)
+            
+        ranked_seqs = all_seq_counter.most_common()
+
+        # print out results
+        n = len(ds)
+        m = max_i
+        freq_matrix = np.zeros([n,m,], dtype=int)
+
+        # Store seqs        
+        seqs = []
+        sampleids = []
+        for j, (seq, count) in enumerate(ranked_seqs):
+            seqs.append(seq)
+            for i, (sampleId) in enumerate(ds.iterkeys()):
+                sampleids.append(sampleId)
+                freq_matrix[i,j] = count 
+                
+        # Get actual description of individuals 
+        sampledescriptions = []
+        for x in sampleids:
+            c = db.con.execute('select description from samples where sampleid = ?', (x,))
+            sampledescriptions.append(c.fetchone()['description'])
+            
+        print freq_matrix
+        print sampledescriptions
+        print seqs
+                
     
     def get_basefraction(self, db=None):
         """ Calculate the fraction of nucleotide bases per base location """

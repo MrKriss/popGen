@@ -18,8 +18,10 @@ def calc_propN_meanphred(infiles = None, filepattern = '', data_inpath = '',
                          out_filename='stats', plothist=False, png_filename=''):
     ''' Calculate the proportion of Ns and the mean Phred scores per read for
     the files given. 
+    the files given.     
     
     OPTIONS
+    OPTIONS    
     - out_filename --> name of .npy file for output
     - plothist -->  if ture plots the histogram to screen.
     - png_filename  -->  saves figure of histogram to file.

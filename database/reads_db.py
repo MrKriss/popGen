@@ -306,22 +306,36 @@ class Reads_db(SQLdatabase):
             con.execute(''' UPDATE samples SET type = ? WHERE description GLOB ? ''', (short_description,pattern))
 
     
-    def write_reads(self, pattern, file_handle, use_type_column=False, format='fasta', ignoreup2=0):
+#     def get_seqbycluster(self, size_range):
+#         """ Return all clusters  """
+    
+    
+    
+    
+    def write_reads_by_(self, search_query, out_file_handle, sql_query=False, 
+                        use_type_column=False, format='fasta', seq_start=0):
         """ Write records returned by the querry to one large fasta or fastq 
         
-        file_handle -- A file object or string specifying a filename. 
+        Defaults is to search by GLOBing the individual descriptions with the search_query.
         
-        ignoreup2 -- starting index of sequence that are written, used to miss out 
+            If sql_query = True, search_query is passed as a full sql statment.
+            If use_type_column=True, search is done by GLOBing the individual type column instead.
+        
+        
+        out_file_handle -- A file object or string specifying a filename. 
+        
+        seq_start -- starting index of sequence that are written, used to miss out 
         cutsite if necessary.        
         """
+        
+        # Output check
+        out_file_handle = outputfile_check(out_file_handle)
         
         if use_type_column:
             column = 'type'
         else:
             column = 'samples.description'
-            
-        # Output check
-        file_handle = outputfile_check(file_handle)
+        
         
         with self.con as con:
             
@@ -329,15 +343,17 @@ class Reads_db(SQLdatabase):
             print >> sys.stderr, 'Executing sql querry....', 
             
             # Find all reads that match a querry for the samples
-            
-            # join seqs and individuals then glob on description
-            querry = '''SELECT seqid, seq 
+            if sql_query:
+                query = search_query
+                c = con.execute(query)
+            else:
+                # join seqs and individuals then glob on description
+                query = '''SELECT seqid, seq, phred  
                     FROM seqs INNER JOIN samples ON seqs.sampleId=samples.sampleId 
                     WHERE {0} GLOB ? '''.format(column)
-
-            c = con.execute(querry, (pattern,))
+                c = con.execute(query, (search_query,))
+            
             record_curs = c.fetchall()
-#             record_curs = con.execute(sql_query)
             
             print >> sys.stderr, ' Done!'
             print >> sys.stderr, 'Records returned in {0}'.format(
@@ -348,18 +364,22 @@ class Reads_db(SQLdatabase):
             
             rec_count = 0
             for rec in record_curs:
-                seq_rec = SeqRecord(Seq(rec['seq'][ignoreup2:]), id=str(rec['seqid']), description='')
-                SeqIO.write(seq_rec, file_handle, format=format)
+                seq_rec = SeqRecord(Seq(rec['seq'][seq_start:]), id=str(rec['seqid']), description='')
+                
+                if format=='fastq':
+                    seq_rec.letter_annotations['phred_quality'] = [ ord(x)-33 for x in rec['phred']]
+                
+                SeqIO.write(seq_rec, out_file_handle, format=format)
                 rec_count += 1 
             
             print >> sys.stderr, ' Done!'
             print >> sys.stderr, '\n{0} records written successfully to {1}\nin {2}'.format(rec_count,
-                file_handle.name, time.strftime('%H:%M:%S', time.gmtime(time.time() - toc))) 
+                out_file_handle.name, time.strftime('%H:%M:%S', time.gmtime(time.time() - toc))) 
             
-            if file_handle.name not in ['<stdout>', '<stderr>']:
-                file_handle.close()
+            if out_file_handle.name not in ['<stdout>', '<stderr>']:
+                out_file_handle.close()
                 
-        return file_handle 
+        return out_file_handle 
     
     def calculate_reads_per_individual(self, individuals=None):
         """ Fill in individuals table with total reads of each """
