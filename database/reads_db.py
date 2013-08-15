@@ -396,7 +396,7 @@ class Reads_db(SQLdatabase):
                 
                 for r in rows:
                     # for each, find the total number of reads
-                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r['sampleId']))
+                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r['sampleId'],))
                     total = c.fetchone()['count(*)'] 
                     
                     # Fill in table  
