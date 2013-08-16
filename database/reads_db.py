@@ -400,7 +400,7 @@ class Reads_db(SQLdatabase):
                     total = c.fetchone()['count(*)'] 
                     
                     # Fill in table  
-                    c.con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r['sampleId'] ))
+                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r['sampleId'] ))
             else:
                 assert type(individuals) is list, 'Invalid parameeter. Expected a list of sample ids'
                 rows = individuals
@@ -411,7 +411,7 @@ class Reads_db(SQLdatabase):
                 total = c.fetchone()['count(*)'] 
                 
                 # Fill in table  
-                c.con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
+                con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
   
     
     def load_cluster_file(self, cluster_file_handle, exp_name=None, 
