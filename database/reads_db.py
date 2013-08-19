@@ -308,11 +308,9 @@ class Reads_db(SQLdatabase):
     
 #     def get_seqbycluster(self, size_range):
 #         """ Return all clusters  """
+  
     
-    
-    
-    
-    def write_reads_by_(self, search_query, out_file_handle, sql_query=False, 
+    def write_reads(self, search_query, out_file_handle, sql_query=False, 
                         use_type_column=False, format='fasta', seq_start=0):
         """ Write records returned by the querry to one large fasta or fastq 
         
@@ -335,7 +333,6 @@ class Reads_db(SQLdatabase):
             column = 'type'
         else:
             column = 'samples.description'
-        
         
         with self.con as con:
             
