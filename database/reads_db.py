@@ -402,16 +402,16 @@ class Reads_db(SQLdatabase):
                     # Fill in table  
                     con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r['sampleId'] ))
             else:
-                assert type(individuals) is list, 'Invalid parameeter. Expected a list of sample ids'
+                assert type(individuals) is list, 'Invalid parameter. Expected a list of sample ids'
                 rows = individuals
 
-            for r in rows:
-                # for each, find the total number of reads
-                c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r,))
-                total = c.fetchone()['count(*)'] 
-                
-                # Fill in table  
-                con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
+                for r in rows:
+                    # for each, find the total number of reads
+                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r,))
+                    total = c.fetchone()['count(*)'] 
+                    
+                    # Fill in table  
+                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
   
     
     def load_cluster_file(self, cluster_file_handle, exp_name=None, 
