@@ -468,7 +468,7 @@ class Reads_db(SQLdatabase):
             for cluster in cluster_gen:
                 if cluster.size <= fmax and cluster.size >= fmin:
                     
-                    data_structure.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members)  )
+                    data_structure.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     
