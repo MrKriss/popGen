@@ -336,7 +336,7 @@ class Reads_db(SQLdatabase):
     
     
     
-    def get_cluster_by_id(self, cluster_id, items=['seq', 'phred', 'sampleId'], table_prefix=None ):
+    def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None ):
         ''' Return the cluster object for the given id '''
     
         if table_prefix is None:
