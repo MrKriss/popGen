@@ -36,7 +36,7 @@ if __name__ == '__main__':
                         help='Database with which to update/load cluster file. (/path/filename).')
     
     parser.add_argument('-p',  dest='tableprefix', default=None,
-                        help='Database with which to update/load cluster file. (/path/filename).')
+                        help='Optional prefix to add to tables i.e <prefix>_members and <prefix>_clusters.')
     
     parser.add_argument('-b',  dest='buffer', default=1000000,
                         help='Number of sequences to read (across multiple clusters) before writing to db.')
@@ -63,8 +63,13 @@ if __name__ == '__main__':
         raise Exception('Database file not found.')
     
     # Load cluster file 
-    db.load_cluster_file(args.input, args.tableprefix, args.overwrite, args.fmin, 
-                         args.fmax, args.skipsort, buffer_max=args.buffer)
+    db.load_cluster_file(cluster_file_handle=args.input, 
+                         table_prefix=args.tableprefix, 
+                         overwrite=args.overwrite, 
+                         fmin=args.fmin, 
+                         fmax=args.fmax, 
+                         skipsort=args.skipsort, 
+                         buffer_max=args.buffer)
     
     total_t = time.time() - toc    
     print >> sys.stderr, 'Loaded cluster file in {0}'.format(
