@@ -209,10 +209,8 @@ class ClusterObj(object):
             c = db.con.execute('select description from samples where sampleid = ?', (x,))
             sampledescriptions.append(c.fetchone()['description'])
             
-        print freq_matrix
-        print sampledescriptions
-        print seqs
-                
+        return freq_matrix, sampledescriptions, seqs
+        
     
     def get_basefraction(self, db=None):
         """ Calculate the fraction of nucleotide bases per base location """
