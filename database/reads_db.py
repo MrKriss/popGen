@@ -310,6 +310,82 @@ class Reads_db(SQLdatabase):
 #         """ Return all clusters  """
   
     
+    def get_cluster_by_id(self, cluster_id, items=['seq', 'phred', 'sampleId'], table_prefix=None ):
+        ''' Return the cluster object for the given id '''
+    
+        if table_prefix is None:
+            members_table = 'members'
+            clusters_table = 'clusters'
+        else:
+            members_table = table_prefix + '_members'
+            clusters_table = table_prefix+ '_clusters'
+    
+        # Set which parameters to get 
+        get_seq = 0
+        get_phred = 0
+        get_sampleid = 0
+        if 'seq' in items:
+            get_seq =  True
+        if 'phred' in items:
+            get_phred = True
+        if 'sampleId' in items:
+            get_sampleid = True
+    
+        with self.con as con:
+             
+            repseq_sql_query = ''' SELECT repseqid, size, clusterid FROM {clusters} 
+                WHERE clusterID = ? '''.format(clusters=clusters_table)
+             
+            members_sql_query = ''' SELECT {items}  FROM seqs 
+                JOIN {members} USING (seqId) JOIN {clusters} USING (clusterId)
+                WHERE clusterId = ?'''.format(items = ','.join(items), 
+                        members=members_table, clusters=clusters_table) 
+    
+            clusterobj = ClusterObj()
+            
+            #===================================================================
+            # Get Repseq Info   
+            #===================================================================
+            c = con.execute(repseq_sql_query, (cluster_id,))
+            cluster_row = c.fetchone()
+            
+            clusterobj.rep_seq_id = cluster_row['repseqid']
+            clusterobj.size = cluster_row['size']
+            clusterobj.id = cluster_row['clusterId']
+            
+            # get repseq_seq
+            c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(items = ','.join(items)), (clusterobj.rep_seq_id,))
+            row = c.fetchone()
+            
+            if get_seq: 
+                clusterobj.rep_seq = row['seq']
+            if get_phred:
+                phred_ascii = row['phred']
+                phred_list = [ord(c) - 33 for c in phred_ascii]
+                clusterobj.rep_phred = np.array(phred_list)
+            if get_sampleid:
+                    clusterobj.rep_sample_id = row['sampleId']
+            
+            #===================================================================
+            # Get Members Info
+            #===================================================================
+            curs = con.execute(members_sql_query, (cluster_id,))
+
+            for row in curs:
+            
+                if get_seq: 
+                    clusterobj.members_id.append(row['seqId'])
+                    clusterobj.members_seq.append(row['seq'])
+                if get_phred:
+                    phred_ascii = row['phred']
+                    phred_list = [ord(c) - 33 for c in phred_ascii]
+                    clusterobj.members_phred.append(np.array(phred_list))
+                if get_sampleid:
+                    clusterobj.members_sample_id.append(row['sampleId'])
+                    
+        return clusterobj
+            
+    
     def write_reads(self, search_query, out_file_handle, sql_query=False, 
                         use_type_column=False, format='fasta', seq_start=0):
         """ Write records returned by the querry to one large fasta or fastq 
@@ -411,7 +487,7 @@ class Reads_db(SQLdatabase):
                     con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
   
     
-    def load_cluster_file(self, cluster_file_handle, exp_name=None, 
+    def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
         ''' Load in a clustering file into the database 
         
@@ -422,12 +498,12 @@ class Reads_db(SQLdatabase):
         
         '''
         
-        if exp_name is None:
+        if table_prefix is None:
             members_table_name = 'members'
             cluster_table_name = 'clusters'
         else:
-            members_table_name = exp_name + '_members'
-            cluster_table_name = exp_name + '_clusters'
+            members_table_name = table_prefix + '_members'
+            cluster_table_name = table_prefix + '_clusters'
         
         if type(cluster_file_handle) == str:
             if not cluster_file_handle.endswith('.clstr'):
@@ -473,9 +549,8 @@ class Reads_db(SQLdatabase):
                     cumulative_cluster_size += cluster.size
                     
                     if cumulative_cluster_size > buffer_max:
-                        self.load_batch_clusterdata(data_structure, exp_name)
+                        self.load_batch_clusterdata(data_structure, table_prefix)
                         data_structure = []
-
         else:    
             for cluster in cluster_gen:
                 data_structure.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
@@ -483,12 +558,12 @@ class Reads_db(SQLdatabase):
                 cumulative_cluster_size += cluster.size
                 
                 if cumulative_cluster_size > buffer_max:
-                    self.load_batch_clusterdata(data_structure, exp_name)
+                    self.load_batch_clusterdata(data_structure, table_prefix)
                     data_structure = []
         
         # Final flush of data
         if data_structure:
-            self.load_batch_clusterdata(data_structure, exp_name)
+            self.load_batch_clusterdata(data_structure, table_prefix)
         
 
     def load_batch_clusterdata(self, data_structure, exp_name=None):
