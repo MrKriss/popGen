@@ -310,6 +310,32 @@ class Reads_db(SQLdatabase):
 #         """ Return all clusters  """
   
     
+    def get_cluster_by_size(self, size_min, size_max, items=['seq', 'phred', 'sampleId'], table_prefix=None):
+        ''' Return all clusterobjs within a certain size range 
+        
+        
+        '''
+        
+        if table_prefix is None:
+            clusters_table = 'clusters'
+        else:
+            clusters_table = table_prefix+ '_clusters'
+        
+        sql_query = ''' SELECT * FROM {clusters} WHERE size BETWEEN ? AND ?'''.format(clusters=clusters_table)
+        
+        with self.con as con:
+            
+            c = con.execute(sql_query, (size_min, size_max))
+            clusterobjs = []
+            
+            # get list of clusterId within the size range
+            for row in c:
+                clusterobjs.append(self.get_cluster_by_id(row['clusterid'], items=items) ,table_prefix=table_prefix)
+                
+        return clusterobjs    
+    
+    
+    
     def get_cluster_by_id(self, cluster_id, items=['seq', 'phred', 'sampleId'], table_prefix=None ):
         ''' Return the cluster object for the given id '''
     
@@ -334,7 +360,7 @@ class Reads_db(SQLdatabase):
         with self.con as con:
              
             repseq_sql_query = ''' SELECT repseqid, size, clusterid FROM {clusters} 
-                WHERE clusterID = ? '''.format(clusters=clusters_table)
+                WHERE clusterId = ? '''.format(clusters=clusters_table)
              
             members_sql_query = ''' SELECT {items}  FROM seqs 
                 JOIN {members} USING (seqId) JOIN {clusters} USING (clusterId)
