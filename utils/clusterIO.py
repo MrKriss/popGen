@@ -191,17 +191,17 @@ class ClusterObj(object):
 
         # print out results
         n = len(ds)
-        m = max_i
-        freq_matrix = np.zeros([n,m,], dtype=int)
+        m = len(ranked_seqs)
+        freq_matrix = np.zeros([n,m], dtype=int)
 
         # Store seqs        
         seqs = []
         sampleids = []
-        for j, (seq, count) in enumerate(ranked_seqs):
-            seqs.append(seq)
+        for j, seq_count_tup in enumerate(ranked_seqs):
+            seqs.append(seq_count_tup[0])
             for i, (sampleId) in enumerate(ds.iterkeys()):
                 sampleids.append(sampleId)
-                freq_matrix[i,j] = count 
+                freq_matrix[i,j] = ds[sampleId][seq_count_tup[0]] 
                 
         # Get actual description of individuals 
         sampledescriptions = []
@@ -209,7 +209,7 @@ class ClusterObj(object):
             c = db.con.execute('select description from samples where sampleid = ?', (x,))
             sampledescriptions.append(c.fetchone()['description'])
             
-        return freq_matrix, sampledescriptions, seqs
+        return freq_matrix, sampledescriptions, seqs, ds
         
     
     def get_basefraction(self, db=None):
@@ -246,10 +246,13 @@ class ClusterObj(object):
             self.basefrac['C'][i] /= float(self.size)
             self.basefrac['N'][i] /= float(self.size)
             
-    def plot_basefrac(self, ignorefirst=6, xlab="", ylab="", title="", **kwargs):
+    def plot_basefrac(self, seq_start_idx=6, xlab="", ylab="", title="", **kwargs):
         """ Visualise the fraction of bases """
         
         import matplotlib.pyplot as plt
+    
+        if not hasattr(self, 'basefrac'):
+            self.get_basefraction()
     
         # Default plot options
         if 'ms' not in kwargs:
@@ -262,8 +265,8 @@ class ClusterObj(object):
         plt.figure()
         for k,v in self.basefrac.iteritems():
         
-            data_xs = range(1,len(v[ignorefirst:])+1) 
-            data_ys = v[ignorefirst:]
+            data_xs = range(1,len(v[seq_start_idx:])+1) 
+            data_ys = v[seq_start_idx:]
             label =  k 
             
             vars()['line' + k], = plt.plot(data_xs, data_ys, label=label, ls='', **kwargs)
@@ -286,6 +289,61 @@ class ClusterObj(object):
         plt.xlabel(xlab)
         plt.ylabel(ylab)
         plt.show()
+        
+    def plot_ATGC(self, db=None):
+        ''' Visualise the presence of nucliotides at each base position. '''
+        
+        import matplotlib.pyplot as plt
+        
+
+        # get the unique sequences 
+        if not hasattr(self, 'unique_seqs'):
+            self.get_unique_seq(seq_start_idx=6, db=db)
+        
+        
+        # Get dimentions
+        n = len(self.unique_seqs)
+        m = len(self.unique_seqs[self.unique_seqs.keys()[0]])
+        
+        y_lab = range(n)
+        x_lab = range(m)
+        
+        fig, ax = plt.subplots()
+
+        data = np.zeros([n, m], dtype = int)
+
+        for i, (seq, count) in enumerate(self.unique_seqs.most_common()):
+            
+            for j, base in enumerate(seq):
+                
+                if base == 'A':
+                    data[i,j] = 1 
+
+
+#         ax.imshow(image, cmap=plt.cm.gray, interpolation='nearest')
+#         ax.set_title('dropped spines')
+# 
+#         
+#         # Move left and bottom spines outward by 10 points
+#         ax.spines['left'].set_position(('outward', 10))
+#         ax.spines['bottom'].set_position(('outward', 10))
+#         # Hide the right and top spines
+#         ax.spines['right'].set_visible(False)
+#         ax.spines['top'].set_visible(False)
+#         # Only show ticks on the left and bottom spines
+#         ax.yaxis.set_ticks_position('left')
+#         ax.xaxis.set_ticks_position('bottom')
+#         
+        plt.show()
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         
     def write2db(self, db):
