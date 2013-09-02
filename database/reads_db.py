@@ -310,10 +310,9 @@ class Reads_db(SQLdatabase):
 #         """ Return all clusters  """
   
     
-    def get_cluster_by_size(self, size_min, size_max, items=['seq', 'phred', 'sampleId'], table_prefix=None):
+    def get_cluster_by_size(self, size_min, size_max, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None):
         ''' Return all clusterobjs within a certain size range 
-        
-        
+             
         '''
         
         if table_prefix is None:
@@ -330,10 +329,9 @@ class Reads_db(SQLdatabase):
             
             # get list of clusterId within the size range
             for row in c:
-                clusterobjs.append(self.get_cluster_by_id(row['clusterid'], items=items) ,table_prefix=table_prefix)
+                clusterobjs.append(self.get_cluster_by_id(row['clusterid'], items=items, table_prefix=table_prefix))
                 
         return clusterobjs    
-    
     
     
     def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None ):

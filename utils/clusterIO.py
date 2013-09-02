@@ -582,6 +582,18 @@ def input_check(handle):
 
     return handle 
 
+def getfromdb(cluster_list, items, db=None):
+    """ Adds the specified items to each cluster in list, looked up from the main db.
+    
+    items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
+            'rep' will fetch just the seq and phred info for the representative sequence.
+            
+    """
+    for cluster in cluster_list:
+        cluster.getfromdb(items, db)
+        
+    return cluster_list
+
 def mismatch2percentage(mismatches, seq_length):
     ''' Convert a number of mismatches to a percentage rounded to the nearest 2 dp '''
     mismatches = int(mismatches)
@@ -782,19 +794,6 @@ def sortby(handle, reverse=True, mode='cluster_size', outfile_postfix=None,
         print "Finished sorting cluster file after {0}\n".format(time.strftime('%H:%M:%S', time.gmtime(t)))    
 
     return sorted_cluster_file
-
-    
-def getfromdb(cluster_list, items, db=None):
-    """ Adds the specified items to each cluster in list, looked up from the main db.
-    
-    items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
-            'rep' will fetch just the seq and phred info for the representative sequence.
-            
-    """
-    for cluster in cluster_list:
-        cluster.getfromdb(items, db)
-        
-    return cluster_list
 
 
 def summary_counter(handle, mode='cluster_size', report=True):
