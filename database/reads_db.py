@@ -22,6 +22,7 @@ from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
 from utils.clusterIO import ClusterObj, parse, sortby
 
+
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
     
@@ -77,12 +78,16 @@ class Reads_db(SQLdatabase):
                 curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
             curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
             seqId INTEGER PRIMARY KEY NOT NULL,
+            sampleId INTEGER,
+            typecode TEXT, 
             
             MIDphred TEXT NOT NULL,
             seq TEXT NOT NULL,
             phred TEXT NOT NULL, 
             length INTEGER NOT NULL,
+            
             sampleId INTEGER,
+            
             meanPhred INTEGER, 
             
             description TEXT,
@@ -106,7 +111,10 @@ class Reads_db(SQLdatabase):
             self.tables.append('meta')
             
     def create_cluster_table(self, table_name=None, overwrite=False):
-        ''' Make cluster table in database '''
+        ''' Create a cluster table in database with the specified name. 
+        
+        overwrite - if true will drop any table that already exists with the specified name.
+        '''
         
         if table_name is None:
             table_name = 'clusters' 
@@ -140,7 +148,10 @@ class Reads_db(SQLdatabase):
             self.tables.append('samples')
             
     def create_members_table(self, table_name=None, overwrite=False):
+        ''' Create a members table in database with the specified name. 
         
+        overwrite - if true will drop any table that already exists with the specified name.
+        '''
         if table_name is None:
             table_name = 'members' 
         
@@ -310,8 +321,28 @@ class Reads_db(SQLdatabase):
 #         """ Return all clusters  """
   
     
+    def create_index(self, index_name, columns):
+        """ Creat an index on the specified columns """
+        
+        
+        if type(columns) is str:
+            columns = [columns]
+        
+        with self.con as con:
+            con.execute(''' CREATE INDEX {0}  samples SET type = ? WHERE description GLOB ? ''', (short_description,pattern))
+            
+            
+        
+    
+    
     def get_cluster_by_size(self, size_min, size_max, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None):
         ''' Return all clusterobjs within a certain size range 
+             
+             
+             # TODO: Optimisation via indexing the size of clusters?
+
+             
+             
              
         '''
         
