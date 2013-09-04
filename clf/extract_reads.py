@@ -44,6 +44,14 @@ if __name__ == '__main__':
                         default='fasta',
                         help='Format of file written to output.')    
     
+    parser.add_argument('-b',  dest='rowbuffer', 
+                        default=100000,
+                        help='Number of records to read before writing to file.')    
+    
+    parser.add_argument('-F',  dest='overwrite', 
+                        default=False,
+                        help='Overwrite any file with same name as output.')    
+    
     print sys.argv
     args = parser.parse_args()
     
@@ -52,4 +60,6 @@ if __name__ == '__main__':
     
     fastafile_handle = db.write_reads(args.output, output_format=args.format,
                                       filter_expression=args.filter_expression,
-                                      startidx=args.startidx)
+                                      startidx=args.startidx, 
+                                      rowbuffer=args.rowbuffer, 
+                                      overwrite=args.overwrite)

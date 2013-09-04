@@ -420,7 +420,7 @@ class Reads_db(SQLdatabase):
         return clusterobj          
     
     def write_reads(self, out_file_handle, output_format='fasta', filter_expression=None, 
-                     startidx=0):
+                     startidx=0, rowbuffer=5000, overwrite=False):
         """ Write records returned by the querry to one large fasta or fastq 
         
         Defaults is to search by GLOBing the individual descriptions with the search_query.
@@ -436,7 +436,7 @@ class Reads_db(SQLdatabase):
         """
         
         # Output check
-        out_file_handle = outputfile_check(out_file_handle)
+        out_file_handle = outputfile_check(out_file_handle, mode='a', overwrite=overwrite)
          
         query = '''SELECT seqid, seq, phred  
                     FROM seqs INNER JOIN samples ON seqs.sampleId=samples.sampleId'''
@@ -446,28 +446,26 @@ class Reads_db(SQLdatabase):
         
         with self.con as con:
             
-            tic = time.time()
-            print >> sys.stderr, 'Executing sql querry....', 
-            
-            c = con.execute(query)
-            record_curs = c.fetchall()
-            
-            print >> sys.stderr, ' Done!'
-            print >> sys.stderr, 'Records returned in {0}'.format(
-                time.strftime('%H:%M:%S', time.gmtime(time.time() - tic))) 
-            
             toc = time.time()
             print >> sys.stderr, 'Writing records to {0} format....'.format(output_format), 
+
+            c = con.execute(query)
+            returned_records = c.fetchmany(rowbuffer)
             
-            rec_count = 0
-            for rec in record_curs:
-                seq_rec = SeqRecord(Seq(rec['seq'][startidx:]), id=str(rec['seqid']), description='')
+            while returned_records:
                 
-                if output_format=='fastq':
-                    seq_rec.letter_annotations['phred_quality'] = [ ord(x)-33 for x in rec['phred']]
+                rec_count = 0
+                for rec in returned_records:
+                    seq_rec = SeqRecord(Seq(rec['seq'][startidx:]), id=str(rec['seqid']), description='')
+                    
+                    if output_format=='fastq':
+                        seq_rec.letter_annotations['phred_quality'] = [ ord(x)-33 for x in rec['phred']]
+                    
+                    SeqIO.write(seq_rec, out_file_handle, format=output_format)
+                    rec_count += 1 
                 
-                SeqIO.write(seq_rec, out_file_handle, format=output_format)
-                rec_count += 1 
+                # Fetch next batch of records from cursor          
+                returned_records = c.fetchmany(rowbuffer)
             
             print >> sys.stderr, ' Done!'
             print >> sys.stderr, '\n{0} records written successfully to {1}\nin {2}'.format(rec_count,

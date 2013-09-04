@@ -26,8 +26,7 @@ class SeqRecCycler(object):
     data_files - Single file as string or list of files to process as strings with
               full extensions. If data_files is a string, it is treated as a glob to 
               the specified path. e.g. glob.glob('*.fastq') for all files ending in .fastq
-              
-              data files contail the full path to the file + filename
+              data files contain the full path to the file + filename
               
     METHODS
     __init_files_gen - initiate files generator
