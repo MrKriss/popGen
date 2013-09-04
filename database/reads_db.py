@@ -313,7 +313,7 @@ class Reads_db(SQLdatabase):
 #                   pairedEnd, illuminaFilter, controlBits, indexSeq));
             
             # Rebuild index on sampleID
-            con.execute('''CREATE INDEX {indexname} ON {tablename}(samplId)'''.format(
+            con.execute('''CREATE INDEX {indexname} ON {tablename}(sampleId)'''.format(
                     indexname=index_name, tablename=table_name))
     
     def update_type(self, pattern, short_description):
@@ -420,7 +420,7 @@ class Reads_db(SQLdatabase):
         return clusterobj          
     
     def write_reads(self, out_file_handle, output_format='fasta', filter_expression=None, 
-                     startidx=0, rowbuffer=5000, overwrite=False):
+                     startidx=0, rowbuffer=100000, overwrite=False):
         """ Write records returned by the querry to one large fasta or fastq 
         
         Defaults is to search by GLOBing the individual descriptions with the search_query.
@@ -451,10 +451,9 @@ class Reads_db(SQLdatabase):
 
             c = con.execute(query)
             returned_records = c.fetchmany(rowbuffer)
-            
+            rec_count = 0
             while returned_records:
                 
-                rec_count = 0
                 for rec in returned_records:
                     seq_rec = SeqRecord(Seq(rec['seq'][startidx:]), id=str(rec['seqid']), description='')
                     
@@ -512,6 +511,9 @@ class Reads_db(SQLdatabase):
                     
                     # Fill in table  
                     con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
+                    
+            # Build index on Cluster size 
+            con.execute('CREATE INDEX IF NOT EXISTS read_countIndex ON samples(read_count)')
     
     def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
