@@ -31,7 +31,7 @@ extract_reads.py -i $database -o $fasta_filepath -e $filter_expression
 # -g compare each read with all other cluster seeds and cluster to nearest (instead of first one above threshold)
 # -m Limit the memory used, 0 is unlimited.
 # -t Number of threads to use.    
-cluster_CDHIT.py -i $fasta_filepath -o $cluster_filepath -p $cdhit_path -n 8 -s 0.95 -g -m 0 -t 1 
+nice cluster_CDHIT.py -i $fasta_filepath -o $cluster_filepath -p $cdhit_path -n 8 -s 0.95 -g -m 0 -t 20 
 
 # Import cluster file into database
 # min and max are the minimum and maximum cluster sizes to load into database
