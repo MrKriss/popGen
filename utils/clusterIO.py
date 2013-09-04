@@ -41,16 +41,7 @@ Sample Cluster File:
 8    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1104:15657:55944... at +/100.00%
 9    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:13547:22466... at +/98.86%
 10    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:20059:45463... at +/97.73%
-
-IMPROVEMENT
------------
-
-seqid is now an integer not the long text description. The seqid can be 
-looked up in the main database to retrieve the information contained in 
-the description if necessaery. 
-
-No longer need a index file to lookup the file positions in compressed .bgzf files. 
-All seq info is contained within a single database.  
+ 
 
 '''
 
@@ -336,31 +327,18 @@ class ClusterObj(object):
 #         
         plt.show()
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    def write2db(self, db):
-        ''' Call the db method to load cluster into database. '''
-        db.load_single_clusterobj(self)
-        
+              
     def write2clstr(self, handle, db=None):
         """ Write cluster to a .clstr file format like CD-HIT. 
         
         e.g.
         
         >Cluster 0
-        0    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:1148:2096... *
-        1    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:2328:25159... at +/100.00%
-        2    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:7411:52830... at +/98.86%
-        3    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:9529:76269... at +/100.00%
-        4    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1102:6206:12309... at +/100.00%
+        0    88nt, >2096... *
+        1    88nt, >25159... at +/100.00%
+        2    88nt, >52830... at +/98.86%
+        3    88nt, >76269... at +/100.00%
+        4    88nt, >12309... at +/100.00%
         
         """
         
@@ -409,7 +387,7 @@ class ClusterObj(object):
 class ClusterFilter(object):
     """ Holds all methods for parsing and filtering a cluster file from CD-HIT
     
-    Impliments a double pass generator to parse reads:
+    Impliments a two-pass generator to parse reads:
     1. Get the next cluster size, and store start and end places. 
 
     2. If size passes, go back and rescan file to get detailed info for that cluster.

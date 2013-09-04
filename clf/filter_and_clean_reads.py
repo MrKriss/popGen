@@ -19,7 +19,6 @@ import _addpaths
 
 from utils.fileIO import SeqRecCycler
 
-
 class RecordPreprocessor(object):
     
     def __init__(self, args):

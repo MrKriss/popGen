@@ -418,34 +418,7 @@ def getMeanPhredPerBase(infiles = None, filepattern = '', data_inpath = ''):
     
     return running_aves
 
-
 if __name__ == '__main__':
-
-#    calc_propN_meanphred(filepattern = '*.idx', data_inpath = dataLoacation)
-#    calc_readlengths(filepattern = '*.idx', data_inpath = dataLoacation)
-       
-#    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-#    lane6_PhredAves = getMeanPhredPerBase(filepattern = '*.idx', data_inpath = dataLoacation)
-    
-#    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane6'
-#    lane6_PhredStats, lane6_PhredCounts = calc_phredperbase_boxplot(filepattern = '*.bgzf', data_inpath = dataLoacation)    
-#
-#    dataLoacation = '/space/musselle/datasets/gazellesAndZebras/lane8'
-#    lane8_PhredStats, lane8_PhredCounts = calc_phredperbase_boxplot(filepattern = '*.bgzf', data_inpath = dataLoacation)    
-#
-#    with open('L6_phredCounts.pkl', 'wb') as f:
-#        pkl.dump(lane6_PhredCounts, f )
-#    with open('L8_phredCounts.pkl', 'wb') as f:
-#        pkl.dump(lane8_PhredCounts, f )
-#
-#    np.save('L6_phredStats', lane6_PhredStats)
-#    np.save('L8_phredStats', lane8_PhredStats)
-
-    dataLoc = '/space/musselle/datasets/gazellesAndZebras'
-    files = ['lane6_NoIndex_L006_R1_005.fastq.bgzf']
-
-#    lane6_PhredStats = calc_phredperbase_boxplot( files , data_inpath = dataLoacation)  
-    
-      
+    pass
 
 
