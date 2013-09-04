@@ -26,11 +26,35 @@ from utils.clusterIO import ClusterObj, parse, sortby
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
     
-    5 TABLES:
-        SEQS - all info on reads themselves
+    4 TABLES:
+        SEQS - all info on the reads themselves. Either derived from sequence ID header.
+                or calculated as the file is processed.
+                
+            seqId -     INTEGER PRIMARY KEY
+            sampleId -  Maps to a sampled individual in the SAMPLES table (INTEGER), 
+            MIDphred  - Phred score for the MIDtag portion of the read (TEXT NOT NULL),
+            seq  -      Read portion of the sequence, with the MIDtag already removed  (TEXT NOT NULL),
+            phred -     The corresponding Phred score for the sequence read (TEXT NOT NULL), 
+            length -    Length of the read (INTEGER NOT NULL),
+            meanPhred - Mean phred score for the sequence read, rounded to nearest int (INTEGER), 
+            description The text in the seqid header of the read, minus the information extracted bellow TEXT,
+            pairedEnd - Whether the sequence is part of a paired end experiment and the numebr (1 or 2) INTEGER,
+            illuminaFilter - Whether the read was flagged up by the illumina filter as being too low quality (Y/N) TEXT,
+            controlBits - INTEGER,
+            indexSeq  - Index sequence used for multiplexing. TEXT
+            
         SAMPLES - info on individuals sampled
+        
+            
+        
+        
         CLUSTERS - info on clusters 
+        
+        
+        
         MEMBERS - Link table for cluster-seqid membership
+        
+        
     
     '''
 
@@ -47,31 +71,6 @@ class Reads_db(SQLdatabase):
             # TODO: Write function to infer description format and use this to creste specific tables.
             # Currently only does Casava 1.8 format
 
-            # Create Tables
-#             curs.execute(''' CREATE TABLE seqs (
-#             seqId INTEGER PRIMARY KEY NOT NULL,
-#             
-#             MIDseq TEXT NOT NULL,
-#             MIDphred TEXT NOT NULL,
-#             seq TEXT NOT NULL,
-#             phred TEXT NOT NULL, 
-#             length INTEGER NOT NULL,
-#             individualId TEXT,
-#             medianPhred INTEGER, 
-#             clusterId INTEGER,
-#             
-#             instrument TEXT, 
-#             runId INTEGER,
-#             flowcellId TEXT,
-#             laneId INTEGER,
-#             tileNo INTEGER,
-#             xcoord INTEGER,
-#             ycoord INTEGER,
-#             pairedEnd INTEGER,
-#             illuminaFilter TEXT,
-#             controlBits INTEGER,
-#             indexSeq TEXT) ''')
-#             self.tables.append('seqs')
             
             if overwrite:
                 curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
@@ -342,7 +341,7 @@ class Reads_db(SQLdatabase):
             for row in c:
                 clusterobjs.append(self.get_cluster_by_id(row['clusterid'], items=items, table_prefix=table_prefix))
                 
-        return clusterobjs       
+        return clusterobjs
     
     def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None ):
         ''' Return the cluster object for the given id '''

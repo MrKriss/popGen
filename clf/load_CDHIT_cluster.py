@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
     toc = time.time()
 
-    parser = argparse.ArgumentParser(description='Run Simple clustering on reads in the database.')
+    parser = argparse.ArgumentParser(description='Load a CDHIT cluster output file into the database.')
     
     # IO parameters
     parser.add_argument('-i',  dest='input', 
@@ -48,10 +48,10 @@ if __name__ == '__main__':
     parser.add_argument('--min',  dest='fmin', default = 2, type=int,
                         help='Minimum size of clusters to load. Default = 2 to miss out singleton clusters')
     parser.add_argument('--max',  dest='fmax', default = 0, type=int, 
-                        help='Maximum size of clusters to load. Default = 2 to miss out singleton clusters')
+                        help='Maximum size of clusters to load. Default = 0 no max limit')
     
     parser.add_argument('--skipsort',  dest='skipsort', action = 'store_true',
-                        help='Maximum size of clusters to load. Default = 2 to miss out singleton clusters')
+                        help='Skip sorting the cluster file. Useful if file has already been previously sorted.')
     
     print sys.argv
     args = parser.parse_args()
