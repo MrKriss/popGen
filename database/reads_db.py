@@ -560,11 +560,11 @@ class Reads_db(SQLdatabase):
         self.create_cluster_table(cluster_table_name)
         self.create_members_table(members_table_name)
         
-        # Make cluster generator
-        cluster_gen = parse(cluster_file_handle)
+        # Make cluster generator. Returns all cluster info
+        cluster_gen = parse(cluster_file_handle, similarity_count=True, edit_dist=True)
         
         # Buffer to hold clusters in memory then write all at once
-        data_structure = []
+        cluster_info_list = []
         cumulative_cluster_size = 0 
         
         # Find starting cluster id 
@@ -579,26 +579,26 @@ class Reads_db(SQLdatabase):
             for cluster in cluster_gen:
                 if cluster.size <= fmax and cluster.size >= fmin:
                     
-                    data_structure.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
+                    cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     
                     if cumulative_cluster_size > buffer_max:
-                        self.load_batch_clusterdata(data_structure, table_prefix)
-                        data_structure = []
+                        self.load_batch_clusterdata(cluster_info_list, table_prefix)
+                        cluster_info_list = []
         else:    
             for cluster in cluster_gen:
-                data_structure.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
+                cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
                 clusterid += 1 
                 cumulative_cluster_size += cluster.size
                 
                 if cumulative_cluster_size > buffer_max:
-                    self.load_batch_clusterdata(data_structure, table_prefix)
-                    data_structure = []
+                    self.load_batch_clusterdata(cluster_info_list, table_prefix)
+                    cluster_info_list = []
         
         # Final flush of data
-        if data_structure:
-            self.load_batch_clusterdata(data_structure, table_prefix)
+        if cluster_info_list:
+            self.load_batch_clusterdata(cluster_info_list, table_prefix)
             
         # Rebuild index on Cluster size 
         with self.con as con:

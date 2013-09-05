@@ -79,7 +79,7 @@ class ClusterObj(object):
         """
         
         # Setup query
-        sql_query = """ SELECT {0} FROM seqs WHERE seqid = ? """.format(items)
+        sql_query = """ SELECT {0} FROM seqs WHERE seqid = ? """.format(','.join(items))
         
         get_seq = 0
         get_phred = 0
@@ -140,11 +140,13 @@ class ClusterObj(object):
         """ Work out the counts for unique reads within a cluster """
         
         if not self.members_seq:
+            assert db, 'Sequence data not present and no lookup database specified.'
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['seq'], db=db)
+            self.getfromdb(items=['seq'], target='all', db=db)
         if not self.rep_seq:
+            assert db, 'Sequence data not present and no lookup database specified.'
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['rep'], db=db)
+            self.getfromdb(items=['seq'], target='rep', db=db)
         
         unique_seq_counter = Counter()
         unique_seq_counter[self.rep_seq[seq_start_idx:]] += 1
@@ -866,7 +868,7 @@ def summary_counter(handle, mode='cluster_size', report=True):
         return reads_per_cluster
     
 
-def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", **kwargs):
+def plot_counters_scatter(counters, labels=None, log='xy', xlab="", ylab="", title="", **kwargs):
     ''' Construct a series of scatter plots from a list of Counter Dictionaries '''
     
     import matplotlib.pyplot as plt
@@ -907,6 +909,163 @@ def plot_counters(counters, labels=None, log='xy', xlab="", ylab="", title="", *
 
     plt.legend(numpoints=1, markerscale=8)
     plt.show()
+
+def plot_counters_hist(counters, bin_increment=100, labels=None, log='xy', xlab="", ylab="", title="", calc_rpc=False, **kwargs):
+    ''' Construct a series of histogram plots from a list of Counter Dictionaries.  
+    
+    counter dictionaries should be number of total reads per cluster size'''
+    
+    import matplotlib.pyplot as plt
+    from pandas import cut, DataFrame
+    
+    # Default plot options
+    if 'ms' not in kwargs:
+        kwargs['ms'] = 4.0
+    if 'marker' not in kwargs:
+        kwargs['marker'] = '.'
+    if 'mew' not in kwargs:
+        kwargs['mew'] = 0.0
+    
+    if type(counters) is not list and type(counters) is not tuple:
+        counters = [counters]
+    
+    if labels is not None:
+        assert len(labels) == len(counters), "Number of labels must match number of counters."
+    
+    
+    # for each counter
+    dict_of_counters = {}
+    c = 0
+    for i in range(len(counters)):
+        
+        # get Total reads per cluster size 
+        if calc_rpc:
+            rpc_counter = {}
+            for k,v in counters[i].iteritems():
+                rpc_counter[k] = int(k) * v
+        
+        dict_of_counters[c] = rpc_counter
+        c +=1
+        
+    # load into pandas dataframe and munge!
+    df = DataFrame(dict_of_counters)
+    df = df.reset_index()
+    df = df.rename(columns={'index': 'csize'})
+    df['csize'] = df['csize'].apply(np.int)
+    
+        
+    # Break it up into bins
+    hist_bins = 
+        
+        
+        
+        
+        
+        
+        
+        
+
+                        
+                        
+                
+                
+                if 
+            hist_counter[bins[i+1]] +=  
+        
+        
+        
+        
+        
+        
+        
+        data_xs = [int(k) for k in counters[i].keys()]
+        data_ys = counters[i].values()
+
+        if labels:
+            plt.plot(data_xs, data_ys, label=labels[i], ls='', **kwargs)
+        else:
+            plt.plot(data_xs, data_ys, label='Counter-'+str(i), ls='', **kwargs)
+        
+        ax = plt.gca()
+        if 'x' in log:
+            ax.set_xscale('log')
+        if 'y' in log:
+            ax.set_yscale('log')
+        
+        plt.title(title)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+
+    plt.legend(numpoints=1, markerscale=8)
+    plt.show()
+
+
+
+
+def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", ylab="", title="", calc_rpc=False, **kwargs):
+    ''' Construct a series of histogram plots from a list of Counter Dictionaries.  
+    
+    counter dictionaries should be number of total reads per cluster size'''
+    
+    import matplotlib.pyplot as plt
+    from pandas import cut, DataFrame
+    
+    # Default plot options
+    if 'ms' not in kwargs:
+        kwargs['ms'] = 4.0
+    if 'marker' not in kwargs:
+        kwargs['marker'] = '.'
+    if 'mew' not in kwargs:
+        kwargs['mew'] = 0.0
+    
+    if type(counters) is not list and type(counters) is not tuple:
+        counters = [counters]
+    
+    if labels is not None:
+        assert len(labels) == len(counters), "Number of labels must match number of counters."
+    
+    for i, counter in enumerate(counters):   
+        
+        # Compact to hist counter  
+        hist_counter = Counter()
+        for size, freq in counter.iteritems():
+            bin = np.ceil(float(size)/bin_width)
+            hist_counter[bin] += freq
+            
+        
+        x_data = 
+        x_loc = 
+        
+        
+        data_ys = counters[i].values()
+        
+        plt.step()
+        
+        
+        
+
+
+       ax = plt.gca()
+        if 'x' in log:
+            ax.set_xscale('log')
+        if 'y' in log:
+            ax.set_yscale('log')
+        
+        plt.title(title)
+        plt.xlabel(xlab)
+        plt.ylabel(ylab)
+
+    plt.legend(numpoints=1, markerscale=8)
+    plt.show()
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
