@@ -122,9 +122,11 @@ class Reads_db(SQLdatabase):
             
             curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
             clusterId INTEGER PRIMARY KEY NOT NULL,
-            selfsimilarity REAL, 
             repseqid INTEGER NOT NULL,
-            size INTEGER NOT NULL) '''.format(table_name))
+            size INTEGER NOT NULL, 
+            trueRepSeq INTEGER,
+            perc_trueRepSeq REAL,
+            selfsimilarity TEXT ) '''.format(table_name))
             self.tables.append(table_name)
             
     def create_samples_table(self, overwrite=False):
@@ -406,11 +408,9 @@ class Reads_db(SQLdatabase):
             #===================================================================
             curs = con.execute(members_sql_query, (cluster_id,))
 
-            t1 = time.time()
-            x = curs.fetchall()
-            print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
             
-            for row in x:
+            t1 = time.time()
+            for row in curs:
             
                 if get_seq: 
                     clusterobj.members_id.append(row['seqId'])
@@ -421,6 +421,7 @@ class Reads_db(SQLdatabase):
                     clusterobj.members_phred.append(np.array(phred_list))
                 if get_sampleid:
                     clusterobj.members_sample_id.append(row['sampleId'])
+            print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
                     
         return clusterobj          
     
@@ -484,7 +485,6 @@ class Reads_db(SQLdatabase):
         """ Fill in individuals table with total reads of each 
 
         """
-        
         # Get list of individuals
         with self.con as con :
         
@@ -523,7 +523,6 @@ class Reads_db(SQLdatabase):
         ''' Load in a clustering file into the database 
         
         By default singletons are not loaded as cutoff = 2
-        
         can also set a fmin and fmax threshold if only clusters of a certain 
         size are to be added.
         
@@ -582,9 +581,19 @@ class Reads_db(SQLdatabase):
         if fmax:
             for cluster in cluster_gen:
                 if cluster.size <= fmax and cluster.size >= fmin:
-                            
+                                         
                     cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
-                 
+                    
+                    # Record Cluster self similarity
+                    if cluster_gen.similarity_counter.most_common()[0] != '100.00':
+                        # Most common sequence is not rep seq
+                        pass
+                    # 
+                    
+                    
+                    
+                    
+                          
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     

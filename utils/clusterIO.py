@@ -920,15 +920,14 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
     counter dictionaries should be number of total reads per cluster size'''
     
     import matplotlib.pyplot as plt
-    from pandas import cut, DataFrame
     
     # Default plot options
-    if 'ms' not in kwargs:
-        kwargs['ms'] = 4.0
-    if 'marker' not in kwargs:
-        kwargs['marker'] = '.'
-    if 'mew' not in kwargs:
-        kwargs['mew'] = 0.0
+#     if 'ms' not in kwargs:
+#         kwargs['ms'] = 4.0
+#     if 'marker' not in kwargs:
+#         kwargs['marker'] = '.'
+#     if 'mew' not in kwargs:
+#         kwargs['mew'] = 0.0
     
     if type(counters) is not list and type(counters) is not tuple:
         counters = [counters]
@@ -941,7 +940,7 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
         # Compact to hist counter  
         hist_counter = Counter()
         for size, freq in counter.iteritems():
-            bin = np.ceil(float(size)/bin_width)
+            bin = np.floor(float(size)/bin_width)
             hist_counter[bin] += freq
         
         # Extract data 
@@ -950,8 +949,7 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
         x_data = np.array(x_data) * bin_width  
         y_data = np.array(y_data)
         
-        
-        plt.step(x_data, y_data, )
+        plt.step(x_data, y_data)
         
     # Plot formating 
     ax = plt.gca()
@@ -967,7 +965,7 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
     plt.legend(numpoints=1, markerscale=8)
     plt.show()
 
-
+    return x_data, y_data
 
 
 if __name__ == '__main__':
