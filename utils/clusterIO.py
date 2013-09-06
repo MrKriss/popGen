@@ -158,13 +158,12 @@ class ClusterObj(object):
     def get_unique_seq_by_individual(self, db, min_seq_count = 1):
         """ Show the breakdown on sequence counts per individual in the cluster """
             
-        # Either 
         # ds = { sampleId : { unique_seq : count } }
         ds = defaultdict(Counter)
         
         if not self.members_seq or not self.members_sample_id:
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb('seq, sampleId', target='all', db=db)
+            self.getfromdb(['seq', 'sampleId'], target='all', db=db)
 
         # Add representative seq
         ds[self.rep_sample_id][self.rep_seq] += 1
@@ -190,11 +189,15 @@ class ClusterObj(object):
         # Store seqs        
         seqs = []
         sampleids = []
-        for j, seq_count_tup in enumerate(ranked_seqs):
-            seqs.append(seq_count_tup[0])
-            for i, (sampleId) in enumerate(ds.iterkeys()):
-                sampleids.append(sampleId)
+        first = 1
+        for i, (sampleId) in enumerate(ds.iterkeys()):
+            sampleids.append(sampleId)
+            
+            for j, seq_count_tup in enumerate(ranked_seqs):
+                if first:
+                    seqs.append(seq_count_tup[0])
                 freq_matrix[i,j] = ds[sampleId][seq_count_tup[0]] 
+            first = 0
                 
         # Get actual description of individuals 
         sampledescriptions = []
