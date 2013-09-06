@@ -365,7 +365,7 @@ class Reads_db(SQLdatabase):
             get_sampleid = True
     
         with self.con as con:
-             
+            
             repseq_sql_query = ''' SELECT repseqid, size, clusterid FROM {clusters} 
                 WHERE clusterId = ? '''.format(clusters=clusters_table)
              
@@ -379,7 +379,10 @@ class Reads_db(SQLdatabase):
             #===================================================================
             # Get Repseq Info   
             #===================================================================
+            t1 = time.time()
             c = con.execute(repseq_sql_query, (cluster_id,))
+            print 'Time for repseq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
+            
             cluster_row = c.fetchone()
             
             clusterobj.rep_seq_id = cluster_row['repseqid']
@@ -387,7 +390,10 @@ class Reads_db(SQLdatabase):
             clusterobj.id = cluster_row['clusterId']
             
             # get repseq_seq
+            t1 = time.time()
             c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(items = ','.join(items)), (clusterobj.rep_seq_id,))
+            print 'Time for seq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
+
             row = c.fetchone()
             
             if get_seq: 
@@ -402,7 +408,9 @@ class Reads_db(SQLdatabase):
             #===================================================================
             # Get Members Info
             #===================================================================
+            t1 = time.time()
             curs = con.execute(members_sql_query, (cluster_id,))
+            print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
 
             for row in curs:
             
@@ -492,9 +500,7 @@ class Reads_db(SQLdatabase):
                 for r in rows:
                     # for each, find the total number of reads
                     c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r['sampleId'],))
-                    # TODO: This would be masively sped up by indexing
                     
-
                     total = c.fetchone()['count(*)'] 
                     
                     # Fill in table  
@@ -578,8 +584,9 @@ class Reads_db(SQLdatabase):
         if fmax:
             for cluster in cluster_gen:
                 if cluster.size <= fmax and cluster.size >= fmin:
-                    
+                            
                     cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
+                 
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     
