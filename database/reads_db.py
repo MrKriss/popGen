@@ -379,22 +379,22 @@ class Reads_db(SQLdatabase):
             #===================================================================
             # Get Repseq Info   
             #===================================================================
-            t1 = time.time()
             c = con.execute(repseq_sql_query, (cluster_id,))
-            print 'Time for repseq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
             
+            t1 = time.time()
             cluster_row = c.fetchone()
+            print 'Time for repseq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
             
             clusterobj.rep_seq_id = cluster_row['repseqid']
             clusterobj.size = cluster_row['size']
             clusterobj.id = cluster_row['clusterId']
             
             # get repseq_seq
-            t1 = time.time()
             c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(items = ','.join(items)), (clusterobj.rep_seq_id,))
-            print 'Time for seq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
 
+            t1 = time.time()
             row = c.fetchone()
+            print 'Time for seq_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
             
             if get_seq: 
                 clusterobj.rep_seq = row['seq']
@@ -408,10 +408,9 @@ class Reads_db(SQLdatabase):
             #===================================================================
             # Get Members Info
             #===================================================================
-            t1 = time.time()
             curs = con.execute(members_sql_query, (cluster_id,))
-            print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
 
+            t1 = time.time()
             for row in curs:
             
                 if get_seq: 
@@ -423,6 +422,7 @@ class Reads_db(SQLdatabase):
                     clusterobj.members_phred.append(np.array(phred_list))
                 if get_sampleid:
                     clusterobj.members_sample_id.append(row['sampleId'])
+            print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
                     
         return clusterobj          
     
