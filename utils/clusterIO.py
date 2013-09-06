@@ -947,22 +947,22 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
         # Extract data 
         bags = sorted(hist_counter.items())
         x_data, y_data = zip(*bags)
-        x_data = np.array(x_data) * bw  
+        x_data = np.array(x_data) * bin_width  
         y_data = np.array(y_data)
         
         
         plt.step(x_data, y_data, )
         
-        # Plot formating 
-        ax = plt.gca()
-        if 'x' in log:
-            ax.set_xscale('log')
-        if 'y' in log:
-            ax.set_yscale('log')
-        
-        plt.title(title)
-        plt.xlabel(xlab)
-        plt.ylabel(ylab)
+    # Plot formating 
+    ax = plt.gca()
+    if 'x' in log:
+        ax.set_xscale('log')
+    if 'y' in log:
+        ax.set_yscale('log')
+    
+    plt.title(title)
+    plt.xlabel(xlab)
+    plt.ylabel(ylab)
 
     plt.legend(numpoints=1, markerscale=8)
     plt.show()
