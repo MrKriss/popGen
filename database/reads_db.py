@@ -574,24 +574,21 @@ class Reads_db(SQLdatabase):
         c = self.con.execute(''' SELECT COUNT(*) FROM {0}'''.format(cluster_table_name))
         clusterid = c.fetchone()['count(*)'] + 1
         
-        # Dorp any index on Cluster size 
+        # Drop any index on Cluster size 
         with self.con as con:
             con.execute(''' DROP INDEX IF EXISTS {0} '''.format(index_name))
         
+
         if fmax:
             for cluster in cluster_gen:
+                             
                 if cluster.size <= fmax and cluster.size >= fmin:
                                          
                     cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
                     
-                    # Record Cluster self similarity
-                    if cluster_gen.similarity_counter.most_common()[0] != '100.00':
-                        # Most common sequence is not rep seq
-                        pass
-                    # 
                     
-                    
-                    
+                        
+             
                     
                           
                     clusterid += 1 

@@ -80,6 +80,9 @@ class ClusterObj(object):
         
         # Setup query
         sql_query = """ SELECT {0} FROM seqs WHERE seqid = ? """.format(','.join(items))
+        multi_sql_query = """ SELECT {0} FROM seqs WHERE seqid IN """.format(','.join(items))
+        
+        
         
         get_seq = 0
         get_phred = 0
@@ -121,11 +124,18 @@ class ClusterObj(object):
                 self.rep_sample_id = record['sampleId']
             
             # get members seq and phred
-            for seqid in self.members_id:
-                
-                record_curs = db.con.execute(sql_query, (seqid,))
-                record = record_curs.fetchone()
-                
+            
+            # Optimise sql query 
+            
+            # records are returned in batch sorted by seqid
+            self.members_id.sort()
+            
+            s = [str(i) for i in self.members_id]
+            multi_sql_query += '({0})'.format(','.join(s))
+            record_curs = db.con.execute(multi_sql_query)
+            
+            for record in record_curs:
+            
                 if get_seq: 
                     self.members_seq.append(record['seq'])
                 if get_phred:
@@ -135,6 +145,58 @@ class ClusterObj(object):
                 if get_sampleid:
                     self.members_sample_id.append(record['sampleId'])
             
+            
+            
+    def correct_repseq(self, db=None):
+        """" Examine whether representative sequence is truely the most common for the cluster 
+        and correct if necessary. 
+        
+        For faster computation, the similarity_counter dict should be used. This must be read from the 
+        CDHIT output file as it is scanned to get the cluster info. To get the dictionary set the 
+        'similarity_count' flag to True in the 'parse' function.  
+        
+        Correction of rep seq requires the lookup of all seqs and recalculation of edit distances
+        using the Levenshtein distance.  
+        
+        """
+#         
+#         if not hasattr(self, 'similarity_counter'):
+#             # Slow method
+#             
+#             # Fetch all unique seq data
+#             self.get_unique_seq(seq_start_idx=6, db=db)
+#             
+#             most_common_seq = self.unique_seqs.most_common()[0]
+#             
+#             if most_common_seq != self.rep_seq:
+#                 
+#                 # Update rep seq
+#                 
+#                 
+#                 # Find next matching sequenceid to the genuine rep seq
+#                 genuine_repseqid = None
+#                 
+#                 for i in self.memb
+#                 
+#                  
+#         
+#         
+#         # Record Cluster self similarity
+#         if cluster_gen.similarity_counter.most_common()[0] != '100.00':
+#         # Most common sequence is not rep seq                    
+#         true_repseq = False
+#                         
+# 
+#                     else:
+#                         true_repseq = True
+#                         
+#                         selfsim = similarity_counter['100.00']
+#         
+#         
+        
+        
+        
+        
         
     def get_unique_seq(self, seq_start_idx=6, db=None):
         """ Work out the counts for unique reads within a cluster """
