@@ -82,8 +82,6 @@ class ClusterObj(object):
         sql_query = """ SELECT {0} FROM seqs WHERE seqid = ? """.format(','.join(items))
         multi_sql_query = """ SELECT {0} FROM seqs WHERE seqid IN """.format(','.join(items))
         
-        
-        
         get_seq = 0
         get_phred = 0
         get_sampleid = 0
@@ -106,7 +104,7 @@ class ClusterObj(object):
                 phred_list = [ord(c) - 33 for c in phred_ascii]
                 self.rep_phred = np.array(phred_list)
             if get_sampleid:
-                self.rep_sample_id = record['sampleId']
+                self.rep_sample_id = int(record['sampleId'])
             
         elif target == 'all':
             
@@ -121,7 +119,7 @@ class ClusterObj(object):
                 phred_list = [ord(c) - 33 for c in phred_ascii]
                 self.rep_phred = np.array(phred_list)
             if get_sampleid:
-                self.rep_sample_id = record['sampleId']
+                self.rep_sample_id = int(record['sampleId'])
             
             # get members seq and phred
             
@@ -135,7 +133,12 @@ class ClusterObj(object):
             record_curs = db.con.execute(multi_sql_query)
             
             for record in record_curs:
-            
+                
+#                 if record['seqid'] < x:
+#                     print 'unsorted'
+#                 else:
+#                     x = record['seqid']
+                
                 if get_seq: 
                     self.members_seq.append(record['seq'])
                 if get_phred:
@@ -144,8 +147,6 @@ class ClusterObj(object):
                     self.members_phred.append(np.array(phred_list))
                 if get_sampleid:
                     self.members_sample_id.append(record['sampleId'])
-            
-            
             
     def correct_repseq(self, db=None):
         """" Examine whether representative sequence is truely the most common for the cluster 
@@ -159,19 +160,19 @@ class ClusterObj(object):
         using the Levenshtein distance.  
         
         """
-#         
+#          
 #         if not hasattr(self, 'similarity_counter'):
 #             # Slow method
-#             
+#              
 #             # Fetch all unique seq data
 #             self.get_unique_seq(seq_start_idx=6, db=db)
-#             
+#              
 #             most_common_seq = self.unique_seqs.most_common()[0]
-#             
+#              
 #             if most_common_seq != self.rep_seq:
-#                 
-#                 # Update rep seq
-#                 
+#                  
+                # Update rep seq
+                 
 #                 
 #                 # Find next matching sequenceid to the genuine rep seq
 #                 genuine_repseqid = None
@@ -193,8 +194,6 @@ class ClusterObj(object):
 #                         selfsim = similarity_counter['100.00']
 #         
 #         
-        
-        
         
         
         
@@ -708,7 +707,7 @@ def parse(handle, db=None, edit_dist=False, similarity_count=False):
                     
                     line_parts = line.split()
                     
-                    cluster.members_id.append(line_parts[2].strip('>.'))
+                    cluster.members_id.append(int(line_parts[2].strip('>.')))
                     if edit_dist:
                         similarity = line_parts[4].strip('+/%')
                         seq_len = line_parts[1].strip('nt,')
