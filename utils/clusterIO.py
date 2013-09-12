@@ -277,36 +277,42 @@ class ClusterObj(object):
         To optimise this, the unique sequences are first found and then edit distances between them calculated.  
         
         """
-        
+        pass
     
-        old_edc = self.editdist_counter
-    
-        num_
-    
-        # map from edit distance to old rep seq, and sequence 
-        exp_seq_dict = {}
-        for key in old_edc.iterkeys():
-            
-            # Fetch example sequece with this edit distance to original rep_seq.
-            idx = self.edit_dists.index(key)
-            exp_seq_id = self.members_id[idx] 
-            c = db.con.execute('Select seqid, seq from seqs where seqid = ?', (exp_seq_id,))
-            exp_seq = c.fetchone()['seq']
-            
-            exp_seq_dict[key] = exp_seq
-    
-        edit_dist_matrix = np.zeros((old_edc.keys() ))
-    
-    
-    
-        if self.editdist_counter:
-            
-            for key in 
-            
-            # Store ids where 
-    
-    
-        
+#         old_edc = self.editdist_counter
+#     
+#         # map from edit distance to old rep seq, and sequence 
+#         exp_seq_dict = {}
+#         for key in old_edc.iterkeys():
+#             
+#             # Fetch example sequece with this edit distance to original rep_seq.
+#             idx = self.edit_dists.index(key)
+#             exp_seq_id = self.members_id[idx] 
+#             c = db.con.execute('Select seqid, seq from seqs where seqid = ?', (exp_seq_id,))
+#             exp_seq = c.fetchone()['seq']
+#             
+#             exp_seq_dict[key] = exp_seq
+#     
+#         edit_dist_matrix = np.zeros((old_edc.keys() ))
+#     
+# #                     top5seqs = self.unique_seqs.most_common()[:5]
+# #             n = len(top5seqs)
+# #             dists = np.zeros([n, n])
+#             # Calc distance matrix
+# #             for i in range(n):
+# #                 for j in range(i+1,n):
+# #                     D = ed.distance(top5seqs[i][0], top5seqs[j][0])
+# #                     dists[i,j] = D
+# #                     dists[j,i] = D
+#     
+#         if self.editdist_counter:
+#             
+#             for key in 
+#             
+#             # Store ids where 
+#     
+#     
+#         
         
         
     def get_unique_seq(self, seq_start_idx=6, db=None):

@@ -546,20 +546,20 @@ class Reads_db(SQLdatabase):
             cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
              
             # Fetch all unique seq data and find most common 
-            self.get_unique_seq(seq_start_idx=6, db=self)
-            majorSeq = self.unique_seqs.most_common()[0][0]
+            cluster.get_unique_seq(seq_start_idx=6, db=self)
+            majorSeq = cluster.unique_seqs.most_common()[0][0]
               
             if majorSeq != self.rep_seq:
                 majorSeqIsRepSeq = False
             else:
                 majorSeqIsRepSeq = True
                 
-            majorSeqPerc = self.unique_seqs.most_common()[0][1] / float(self.size)
+            majorSeqPerc = cluster.unique_seqs.most_common()[0][1] / float(cluster.size)
             
             # Calculate metric for self similarity 
             selfsimilarity = []
             # First work out lev distance between top 5 unique seqs
-            top5seqs = self.unique_seqs.most_common()[:5]
+            top5seqs = cluster.unique_seqs.most_common()[:5]
 #             n = len(top5seqs)
 #             dists = np.zeros([n, n])
             # Calc distance matrix
@@ -572,7 +572,7 @@ class Reads_db(SQLdatabase):
             # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
             for idx, (seq, count) in enumerate(top5seqs):
                 if idx != 0:                    
-                    perc = (count / float(self.size))
+                    perc = (count / float(cluster.size))
                     d = ed.distance(majorSeq, seq) 
                     selfsimilarity.append(( perc, d  ))
             
