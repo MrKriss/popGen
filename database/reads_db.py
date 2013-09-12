@@ -517,6 +517,76 @@ class Reads_db(SQLdatabase):
             # Build index on Cluster size 
             con.execute('CREATE INDEX IF NOT EXISTS read_countIndex ON samples(read_count)')
     
+    def calculate_true_rep_seq(self, clusterids=None, table_prefix=None):
+        """" Examine whether representative sequences is truely the most common for the cluster 
+        and correct if necessary. 
+        
+        Correction of rep seq requires the lookup of all seqs and recalculation of edit distances
+        using the Levenshtein distance.  
+        
+        """
+        
+        if table_prefix is None:
+            members_table_name = 'members'
+            cluster_table_name = 'clusters'
+        else:
+            members_table_name = table_prefix + '_members'
+            cluster_table_name = table_prefix + '_clusters'
+        
+        if clusterids is None:
+            # Find Last cluster id 
+            c = self.con.execute(''' SELECT COUNT(*) FROM {0}'''.format(cluster_table_name))
+            clusterid_max = c.fetchone()['count(*)']
+            clusterids = range(1,clusterid_max+1)
+        
+        for cid in clusterids:
+        
+            cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
+            
+            # Fetch all unique seq data
+            self.get_unique_seq(seq_start_idx=6, db=self)
+              
+            most_common_seq = self.unique_seqs.most_common()[0]
+              
+            if most_common_seq != self.rep_seq:
+
+                # Find next matching sequenceid to the genuine rep seq
+                idx = self.members_seq.index(most_common_seq)
+                  
+                # Store old values 
+                old_rep_seq = self.rep_seq 
+                old_rep_seq_id = self.rep_seq_id 
+                old_rep_sample_id = self.rep_sample_id 
+                old_rep_phred = self.rep_phred
+                
+                # Update rep seq
+                self.rep_seq = self.members_seq[idx]
+                self.rep_seq_id = self.members_id[idx]
+                self.rep_sample_id = self.members_sample_id[idx]
+                
+                # Remove id from members 
+                del self.members_seq[idx]
+                del self.members_id[idx]
+                self.members_sample_id[idx]
+                
+                # Add rep seq id and Find the index to insert rep data to 
+                self.members_id.append(old_rep_seq_id)
+                x = np.array(self.members_id) 
+                sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
+                
+                # Insert old rep data into members
+                self.members_seq.insert(sortidx, old_rep_seq) 
+                self.members_sample_id.insert(sortidx, old_rep_sample_id) 
+                self.members_phred.insert(sortidx, old_rep_phred) 
+                self.members_id.sort()
+                
+                # Update self similarity measure 
+                
+            
+         
+        
+    
+    
     def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
         ''' Load in a clustering file into the database 
@@ -563,7 +633,7 @@ class Reads_db(SQLdatabase):
         self.create_members_table(members_table_name)
         
         # Make cluster generator. Returns all cluster info
-        cluster_gen = parse(cluster_file_handle, similarity_count=True, edit_dist=True)
+        cluster_gen = parse(cluster_file_handle)
         
         # Buffer to hold clusters in memory then write all at once
         cluster_info_list = []
@@ -577,19 +647,12 @@ class Reads_db(SQLdatabase):
         with self.con as con:
             con.execute(''' DROP INDEX IF EXISTS {0} '''.format(index_name))
         
-
         if fmax:
             for cluster in cluster_gen:
                              
                 if cluster.size <= fmax and cluster.size >= fmin:
                                          
                     cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
-                    
-                    
-                        
-             
-                    
-                          
                     clusterid += 1 
                     cumulative_cluster_size += cluster.size
                     
