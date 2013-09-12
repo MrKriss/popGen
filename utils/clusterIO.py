@@ -203,9 +203,9 @@ class ClusterObj(object):
             else:
                 return False
         
-        else: # Has a similarity counter 
+        else: # Has a editdistance counter 
             
-            if self.editdist_counter()[0] != 0:
+            if self.editdist_counter.most_common()[0] != 0:
             
                 # Faster calculation using just similarity count and edit distances
                 if self.edit_dists:
