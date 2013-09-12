@@ -258,7 +258,6 @@ class ClusterObj(object):
                     x = np.array(self.members_id) 
                     sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
                     
-                    
                     # Insert old rep data into members
                     self.members_seq.insert(sortidx, old_rep_seq) 
                     self.members_sample_id.insert(sortidx, old_rep_sample_id) 
@@ -755,7 +754,7 @@ def parse(handle, db=None, edit_dist=False, editdist_count=False):
     cluster = ClusterObj()
     
     if editdist_count:
-        cluster.editdist_counter()
+        cluster.editdist_counter = Counter()
     
     # Cycle through file     
     try:
@@ -783,7 +782,7 @@ def parse(handle, db=None, edit_dist=False, editdist_count=False):
                         cluster = ClusterObj()
                         cluster.id = next_cluster_num
                         if editdist_count:
-                            cluster.editdist_counter()
+                            cluster.editdist_counter = Counter()
                     
                 elif line.endswith('*'): 
                     # This is the representative sequence for the cluster
