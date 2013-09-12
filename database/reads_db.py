@@ -587,7 +587,7 @@ class Reads_db(SQLdatabase):
                                 cluster_table_name)
             
                 con.execute(sql_query, (majorSeq, majorSeqIsRepSeq, majorSeqPerc, 
-                                          str(selfsimilarity, cid) ))
+                                          str(selfsimilarity), cid) )
     
     def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
