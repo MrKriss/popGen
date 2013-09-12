@@ -554,7 +554,7 @@ class Reads_db(SQLdatabase):
             else:
                 majorSeqIsRepSeq = True
                 
-            majorSeqPerc = cluster.unique_seqs.most_common()[0][1] / float(cluster.size) * 100
+            majorSeqPerc = (cluster.unique_seqs.most_common()[0][1] / float(cluster.size)) * 100
             
             # Calculate metric for self similarity 
             selfsimilarity = []
