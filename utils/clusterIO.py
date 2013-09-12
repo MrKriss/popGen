@@ -30,17 +30,19 @@ Features
 Sample Cluster File:
 
 >Cluster 0
-0    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:1148:2096... *
-1    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:2328:25159... at +/100.00%
-2    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:7411:52830... at +/98.86%
-3    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1101:9529:76269... at +/100.00%
-4    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1102:6206:12309... at +/100.00%
-5    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1102:8696:31554... at +/100.00%
-6    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1103:7706:11162... at +/100.00%
-7    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1104:9565:35059... at +/98.86%
-8    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1104:15657:55944... at +/100.00%
-9    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:13547:22466... at +/98.86%
-10    88nt, >HWI-ST0747:233:C0RH3ACXX:6:1105:20059:45463... at +/97.73%
+0    88nt, >2096... *
+1    88nt, >25159... at +/100.00%
+2    88nt, >52830... at +/98.86%
+3    88nt, >76269... at +/100.00%
+4    88nt, >12309... at +/100.00%
+5    88nt, >31554... at +/100.00%
+6    88nt, >11162... at +/100.00%
+7    88nt, >35059... at +/98.86%
+>Cluster 1
+0    88nt, >96... *
+1    88nt, >55944... at +/100.00%
+2    88nt, >22466... at +/98.86%
+3    88nt, >45463... at +/97.73%
  
 
 '''
@@ -76,6 +78,8 @@ class ClusterObj(object):
         target - Whether to fetch the data for the rep seq ('rep'), or all cluster members ('all'). 
         
         db    - Reference to a Reads_db database object.
+        
+        Note: This method can be slow due to the number of lookups required. 
         """
         
         # Setup query
@@ -146,7 +150,7 @@ class ClusterObj(object):
         """" Examine whether representative sequence is truely the most common for the cluster 
         and correct if necessary. 
         
-        For faster computation, the similarity_counter dict should be used. This must be read from the 
+        For faster computation, the editdist_counter dict should be used. This must be read from the 
         CDHIT output file as it is scanned to get the cluster info. To get the dictionary set the 
         'similarity_count' flag to True in the 'parse' function.  
         
@@ -155,7 +159,7 @@ class ClusterObj(object):
         
         """
           
-        if not hasattr(self, 'similarity_counter'):
+        if not hasattr(self, 'editdist_counter'):
             # Slower method
               
             # Fetch all unique seq data
@@ -187,7 +191,8 @@ class ClusterObj(object):
                 # Add rep seq id and Find the index to insert rep data to 
                 self.members_id.append(old_rep_seq_id)
                 x = np.array(self.members_id) 
-                sortidx = int(np.find(x.argsort() == len(x) -1 ))
+                sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
+                
                 # Insert old rep data into members
                 self.members_seq.insert(sortidx, old_rep_seq) 
                 self.members_sample_id.insert(sortidx, old_rep_sample_id) 
@@ -200,7 +205,7 @@ class ClusterObj(object):
         
         else: # Has a similarity counter 
             
-            if self.similarity_counter.most_common()[0] != '100.00':
+            if self.editdist_counter()[0] != 0:
             
                 # Faster calculation using just similarity count and edit distances
                 if self.edit_dists:
@@ -251,7 +256,9 @@ class ClusterObj(object):
                     # Add rep seq id and Find the index to insert rep data to 
                     self.members_id.append(old_rep_seq_id)
                     x = np.array(self.members_id) 
-                    sortidx = int(np.find(x.argsort() == len(x) -1 ))
+                    sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
+                    
+                    
                     # Insert old rep data into members
                     self.members_seq.insert(sortidx, old_rep_seq) 
                     self.members_sample_id.insert(sortidx, old_rep_sample_id) 
@@ -728,7 +735,7 @@ def percentage2mismatch(percentage, seq_length):
     seq_length = int(seq_length)
     return  int(round( (percentage / 100.) * seq_length))
                    
-def parse(handle, db=None, edit_dist=False, similarity_count=False):
+def parse(handle, db=None, edit_dist=False, editdist_count=False):
     """ Reads in a CDHIT cluster file and returns a generator for the clusters. 
     
      - handle   - handle to the file, or the filename as a string
@@ -747,8 +754,8 @@ def parse(handle, db=None, edit_dist=False, similarity_count=False):
     # Setup Data structure
     cluster = ClusterObj()
     
-    if similarity_count:
-        cluster.similarity_counter = Counter()
+    if editdist_count:
+        cluster.editdist_counter()
     
     # Cycle through file     
     try:
@@ -775,8 +782,8 @@ def parse(handle, db=None, edit_dist=False, similarity_count=False):
                         # Reset Cluster
                         cluster = ClusterObj()
                         cluster.id = next_cluster_num
-                        if similarity_count:
-                            cluster.similarity_counter = Counter()
+                        if editdist_count:
+                            cluster.editdist_counter()
                     
                 elif line.endswith('*'): 
                     # This is the representative sequence for the cluster
@@ -786,13 +793,13 @@ def parse(handle, db=None, edit_dist=False, similarity_count=False):
                     line_parts = line.split()
                     
                     cluster.members_id.append(int(line_parts[2].strip('>.')))
-                    if edit_dist:
+                    if edit_dist or editdist_count:
                         similarity = line_parts[4].strip('+/%')
                         seq_len = line_parts[1].strip('nt,')
-                        cluster.edit_dists.append(percentage2mismatch( 100 - float(similarity), seq_len))
-                    if similarity_count:
-                        similarity = line_parts[4].strip('+/%')
-                        cluster.similarity_counter[similarity] += 1
+                        edit_dist = percentage2mismatch( 100 - float(similarity), seq_len)
+                        cluster.edit_dists.append(edit_dist)
+                        if editdist_count:
+                            cluster.editdist_counter[edit_dist] += 1
                     
             # Got to end of file but still one more cluster to add
             cluster.size = len(cluster.members_id) + 1

@@ -407,7 +407,6 @@ class Reads_db(SQLdatabase):
             # Get Members Info
             #===================================================================
             curs = con.execute(members_sql_query, (cluster_id,))
-
             
             t1 = time.time()
             for row in curs:
