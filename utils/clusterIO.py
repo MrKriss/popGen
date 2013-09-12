@@ -147,7 +147,7 @@ class ClusterObj(object):
                     self.members_sample_id.append(record['sampleId'])
             
     def correct_repseq(self, db=None):
-        """" Examine whether representative sequence is truely the most common for the cluster 
+        """" Examine whether representative sequences is truely the most common for the cluster 
         and correct if necessary. 
         
         For faster computation, the editdist_counter dict should be used. This must be read from the 

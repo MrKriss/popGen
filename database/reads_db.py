@@ -124,8 +124,8 @@ class Reads_db(SQLdatabase):
             clusterId INTEGER PRIMARY KEY NOT NULL,
             repseqid INTEGER NOT NULL,
             size INTEGER NOT NULL, 
-            trueRepSeq INTEGER,
-            perc_trueRepSeq REAL,
+            majorSeq TEXT,
+            majorSeqPerc REAL,
             selfsimilarity TEXT ) '''.format(table_name))
             self.tables.append(table_name)
             
@@ -581,7 +581,9 @@ class Reads_db(SQLdatabase):
                 self.members_id.sort()
                 
                 # Update self similarity measure 
-                
+                with self.con as con:
+                    
+                    con.execute('UPDATE {} SET '.format(cluster_table_name, cid, )) 
             
          
         
