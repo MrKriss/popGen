@@ -22,6 +22,8 @@ from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
 from utils.clusterIO import ClusterObj, parse, sortby
 
+import editdist as ed
+
 
 class Reads_db(SQLdatabase):
     ''' Database to hold all information on fastq sequence reads for an experiment
@@ -125,6 +127,7 @@ class Reads_db(SQLdatabase):
             repseqid INTEGER NOT NULL,
             size INTEGER NOT NULL, 
             majorSeq TEXT,
+            majorSeqIsRepSeq INTEGER,
             majorSeqPerc REAL,
             selfsimilarity TEXT ) '''.format(table_name))
             self.tables.append(table_name)
@@ -517,13 +520,12 @@ class Reads_db(SQLdatabase):
             # Build index on Cluster size 
             con.execute('CREATE INDEX IF NOT EXISTS read_countIndex ON samples(read_count)')
     
-    def calculate_true_rep_seq(self, clusterids=None, table_prefix=None):
-        """" Examine whether representative sequences is truely the most common for the cluster 
-        and correct if necessary. 
+    def calculate_majorseq(self, clusterids=None, table_prefix=None):
+        """" Calculate majority sequence observed in clusters and what percentage of the cluster 
+        this makes up. Note that this can be different to the representative sequence. 
         
-        Correction of rep seq requires the lookup of all seqs and recalculation of edit distances
-        using the Levenshtein distance.  
-        
+        Also calculates a measure of self similarity, measureing the percentage of reads 1 edit dist away, 
+        2 edit dists away               
         """
         
         if table_prefix is None:
@@ -542,52 +544,49 @@ class Reads_db(SQLdatabase):
         for cid in clusterids:
         
             cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
-            
-            # Fetch all unique seq data
+             
+            # Fetch all unique seq data and find most common 
             self.get_unique_seq(seq_start_idx=6, db=self)
+            majorSeq = self.unique_seqs.most_common()[0][0]
               
-            most_common_seq = self.unique_seqs.most_common()[0]
-              
-            if most_common_seq != self.rep_seq:
-
-                # Find next matching sequenceid to the genuine rep seq
-                idx = self.members_seq.index(most_common_seq)
-                  
-                # Store old values 
-                old_rep_seq = self.rep_seq 
-                old_rep_seq_id = self.rep_seq_id 
-                old_rep_sample_id = self.rep_sample_id 
-                old_rep_phred = self.rep_phred
+            if majorSeq != self.rep_seq:
+                majorSeqIsRepSeq = False
+            else:
+                majorSeqIsRepSeq = True
                 
-                # Update rep seq
-                self.rep_seq = self.members_seq[idx]
-                self.rep_seq_id = self.members_id[idx]
-                self.rep_sample_id = self.members_sample_id[idx]
-                
-                # Remove id from members 
-                del self.members_seq[idx]
-                del self.members_id[idx]
-                self.members_sample_id[idx]
-                
-                # Add rep seq id and Find the index to insert rep data to 
-                self.members_id.append(old_rep_seq_id)
-                x = np.array(self.members_id) 
-                sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
-                
-                # Insert old rep data into members
-                self.members_seq.insert(sortidx, old_rep_seq) 
-                self.members_sample_id.insert(sortidx, old_rep_sample_id) 
-                self.members_phred.insert(sortidx, old_rep_phred) 
-                self.members_id.sort()
-                
-                # Update self similarity measure 
-                with self.con as con:
-                    
-                    con.execute('UPDATE {} SET '.format(cluster_table_name, cid, )) 
+            majorSeqPerc = self.unique_seqs.most_common()[0][1] / float(self.size)
             
-         
-        
-    
+            # Calculate metric for self similarity 
+            selfsimilarity = []
+            # First work out lev distance between top 5 unique seqs
+            top5seqs = self.unique_seqs.most_common()[:5]
+#             n = len(top5seqs)
+#             dists = np.zeros([n, n])
+            # Calc distance matrix
+#             for i in range(n):
+#                 for j in range(i+1,n):
+#                     D = ed.distance(top5seqs[i][0], top5seqs[j][0])
+#                     dists[i,j] = D
+#                     dists[j,i] = D
+            
+            # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
+            for idx, (seq, count) in enumerate(top5seqs):
+                if idx != 0:                    
+                    perc = (count / float(self.size))
+                    d = ed.distance(majorSeq, seq) 
+                    selfsimilarity.append(( perc, d  ))
+            
+            # sort by percentage of cluster
+            selfsimilarity = sorted(selfsimilarity, key=lambda s: (s[0], s[1]), reverse=True)
+               
+            # Update info for cluster 
+            with self.con as con:
+            
+                con.execute('''UPDATE {0} SET majorSeq = {1}, majorSeqIsRepSeq = {2}, 
+                majorSeqPerc = {3}, selfsimilarity = {4} WHERE clusterid = ?'''.format(
+                                cluster_table_name, majorSeq, 
+                                majorSeqIsRepSeq, majorSeqPerc, 
+                                str(selfsimilarity)), (cid,)) 
     
     def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
