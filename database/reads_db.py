@@ -549,7 +549,7 @@ class Reads_db(SQLdatabase):
             cluster.get_unique_seq(seq_start_idx=6, db=self)
             majorSeq = cluster.unique_seqs.most_common()[0][0]
               
-            if majorSeq != self.rep_seq:
+            if majorSeq != cluster.rep_seq:
                 majorSeqIsRepSeq = False
             else:
                 majorSeqIsRepSeq = True
