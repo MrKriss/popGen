@@ -582,11 +582,13 @@ class Reads_db(SQLdatabase):
             # Update info for cluster 
             with self.con as con:
             
-                con.execute('''UPDATE {0} SET majorSeq = {1}, majorSeqIsRepSeq = {2}, 
-                majorSeqPerc = {3}, selfsimilarity = {4} WHERE clusterid = ?'''.format(
+                sql_query = '''UPDATE {0} SET majorSeq = {1}, majorSeqIsRepSeq = {2}, 
+                                majorSeqPerc = {3}, selfsimilarity = {4} WHERE clusterid = ?'''.format(
                                 cluster_table_name, majorSeq, 
                                 majorSeqIsRepSeq, majorSeqPerc, 
-                                str(selfsimilarity)), (cid,)) 
+                                str(selfsimilarity))
+            
+                con.execute(sql_query, (cid,)) 
     
     def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
