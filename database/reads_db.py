@@ -554,7 +554,7 @@ class Reads_db(SQLdatabase):
             else:
                 majorSeqIsRepSeq = True
                 
-            majorSeqPerc = cluster.unique_seqs.most_common()[0][1] / float(cluster.size)
+            majorSeqPerc = cluster.unique_seqs.most_common()[0][1] / float(cluster.size) * 100
             
             # Calculate metric for self similarity 
             selfsimilarity = []
@@ -572,7 +572,7 @@ class Reads_db(SQLdatabase):
             # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
             for idx, (seq, count) in enumerate(top5seqs):
                 if idx != 0:                    
-                    perc = (count / float(cluster.size))
+                    perc = (count / float(cluster.size)) * 100
                     d = ed.distance(majorSeq, seq) 
                     selfsimilarity.append(( perc, d  ))
             
