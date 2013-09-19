@@ -577,7 +577,7 @@ class Reads_db(SQLdatabase):
                     selfsimilarity.append(( perc, d ))
             
             # sort by percentage of cluster
-            selfsimilarity = sorted(selfsimilarity, key=lambda s: (s[0], s[1]), reverse=True)
+            #selfsimilarity = sorted(selfsimilarity, key=lambda s: (s[0], s[1]), reverse=True)
                
             # Update info for cluster 
             with self.con as con:
