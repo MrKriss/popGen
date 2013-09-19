@@ -1,4 +1,3 @@
-
 # Created on 27 Jun 2013
 
 # @author: musselle
@@ -17,6 +16,7 @@ from Bio.SeqRecord import SeqRecord
 from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
 from utils.clusterIO import ClusterObj, parse, sortby
+
 
 class Reads_db(SQLdatabase):
     """ Database to hold all information on fastq sequence reads for an experiment
@@ -53,19 +53,17 @@ class Reads_db(SQLdatabase):
     """
 
     def __init__(self, db_file="test.db", recbyname=True, new=False):
-       
-        SQLdatabase.__init__(self, db_file, recbyname) 
-        
+
+        SQLdatabase.__init__(self, db_file, recbyname)
+
     def create_seqs_table(self, table_name='seqs', overwrite=False):
 
         with self.con as con:
-    
-            curs = con.cursor()        
-    
+            curs = con.cursor()
+
             # TODO: Write function to infer description format and use this to creste specific tables.
             # Currently only does Casava 1.8 format
 
-            
             if overwrite:
                 curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
             curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
@@ -86,23 +84,23 @@ class Reads_db(SQLdatabase):
             indexSeq TEXT) '''.format(table_name))
             self.tables.append('{0}'.format(table_name))
             self.seqs_table_name = table_name
-            
+
     def create_cluster_table(self, table_name=None, overwrite=False):
         """ Create a cluster table in database with the specified name.
 
         overwrite - if true will drop any table that already exists with the specified name.
         """
-        
+
         if table_name is None:
-            table_name = 'clusters' 
-        
+            table_name = 'clusters'
+
         with self.con as con:
-    
+
             curs = con.cursor()
 
             if overwrite:
                 curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
-            
+
             curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
             clusterId INTEGER PRIMARY KEY NOT NULL,
             repseqid INTEGER NOT NULL,
@@ -112,11 +110,10 @@ class Reads_db(SQLdatabase):
             majorSeqPerc REAL,
             selfsimilarity TEXT ) '''.format(table_name))
             self.tables.append(table_name)
-            
+
     def create_samples_table(self, overwrite=False):
-        
-        with self.con as con:   
-        
+
+        with self.con as con:
             if overwrite:
                 con.execute('DROP TABLE IF EXISTS samples')
             con.execute(''' CREATE TABLE samples (
@@ -125,19 +122,19 @@ class Reads_db(SQLdatabase):
             description TEXT UNIQUE,
             type TEXT,
             read_count INTEGER )''')
-    
+
             self.tables.append('samples')
-            
+
     def create_members_table(self, table_name=None, overwrite=False):
         """ Create a members table in database with the specified name.
 
         overwrite - if true will drop any table that already exists with the specified name.
         """
         if table_name is None:
-            table_name = 'members' 
-        
-        with self.con as con:   
-        
+            table_name = 'members'
+
+        with self.con as con:
+
             if overwrite:
                 con.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
             con.execute(''' CREATE TABLE {0} (
@@ -145,7 +142,7 @@ class Reads_db(SQLdatabase):
             clusterid INTEGER,
             seqid INTEGER, 
             UNIQUE (clusterid, seqid))'''.format(table_name))
-    
+
             self.tables.append(table_name)
 
     def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs', buffer_max=100000):
@@ -160,19 +157,17 @@ class Reads_db(SQLdatabase):
         If 'data_files' or 'barcode_files' is a str, it is interpreted as a glob to the
         data_path / barcode_path respecively.
         """
-        
-        start_dir = os.getcwd()
-        
+
         if barcode_files:
             # input checks
             if type(barcode_files) is str:
-                
+
                 # Check for path head included in data_files
                 if not os.path.split(barcode_files)[0]:
                     # Append the abs path to current directory 
                     current_dir = os.getcwd()
                     barcode_files = os.path.join(current_dir, barcode_files)
-                
+
                 # Glob the file pattern 
                 barcode_files = glob.glob(barcode_files)
                 assert barcode_files, "No barcode files found at destination"
@@ -189,12 +184,12 @@ class Reads_db(SQLdatabase):
             MIDs = []
             descriptions = []
             for barcode_file in barcode_files:
-                with open(barcode_file, 'rb') as f: 
+                with open(barcode_file, 'rb') as f:
                     for line in f:
                         parts = line.strip().split()
                         MIDs.append(parts[0])
                         descriptions.append(parts[1])
-                        
+
                     diff = len(MIDs) - len(set(MIDs))
                     if diff > 0:
                         raise Exception('MID tags in barcode files are not unique.\n{0} duplicates found'.format(diff))
@@ -209,29 +204,29 @@ class Reads_db(SQLdatabase):
                                 # Find ID of last scanned Barcode                             
                                 curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (descriptions[i],))
                                 ids.append(curs.fetchone()['sampleId'])
-                                
+
                         barcode_dict = dict(zip(MIDs, ids))
                         MIDlength = len(MIDs[0])
-                                          
+
         # Setup Files generator
         if type(data_files) is file:
             recgen = SeqIO.parse(data_files, 'fastq')
-        else: 
+        else:
             SeqRecGen = SeqRecCycler(data_files=data_files)
             recgen = SeqRecGen.recgen
-        
+
         # Setup buffer
         data_buffer = []
         data_buffer_count = 0
         index_name = 'sampleidIndex'
-        
+
         with self.con as con:
 
             # Drop index if it exists
             con.execute(''' DROP INDEX IF EXISTS {0} '''.format(index_name))
-            
+
             for rec in recgen:
-                
+
                 # TODO: Write function to infer description format and use this to create specific tables.
                 # Currently only does Casava 1.8 format
 
@@ -244,32 +239,32 @@ class Reads_db(SQLdatabase):
                 # Sequence stored does not include MID tag, this is stored separately.
                 seq = fullseq[MIDlength:]
                 length = len(seq)
-                
-                fullphred = [chr(i+33) for i in rec.letter_annotations['phred_quality']]
+
+                fullphred = [chr(i + 33) for i in rec.letter_annotations['phred_quality']]
                 MIDphred = fullphred[:MIDlength]
                 MIDphred = ''.join(MIDphred)
                 phred = fullphred[MIDlength:]
                 phred = ''.join(phred)
                 meanPhred = round(sum(rec.letter_annotations['phred_quality']) / float(len(fullseq)))
-                
+
                 # Store data in Sequence ID string
                 data = rec.description.split()
                 data = [i.split(':') for i in data]
                 # Format is 
                 # [['@HWI-ST0747', '233', 'C0RH3ACXX', '6', '2116', '17762', '96407'], ['1', 'N', '0', '']]
-                
+
                 description = ':'.join(data[0])
-                
+
                 pairedEnd = data[1][0]
                 illuminaFilter = data[1][1]
                 controlBits = data[1][2]
                 indexSeq = data[1][3]
-                
+
                 # Write data to memory file 
                 data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
-                                                pairedEnd, illuminaFilter, controlBits, indexSeq))
+                                    pairedEnd, illuminaFilter, controlBits, indexSeq))
                 data_buffer_count += 1
-                
+
                 if data_buffer_count > buffer_max:
                     # Insert data and reset buffer
 
@@ -277,124 +272,124 @@ class Reads_db(SQLdatabase):
                      (seq, phred, MIDphred, sampleId, meanPhred, length, 
                      description,pairedEnd, illuminaFilter, controlBits, indexSeq) 
                      VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
-                    
+
                     data_buffer = []
                     data_buffer_count = 0
-            
+
             # End of generator. Flush remaining data buffer
-                    
+
             con.executemany('''INSERT INTO {0}
              (seq, phred, MIDphred, sampleId, meanPhred, length, description,
               pairedEnd, illuminaFilter, controlBits, indexSeq) 
              VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
-            
-#                 curs.execute('''INSERT INTO {0}
-#                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-#                   pairedEnd, illuminaFilter, controlBits, indexSeq) 
-#                  VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), 
-#                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-#                   pairedEnd, illuminaFilter, controlBits, indexSeq));
-            
+
+            #                 curs.execute('''INSERT INTO {0}
+            #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+            #                   pairedEnd, illuminaFilter, controlBits, indexSeq)
+            #                  VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name),
+            #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+            #                   pairedEnd, illuminaFilter, controlBits, indexSeq));
+
             # Rebuild index on sampleID
             con.execute('''CREATE INDEX {indexname} ON {tablename}(sampleId)'''.format(
                 indexname=index_name, tablename=table_name))
-    
+
     def update_type(self, pattern, short_description):
         """ Assiciate a symbol to a particular description pattern """
-        
+
         with self.con as con:
-            con.execute(''' UPDATE samples SET type = ? WHERE description GLOB ? ''', (short_description,pattern))
-            
-    
+            con.execute(''' UPDATE samples SET type = ? WHERE description GLOB ? ''', (short_description, pattern))
+
+
     def get_cluster_by_size(self, size_min, size_max, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None):
         """ Return all clusterobjs within a certain size range """
-        
+
         if table_prefix is None:
             clusters_table = 'clusters'
         else:
-            clusters_table = table_prefix+ '_clusters'
-        
+            clusters_table = table_prefix + '_clusters'
+
         sql_query = ''' SELECT * FROM {clusters} WHERE size BETWEEN ? AND ?'''.format(clusters=clusters_table)
-        
+
         with self.con as con:
-            
+
             c = con.execute(sql_query, (size_min, size_max))
             clusterobjs = []
-            
+
             # get list of clusterId within the size range
             for row in c:
                 clusterobjs.append(self.get_cluster_by_id(row['clusterid'], items=items, table_prefix=table_prefix))
-                
+
         return clusterobjs
-    
-    def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None ):
+
+    def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None):
         """ Return the cluster object for the given id """
-    
+
         if table_prefix is None:
             members_table = 'members'
             clusters_table = 'clusters'
         else:
             members_table = table_prefix + '_members'
-            clusters_table = table_prefix+ '_clusters'
-    
+            clusters_table = table_prefix + '_clusters'
+
         # Set which parameters to get 
         get_seq = 0
         get_phred = 0
         get_sampleid = 0
         if 'seq' in items:
-            get_seq =  True
+            get_seq = True
         if 'phred' in items:
             get_phred = True
         if 'sampleId' in items:
             get_sampleid = True
-    
+
         with self.con as con:
-            
+
             repseq_sql_query = ''' SELECT repseqid, size, clusterid FROM {clusters} 
                 WHERE clusterId = ? '''.format(clusters=clusters_table)
-             
+
             members_sql_query = ''' SELECT {items}  FROM seqs 
                 JOIN {members} USING (seqId) JOIN {clusters} USING (clusterId)
-                WHERE clusterId = ?'''.format(items = ','.join(items), 
-                        members=members_table, clusters=clusters_table) 
-    
+                WHERE clusterId = ?'''.format(items=','.join(items),
+                                              members=members_table, clusters=clusters_table)
+
             clusterobj = ClusterObj()
-            
+
             #===================================================================
             # Get Repseq Info   
             #===================================================================
             c = con.execute(repseq_sql_query, (cluster_id,))
-            
+
             cluster_row = c.fetchone()
-            
+
             clusterobj.rep_seq_id = cluster_row['repseqid']
             clusterobj.size = cluster_row['size']
             clusterobj.id = cluster_row['clusterId']
-            
+
             # get repseq_seq
             c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(
                 items=','.join(items)), (clusterobj.rep_seq_id, ))
 
             row = c.fetchone()
-            
-            if get_seq: 
+
+            if get_seq:
                 clusterobj.rep_seq = row['seq']
             if get_phred:
                 phred_ascii = row['phred']
                 phred_list = [ord(c) - 33 for c in phred_ascii]
                 clusterobj.rep_phred = np.array(phred_list)
             if get_sampleid:
-                    clusterobj.rep_sample_id = row['sampleId']
-            
+                clusterobj.rep_sample_id = row['sampleId']
+
             #===================================================================
             # Get Members Info
             #===================================================================
             curs = con.execute(members_sql_query, (cluster_id,))
-            
+
             t1 = time.time()
             for row in curs:
-            
-                if get_seq: 
+
+                if get_seq:
                     clusterobj.members_id.append(row['seqId'])
                     clusterobj.members_seq.append(row['seq'])
                 if get_phred:
@@ -404,11 +399,11 @@ class Reads_db(SQLdatabase):
                 if get_sampleid:
                     clusterobj.members_sample_id.append(row['sampleId'])
             print 'Time for members_sql_query: ', time.strftime('%H:%M:%S', time.gmtime(time.time() - t1))
-                    
-        return clusterobj          
-    
-    def write_reads(self, out_file_handle, output_format='fasta', filter_expression=None, 
-                     startidx=0, rowbuffer=100000, overwrite=False):
+
+        return clusterobj
+
+    def write_reads(self, out_file_handle, output_format='fasta', filter_expression=None,
+                    startidx=0, rowbuffer=100000, overwrite=False):
         """ Write records returned by the querry to one large fasta or fastq 
         
         Defaults is to search by GLOBing the individual descriptions with the search_query.
@@ -422,84 +417,84 @@ class Reads_db(SQLdatabase):
         startidx -- starting base index of DNA sequence that is written, used to miss out 
         cutsite if necessary.        
         """
-        
+
         # Output check
         out_file_handle = outputfile_check(out_file_handle, mode='a', overwrite=overwrite)
-         
+
         query = '''SELECT seqid, seq, phred  
                     FROM seqs INNER JOIN samples ON seqs.sampleId=samples.sampleId'''
-            
+
         if filter_expression:
-            query +=  ' WHERE {0}'.format(filter_expression)
-        
+            query += ' WHERE {0}'.format(filter_expression)
+
         with self.con as con:
-            
+
             toc = time.time()
-            print >> sys.stderr, 'Writing records to {0} format....'.format(output_format), 
+            print >> sys.stderr, 'Writing records to {0} format....'.format(output_format),
 
             c = con.execute(query)
             returned_records = c.fetchmany(rowbuffer)
             rec_count = 0
             while returned_records:
-                
+
                 for rec in returned_records:
                     seq_rec = SeqRecord(Seq(rec['seq'][startidx:]), id=str(rec['seqid']), description='')
-                    
-                    if output_format=='fastq':
-                        seq_rec.letter_annotations['phred_quality'] = [ ord(x)-33 for x in rec['phred']]
-                    
+
+                    if output_format == 'fastq':
+                        seq_rec.letter_annotations['phred_quality'] = [ord(x) - 33 for x in rec['phred']]
+
                     SeqIO.write(seq_rec, out_file_handle, format=output_format)
-                    rec_count += 1 
-                
-                # Fetch next batch of records from cursor          
+                    rec_count += 1
+
+                    # Fetch next batch of records from cursor
                 returned_records = c.fetchmany(rowbuffer)
-            
+
             print >> sys.stderr, ' Done!'
             print >> sys.stderr, '\n{0} records written successfully to {1}\nin {2}'.format(rec_count,
-                out_file_handle.name, time.strftime('%H:%M:%S', time.gmtime(time.time() - toc))) 
-            
+                        out_file_handle.name, time.strftime('%H:%M:%S', time.gmtime(time.time() - toc)))
+
             if out_file_handle.name not in ['<stdout>', '<stderr>']:
                 out_file_handle.close()
-                
-        return out_file_handle 
-    
+
+        return out_file_handle
+
     def calculate_reads_per_individual(self, individuals=None):
         """ Fill in individuals table with total reads of each 
 
         """
         # Get list of individuals
-        with self.con as con :
-        
-            if individuals is None:    
+        with self.con as con:
+
+            if individuals is None:
                 c = con.execute(''' SELECT sampleId from samples ''')
                 rows = c.fetchall()
-            
+
                 num = len(rows)
                 print >> sys.stderr, 'Updating read counts for {0} samples'.format(num),
-                
+
                 for r in rows:
                     # for each, find the total number of reads
-                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r['sampleId'],))
-                    
-                    total = c.fetchone()['count(*)'] 
-                    
+                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''', (r['sampleId'],))
+
+                    total = c.fetchone()['count(*)']
+
                     # Fill in table  
-                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r['sampleId'] ))
+                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total, r['sampleId'] ))
             else:
                 assert type(individuals) is list, 'Invalid parameter. Expected a list of sample ids'
                 rows = individuals
 
                 for r in rows:
                     # for each, find the total number of reads
-                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''',  (r,))
-                    total = c.fetchone()['count(*)'] 
-                    
+                    c = con.execute(''' SELECT count(*) FROM seqs WHERE sampleId = ?''', (r,))
+                    total = c.fetchone()['count(*)']
+
                     # Fill in table  
-                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total , r))
-                    
+                    con.execute(''' UPDATE samples SET read_count = ? WHERE sampleId = ? ''', (total, r))
+
             # Build index on Cluster size 
             con.execute('CREATE INDEX IF NOT EXISTS read_countIndex ON samples(read_count)')
-    
+
     def calculate_majorseq(self, clusterids=None, table_prefix=None, seq_start_idx=6):
         """" Calculate majority sequence observed in clusters and what percentage of the cluster 
         this makes up. Note that this can be different to the representative sequence. 
@@ -507,75 +502,58 @@ class Reads_db(SQLdatabase):
         Also calculates a measure of self similarity, measureing the percentage of reads 1 edit dist away, 
         2 edit dists away               
         """
-        
+
         if table_prefix is None:
             members_table_name = 'members'
             cluster_table_name = 'clusters'
         else:
             members_table_name = table_prefix + '_members'
             cluster_table_name = table_prefix + '_clusters'
-        
+
         if clusterids is None:
             # Find Last cluster id 
             c = self.con.execute(''' SELECT COUNT(*) FROM {0}'''.format(cluster_table_name))
             clusterid_max = c.fetchone()['count(*)']
-            clusterids = range(1,clusterid_max+1)
-
-
-        c = 0
+            clusterids = range(1, clusterid_max + 1)
 
         for cid in clusterids:
-        
-            cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
-             
+
+            cluster = self.get_cluster_by_id(cid, items=['seqid', 'seq'], table_prefix=table_prefix)
+
             # Fetch all unique seq data and find most common 
             cluster.get_unique_seq(seq_start_idx=seq_start_idx, db=self)
             majorSeq = cluster.unique_seqs.most_common()[0][0]
 
-
-
             if majorSeq != cluster.rep_seq[seq_start_idx:]:
                 majorSeqIsRepSeq = False
-                if c < 4:
-                    print majorSeq
-                    print cluster.rep_seq[seq_start_idx:]
-                    c += 1
             else:
                 majorSeqIsRepSeq = True
-                
+
             majorSeqPerc = (cluster.unique_seqs.most_common()[0][1] / float(cluster.size)) * 100
-            
+
             # Calculate metric for self similarity 
             selfsimilarity = []
             # First work out lev distance between top 5 unique seqs
             top5seqs = cluster.unique_seqs.most_common()[:5]
-#             n = len(top5seqs)
-#             dists = np.zeros([n, n])
-            # Calc distance matrix
-#             for i in range(n):
-#                 for j in range(i+1,n):
-#                     D = ed.distance(top5seqs[i][0], top5seqs[j][0])
-#                     dists[i,j] = D
-#                     dists[j,i] = D
-            
+
             # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
             for idx, (seq, count) in enumerate(top5seqs):
-                if idx != 0:                    
+                if idx != 0:
                     perc = (int((count / float(cluster.size)) * 100) * 100) / 100.0
-                    d = ed.distance(majorSeq, seq) 
+                    d = ed.distance(majorSeq, seq)
                     selfsimilarity.append((perc, d))
-            
+
             # Update info for cluster
             with self.con as con:
 
                 sql_query = '''UPDATE {0} SET majorSeq = ?, majorSeqIsRepSeq = ?,
                                 majorSeqPerc = ?, selfsimilarity = ? WHERE clusterid = ?'''.format(
-                                cluster_table_name)
+                    cluster_table_name)
 
-                con.execute(sql_query, (majorSeq, majorSeqIsRepSeq, majorSeqPerc, 
-                                          str(selfsimilarity), cid) )
-    
-    def load_cluster_file(self, cluster_file_handle, table_prefix=None, 
+                con.execute(sql_query, (majorSeq, majorSeqIsRepSeq, majorSeqPerc,
+                                        str(selfsimilarity), cid))
+
+    def load_cluster_file(self, cluster_file_handle, table_prefix=None,
                           overwrite=False, fmin=2, fmax=None, skipsort=False, buffer_max=1000000):
         ''' Load in a clustering file into the database 
         
@@ -593,19 +571,19 @@ class Reads_db(SQLdatabase):
             members_table_name = table_prefix + '_members'
             cluster_table_name = table_prefix + '_clusters'
             index_name = table_prefix + '_clustersizeIndex'
-        
+
         # input checks
         if type(cluster_file_handle) == str:
             if not cluster_file_handle.endswith('.clstr'):
                 cluster_file_handle = cluster_file_handle + '.clstr'
-        
+
         cluster_file_handle = inputfile_check(cluster_file_handle)
-        
+
         # Sort file
         if not skipsort:
             # Filter out singletons and sort clusters in accending order
             print >> sys.stderr, 'Sorting cluster file %s ...' % (cluster_file_handle.name)
-            sorted_cluster_file = sortby(cluster_file_handle, reverse=True, 
+            sorted_cluster_file = sortby(cluster_file_handle, reverse=True,
                                          mode='cluster_size', outfile_postfix='-subset', cutoff=fmin)
             cluster_file_handle = inputfile_check(sorted_cluster_file)
 
@@ -616,82 +594,83 @@ class Reads_db(SQLdatabase):
             with self.con as con:
                 con.execute(''' DROP TABLE IF EXISTS {0} '''.format(cluster_table_name))
                 con.execute(''' DROP TABLE IF EXISTS {0} '''.format(members_table_name))
-        
+
         self.create_cluster_table(cluster_table_name)
         self.create_members_table(members_table_name)
-        
+
         # Make cluster generator. Returns all cluster info
         cluster_gen = parse(cluster_file_handle)
-        
+
         # Buffer to hold clusters in memory then write all at once
         cluster_info_list = []
-        cumulative_cluster_size = 0 
-        
+        cumulative_cluster_size = 0
+
         # Find starting cluster id 
         c = self.con.execute(''' SELECT COUNT(*) FROM {0}'''.format(cluster_table_name))
         clusterid = c.fetchone()['count(*)'] + 1
-        
+
         # Drop any index on Cluster size 
         with self.con as con:
             con.execute(''' DROP INDEX IF EXISTS {0} '''.format(index_name))
-        
+
         if fmax:
             for cluster in cluster_gen:
-                             
+
                 if cluster.size <= fmax and cluster.size >= fmin:
-                                         
-                    cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
-                    clusterid += 1 
+
+                    cluster_info_list.append(( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id))
+                    clusterid += 1
                     cumulative_cluster_size += cluster.size
-                    
+
                     if cumulative_cluster_size > buffer_max:
                         self.load_batch_clusterdata(cluster_info_list, table_prefix)
                         cluster_info_list = []
-        else:    
+        else:
             for cluster in cluster_gen:
-                cluster_info_list.append( ( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id)  )
-                clusterid += 1 
+                cluster_info_list.append(( clusterid, cluster.rep_seq_id, cluster.size, cluster.members_id))
+                clusterid += 1
                 cumulative_cluster_size += cluster.size
-                
+
                 if cumulative_cluster_size > buffer_max:
                     self.load_batch_clusterdata(cluster_info_list, table_prefix)
                     cluster_info_list = []
-        
+
         # Final flush of data
         if cluster_info_list:
             self.load_batch_clusterdata(cluster_info_list, table_prefix)
-            
+
         # Rebuild index on Cluster size 
         with self.con as con:
             con.execute('''CREATE INDEX {indexname} ON {tablename}(size)'''.format(
-                    indexname=index_name, tablename=cluster_table_name))
-            
+                indexname=index_name, tablename=cluster_table_name))
+
     def load_batch_clusterdata(self, data_structure, exp_name=None):
         """ Load in a single cluster object to the database. """
-        
+
         if exp_name is None:
             members_table_name = 'members'
             cluster_table_name = 'clusters'
         else:
             members_table_name = exp_name + '_members'
             cluster_table_name = exp_name + '_clusters'
-              
+
         with self.con as con:
-            
+
             # Just insert cluster into clusters table and incriment id 
             curs = con.cursor()
-            
+
             g = ((x[0], x[1], x[2]) for x in data_structure)
-            
+
             curs.executemany(''' INSERT INTO {0}
-                    (clusterid, repseqid, size) VALUES (?,?,?) '''.format(cluster_table_name), g )
-                
+                    (clusterid, repseqid, size) VALUES (?,?,?) '''.format(cluster_table_name), g)
+
             for x in data_structure:
                 g = ( ( x[0], int(seqid) ) for seqid in x[3])
-                
+
                 # Processing members using executemany is much faster for many inserts
                 con.executemany(''' INSERT INTO {0}
                      (clusterId, seqId) VALUES (?,?) '''.format(members_table_name), g)
+
 
 if __name__ == '__main__':
     pass

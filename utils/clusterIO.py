@@ -140,7 +140,44 @@ class ClusterObj(object):
                     self.members_phred.append(np.array(phred_list))
                 if get_sampleid:
                     self.members_sample_id.append(record['sampleId'])
-            
+
+    def align(self, start_idx=6):
+        """ Create an Allignment of the sequences in the cluster so as to accomodate indels. """
+
+        from Bio.Align.Applications import MuscleCommandline
+        from Bio import Seq, SeqRecord
+        import subprocess
+        import sys
+        from Bio import AlignIO
+
+        # Get list of sequence Records in fasta format.
+        allSeqRecs = [SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))]
+
+        for i in range(len(self.members_seq)):
+            rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_seq_id[i]), description=str(self.members_sample_id[i]))
+            allSeqRecs.append(rec)
+
+        # Align with MUSCLE
+        cline = MuscleCommandline()
+        child = subprocess.Popen(str(cline), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        SeqIO.write(allSeqRecs, child.stdin, format='fasta')
+        child.stdin.close()
+
+        # Read back in as a mult seq alignment
+        align = AlignIO.read(child.stdout, "clustal")
+
+        return align
+
+
+    def genotype(self):
+        """ Call genotypes on the cluster for each individual """
+
+
+        # Arrane
+
+
+
+
     # def correct_repseq(self, db=None):
     #     """" Examine whether representative sequences is truely the most common for the cluster
     #     and correct it in the database if necessary.
