@@ -1,64 +1,56 @@
-'''
-Created on 27 Jun 2013
 
-@author: musselle
-'''
-import os, sys, time, glob, gzip, csv
-import cPickle as pkl
-from subprocess import PIPE, Popen
+# Created on 27 Jun 2013
 
-from cStringIO import StringIO
+# @author: musselle
+
+import os
+import sys
+import time
+import glob
+import editdist as ed
 
 import numpy as np
-
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-
-import sqlite3
-from utils.general_utilities import set_trace, get_path_prefix
 
 from database.core import SQLdatabase
 from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
 from utils.clusterIO import ClusterObj, parse, sortby
 
-import editdist as ed
-
-
 class Reads_db(SQLdatabase):
-    ''' Database to hold all information on fastq sequence reads for an experiment
-    
+    """ Database to hold all information on fastq sequence reads for an experiment
+
     4 TABLES:
         SEQS - all info on the reads themselves. Either derived from sequence ID header.
                 or calculated as the file is processed.
-                
+
             seqId -     INTEGER PRIMARY KEY
-            sampleId -  Maps to a sampled individual in the SAMPLES table (INTEGER), 
+            sampleId -  Maps to a sampled individual in the SAMPLES table (INTEGER),
             MIDphred  - Phred score for the MIDtag portion of the read (TEXT NOT NULL),
             seq  -      Read portion of the sequence, with the MIDtag already removed  (TEXT NOT NULL),
-            phred -     The corresponding Phred score for the sequence read (TEXT NOT NULL), 
+            phred -     The corresponding Phred score for the sequence read (TEXT NOT NULL),
             length -    Length of the read (INTEGER NOT NULL),
-            meanPhred - Mean phred score for the sequence read, rounded to nearest int (INTEGER), 
+            meanPhred - Mean phred score for the sequence read, rounded to nearest int (INTEGER),
             description The text in the seqid header of the read, minus the information extracted bellow TEXT,
             pairedEnd - Whether the sequence is part of a paired end experiment and the numebr (1 or 2) INTEGER,
             illuminaFilter - Whether the read was flagged up by the illumina filter as being too low quality (Y/N) TEXT,
             controlBits - INTEGER,
             indexSeq  - Index sequence used for multiplexing. TEXT
-            
+
         SAMPLES - info on individuals sampled
-        
-            
-        
-        
-        CLUSTERS - info on clusters 
-        
-        
-        
+
+
+
+        CLUSTERS - info on clusters
+
+
+
         MEMBERS - Link table for cluster-seqid membership
-        
-        
-    
-    '''
+
+
+
+    """
 
     def __init__(self, db_file="test.db", recbyname=True, new=False):
        
@@ -95,22 +87,11 @@ class Reads_db(SQLdatabase):
             self.tables.append('{0}'.format(table_name))
             self.seqs_table_name = table_name
             
-#     def create_meta_table(self, overwrite=False):
-#         
-#         with self.con as con:   
-#         
-#             if overwrite:
-#                 con.execute('DROP TABLE IF EXISTS meta')
-#             con.execute(''' CREATE TABLE meta (
-#             Id INTEGER PRIMARY KEY NOT NULL,
-#             exp_name TEXT )''')
-#             self.tables.append('meta')
-            
     def create_cluster_table(self, table_name=None, overwrite=False):
-        ''' Create a cluster table in database with the specified name. 
-        
+        """ Create a cluster table in database with the specified name.
+
         overwrite - if true will drop any table that already exists with the specified name.
-        '''
+        """
         
         if table_name is None:
             table_name = 'clusters' 
@@ -148,10 +129,10 @@ class Reads_db(SQLdatabase):
             self.tables.append('samples')
             
     def create_members_table(self, table_name=None, overwrite=False):
-        ''' Create a members table in database with the specified name. 
-        
+        """ Create a members table in database with the specified name.
+
         overwrite - if true will drop any table that already exists with the specified name.
-        '''
+        """
         if table_name is None:
             table_name = 'members' 
         
@@ -166,20 +147,19 @@ class Reads_db(SQLdatabase):
             UNIQUE (clusterid, seqid))'''.format(table_name))
     
             self.tables.append(table_name)
-            
 
     def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs', buffer_max=100000):
-        ''' Load in all sequences in the specified files to the database 
-        
+        """ Load in all sequences in the specified files to the database
+
         Barcodes for the MIDtag samples are added to the database if given.
-         
-        The list of Barcodes in the files given must be unique. 
+
+        The list of Barcodes in the files given must be unique.
         Therefore if there are duplicates, the data and barcodes must be added in sets of
-        unique barcodes for the data files added. 
-         
-        If 'data_files' or 'barcode_files' is a str, it is interpreted as a glob to the 
+        unique barcodes for the data files added.
+
+        If 'data_files' or 'barcode_files' is a str, it is interpreted as a glob to the
         data_path / barcode_path respecively.
-        '''
+        """
         
         start_dir = os.getcwd()
         
@@ -246,8 +226,7 @@ class Reads_db(SQLdatabase):
         index_name = 'sampleidIndex'
         
         with self.con as con:
-            curs = con.cursor()
-            
+
             # Drop index if it exists
             con.execute(''' DROP INDEX IF EXISTS {0} '''.format(index_name))
             
@@ -318,17 +297,17 @@ class Reads_db(SQLdatabase):
             
             # Rebuild index on sampleID
             con.execute('''CREATE INDEX {indexname} ON {tablename}(sampleId)'''.format(
-                    indexname=index_name, tablename=table_name))
+                indexname=index_name, tablename=table_name))
     
     def update_type(self, pattern, short_description):
-        " Assiciate a symbol to a particular description pattern "
+        """ Assiciate a symbol to a particular description pattern """
         
         with self.con as con:
             con.execute(''' UPDATE samples SET type = ? WHERE description GLOB ? ''', (short_description,pattern))
             
     
     def get_cluster_by_size(self, size_min, size_max, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None):
-        ''' Return all clusterobjs within a certain size range '''
+        """ Return all clusterobjs within a certain size range """
         
         if table_prefix is None:
             clusters_table = 'clusters'
@@ -349,7 +328,7 @@ class Reads_db(SQLdatabase):
         return clusterobjs
     
     def get_cluster_by_id(self, cluster_id, items=['seqId', 'seq', 'phred', 'sampleId'], table_prefix=None ):
-        ''' Return the cluster object for the given id '''
+        """ Return the cluster object for the given id """
     
         if table_prefix is None:
             members_table = 'members'
@@ -393,7 +372,8 @@ class Reads_db(SQLdatabase):
             clusterobj.id = cluster_row['clusterId']
             
             # get repseq_seq
-            c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(items = ','.join(items)), (clusterobj.rep_seq_id,))
+            c = con.execute(''' SELECT {items} FROM seqs WHERE seqId = ?'''.format(
+                items=','.join(items)), (clusterobj.rep_seq_id, ))
 
             row = c.fetchone()
             
@@ -540,7 +520,10 @@ class Reads_db(SQLdatabase):
             c = self.con.execute(''' SELECT COUNT(*) FROM {0}'''.format(cluster_table_name))
             clusterid_max = c.fetchone()['count(*)']
             clusterids = range(1,clusterid_max+1)
-        
+
+
+        c = 0
+
         for cid in clusterids:
         
             cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
@@ -548,9 +531,15 @@ class Reads_db(SQLdatabase):
             # Fetch all unique seq data and find most common 
             cluster.get_unique_seq(seq_start_idx=6, db=self)
             majorSeq = cluster.unique_seqs.most_common()[0][0]
-              
+
+
+
             if majorSeq != cluster.rep_seq:
                 majorSeqIsRepSeq = False
+                if c < 4:
+                    print majorSeq
+                    print cluster.rep_seq
+                    c += 1
             else:
                 majorSeqIsRepSeq = True
                 
@@ -572,21 +561,14 @@ class Reads_db(SQLdatabase):
             # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
             for idx, (seq, count) in enumerate(top5seqs):
                 if idx != 0:                    
-                    perc = (int((count / float(cluster.size)) * 100) * 100 ) / 100.0
+                    perc = (int((count / float(cluster.size)) * 100) * 100) / 100.0
                     d = ed.distance(majorSeq, seq) 
-                    selfsimilarity.append(( perc, d ))
+                    selfsimilarity.append((perc, d))
             
-            # sort by percentage of cluster
-            #selfsimilarity = sorted(selfsimilarity, key=lambda s: (s[0], s[1]), reverse=True)
-               
-            # Update info for cluster 
+            # Update info for cluster
             with self.con as con:
 
-                selfsimilarity_str = ''
-                for i,e in enumerate(selfsimilarity):
-                    pass
-
-                sql_query = '''UPDATE {0} SET majorSeq = ?, majorSeqIsRepSeq = ?, 
+                sql_query = '''UPDATE {0} SET majorSeq = ?, majorSeqIsRepSeq = ?,
                                 majorSeqPerc = ?, selfsimilarity = ? WHERE clusterid = ?'''.format(
                                 cluster_table_name)
 
@@ -685,7 +667,7 @@ class Reads_db(SQLdatabase):
                     indexname=index_name, tablename=cluster_table_name))
             
     def load_batch_clusterdata(self, data_structure, exp_name=None):
-        ''' Load in a single cluster object to the database. '''
+        """ Load in a single cluster object to the database. """
         
         if exp_name is None:
             members_table_name = 'members'

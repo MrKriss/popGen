@@ -3,19 +3,14 @@ Created on 24 Apr 2013
 
 @author: musselle
 '''
-import os 
-import sys 
+import os
 import time
 from collections import defaultdict, Counter
-
-import numpy as np 
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import IUPAC
-import pandas as pd
-
 from editdist import distance
+
+import numpy as np
+from Bio import SeqIO
+
 
 '''
 IO support for CDHIT clustering files in python.
@@ -146,174 +141,56 @@ class ClusterObj(object):
                 if get_sampleid:
                     self.members_sample_id.append(record['sampleId'])
             
-    def correct_repseq(self, db=None):
-        """" Examine whether representative sequences is truely the most common for the cluster 
-        and correct if necessary. 
-        
-        For faster computation, the editdist_counter dict should be used. This must be read from the 
-        CDHIT output file as it is scanned to get the cluster info. To get the dictionary set the 
-        'similarity_count' flag to True in the 'parse' function.  
-        
-        Correction of rep seq requires the lookup of all seqs and recalculation of edit distances
-        using the Levenshtein distance.  
-        
-        """
-          
-        if not hasattr(self, 'editdist_counter'):
-            # Slower method
-              
-            # Fetch all unique seq data
-            self.get_unique_seq(seq_start_idx=6, db=db)
-              
-            most_common_seq = self.unique_seqs.most_common()[0]
-              
-            if most_common_seq != self.rep_seq:
-
-                # Find next matching sequenceid to the genuine rep seq
-                idx = self.members_seq.index(most_common_seq)
-                  
-                # Store old values 
-                old_rep_seq = self.rep_seq 
-                old_rep_seq_id = self.rep_seq_id 
-                old_rep_sample_id = self.rep_sample_id 
-                old_rep_phred = self.rep_phred
-                
-                # Update rep seq
-                self.rep_seq = self.members_seq[idx]
-                self.rep_seq_id = self.members_id[idx]
-                self.rep_sample_id = self.members_sample_id[idx]
-                
-                # Remove id from members 
-                del self.members_seq[idx]
-                del self.members_id[idx]
-                self.members_sample_id[idx]
-                
-                # Add rep seq id and Find the index to insert rep data to 
-                self.members_id.append(old_rep_seq_id)
-                x = np.array(self.members_id) 
-                sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
-                
-                # Insert old rep data into members
-                self.members_seq.insert(sortidx, old_rep_seq) 
-                self.members_sample_id.insert(sortidx, old_rep_sample_id) 
-                self.members_phred.insert(sortidx, old_rep_phred) 
-                self.members_id.sort()
-                
-                return True
-            else:
-                return False
-        
-        else: # Has a editdistance counter 
-            
-            if self.editdist_counter.most_common()[0] != 0:
-            
-                # Faster calculation using just similarity count and edit distances
-                if self.edit_dists:
-                    # Find most common seq just from edit_dists
-                    idx = self.edit_dists.index(0)
-                    
-                    # Store old values 
-                    old_rep_seq_id = self.rep_seq_id 
-                    
-                    # Update rep seq
-                    self.rep_seq_id = self.members_id[idx]
-                
-                    # Remove id from members 
-                    del self.members_id[idx]
-                    
-                    # Add rep seq id and Find the index to insert rep data to 
-                    self.members_id.append(old_rep_seq_id)
-                    self.members_id.sort()
-                    
-                else: # use unique seqs  
-                
-                    # Slower method
-              
-                    # Fetch all unique seq data
-                    self.get_unique_seq(seq_start_idx=6, db=db)
-                      
-                    most_common_seq = self.unique_seqs.most_common()[0]
-                      
-                    # Find next matching sequenceid to the genuine rep seq
-                    idx = self.members_seq.index(most_common_seq)
-                      
-                    # Store old values 
-                    old_rep_seq = self.rep_seq 
-                    old_rep_seq_id = self.rep_seq_id 
-                    old_rep_sample_id = self.rep_sample_id 
-                    old_rep_phred = self.rep_phred
-                    
-                    # Update rep seq
-                    self.rep_seq = self.members_seq[idx]
-                    self.rep_seq_id = self.members_id[idx]
-                    self.rep_sample_id = self.members_sample_id[idx]
-                    
-                    # Remove id from members 
-                    del self.members_seq[idx]
-                    del self.members_id[idx]
-                    self.members_sample_id[idx]
-                    
-                    # Add rep seq id and Find the index to insert rep data to 
-                    self.members_id.append(old_rep_seq_id)
-                    x = np.array(self.members_id) 
-                    sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
-                    
-                    # Insert old rep data into members
-                    self.members_seq.insert(sortidx, old_rep_seq) 
-                    self.members_sample_id.insert(sortidx, old_rep_sample_id) 
-                    self.members_phred.insert(sortidx, old_rep_phred) 
-                    self.members_id.sort()
-                    
-                return True
-                
-            else: # rep seq is most common sequence
-                
-                return False
-        
-        
-    def calc_edit_dists(self, db=None):
-        """ Recalculate edit distances between the representative sequence and the member sequences. 
-        
-        To optimise this, the unique sequences are first found and then edit distances between them calculated.  
-        
-        """
-        pass
-    
-#         old_edc = self.editdist_counter
-#     
-#         # map from edit distance to old rep seq, and sequence 
-#         exp_seq_dict = {}
-#         for key in old_edc.iterkeys():
-#             
-#             # Fetch example sequece with this edit distance to original rep_seq.
-#             idx = self.edit_dists.index(key)
-#             exp_seq_id = self.members_id[idx] 
-#             c = db.con.execute('Select seqid, seq from seqs where seqid = ?', (exp_seq_id,))
-#             exp_seq = c.fetchone()['seq']
-#             
-#             exp_seq_dict[key] = exp_seq
-#     
-#         edit_dist_matrix = np.zeros((old_edc.keys() ))
-#     
-# #                     top5seqs = self.unique_seqs.most_common()[:5]
-# #             n = len(top5seqs)
-# #             dists = np.zeros([n, n])
-#             # Calc distance matrix
-# #             for i in range(n):
-# #                 for j in range(i+1,n):
-# #                     D = ed.distance(top5seqs[i][0], top5seqs[j][0])
-# #                     dists[i,j] = D
-# #                     dists[j,i] = D
-#     
-#         if self.editdist_counter:
-#             
-#             for key in 
-#             
-#             # Store ids where 
-#     
-#     
-#         
-        
+    # def correct_repseq(self, db=None):
+    #     """" Examine whether representative sequences is truely the most common for the cluster
+    #     and correct it in the database if necessary.
+    #
+    #     For faster computation, the editdist_counter dict should be used. This must be read from the
+    #     CDHIT output file as it is scanned to get the cluster info. To get the dictionary set the
+    #     'similarity_count' flag to True in the 'parse' function.
+    #
+    #
+    #     """
+    #
+    #     # Fetch all unique seq data
+    #     self.get_unique_seq(seq_start_idx=6, db=db)
+    #     most_common_seq = self.unique_seqs.most_common()[0]
+    #
+    #     if most_common_seq != self.rep_seq:
+    #
+    #         # Find next matching sequenceid to the genuine rep seq
+    #         idx = self.members_seq.index(most_common_seq)
+    #
+    #         # Store old values
+    #         old_rep_seq = self.rep_seq
+    #         old_rep_seq_id = self.rep_seq_id
+    #         old_rep_sample_id = self.rep_sample_id
+    #         old_rep_phred = self.rep_phred
+    #
+    #         # Update rep seq
+    #         self.rep_seq = self.members_seq[idx]
+    #         self.rep_seq_id = self.members_id[idx]
+    #         self.rep_sample_id = self.members_sample_id[idx]
+    #
+    #         # Remove id from members
+    #         del self.members_seq[idx]
+    #         del self.members_id[idx]
+    #         self.members_sample_id[idx]
+    #
+    #         # Add rep seq id and Find the index to insert rep data to
+    #         self.members_id.append(old_rep_seq_id)
+    #         x = np.array(self.members_id)
+    #         sortidx = int([i for i, elem in enumerate(x.argsort()) if elem == len(x) -1])
+    #
+    #         # Insert old rep data into members
+    #         self.members_seq.insert(sortidx, old_rep_seq)
+    #         self.members_sample_id.insert(sortidx, old_rep_sample_id)
+    #         self.members_phred.insert(sortidx, old_rep_phred)
+    #         self.members_id.sort()
+    #
+    #         return True
+    #     else:
+    #         return False
         
     def get_unique_seq(self, seq_start_idx=6, db=None):
         """ Work out the counts for unique reads within a cluster """
