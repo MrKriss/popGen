@@ -583,7 +583,8 @@ class Reads_db(SQLdatabase):
             with self.con as con:
 
                 selfsimilarity_str = ''
-                for i,e in enumerate(selfsimilarity)
+                for i,e in enumerate(selfsimilarity):
+                    pass
 
                 sql_query = '''UPDATE {0} SET majorSeq = ?, majorSeqIsRepSeq = ?, 
                                 majorSeqPerc = ?, selfsimilarity = ? WHERE clusterid = ?'''.format(
