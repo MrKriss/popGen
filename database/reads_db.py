@@ -572,24 +572,23 @@ class Reads_db(SQLdatabase):
             # selfsimilarity = [( cumulative_percentage, edit distance), ... (  )]
             for idx, (seq, count) in enumerate(top5seqs):
                 if idx != 0:                    
-                    perc = (count / float(cluster.size)) * 100
+                    perc = (int((count / float(cluster.size)) * 100) * 100 ) / 100.0
                     d = ed.distance(majorSeq, seq) 
-                    selfsimilarity.append(( perc, d  ))
+                    selfsimilarity.append(( perc, d ))
             
             # sort by percentage of cluster
             selfsimilarity = sorted(selfsimilarity, key=lambda s: (s[0], s[1]), reverse=True)
                
             # Update info for cluster 
             with self.con as con:
-            
+
+                selfsimilarity_str = ''
+                for i,e in enumerate(selfsimilarity)
+
                 sql_query = '''UPDATE {0} SET majorSeq = ?, majorSeqIsRepSeq = ?, 
                                 majorSeqPerc = ?, selfsimilarity = ? WHERE clusterid = ?'''.format(
                                 cluster_table_name)
-            
-                selfsimilaritystring = ''
-                for tup in selfsimilarity:
-                    pass
-            
+
                 con.execute(sql_query, (majorSeq, majorSeqIsRepSeq, majorSeqPerc, 
                                           str(selfsimilarity), cid) )
     
