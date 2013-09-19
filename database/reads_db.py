@@ -500,7 +500,7 @@ class Reads_db(SQLdatabase):
             # Build index on Cluster size 
             con.execute('CREATE INDEX IF NOT EXISTS read_countIndex ON samples(read_count)')
     
-    def calculate_majorseq(self, clusterids=None, table_prefix=None):
+    def calculate_majorseq(self, clusterids=None, table_prefix=None, seq_start_idx=6):
         """" Calculate majority sequence observed in clusters and what percentage of the cluster 
         this makes up. Note that this can be different to the representative sequence. 
         
@@ -529,12 +529,12 @@ class Reads_db(SQLdatabase):
             cluster = self.get_cluster_by_id(cid, items = ['seqid', 'seq'], table_prefix=table_prefix)
              
             # Fetch all unique seq data and find most common 
-            cluster.get_unique_seq(seq_start_idx=6, db=self)
+            cluster.get_unique_seq(seq_start_idx=seq_start_idx, db=self)
             majorSeq = cluster.unique_seqs.most_common()[0][0]
 
 
 
-            if majorSeq != cluster.rep_seq:
+            if majorSeq != cluster.rep_seq[seq_start_idx:]:
                 majorSeqIsRepSeq = False
                 if c < 4:
                     print majorSeq
