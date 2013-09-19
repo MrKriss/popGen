@@ -538,7 +538,7 @@ class Reads_db(SQLdatabase):
                 majorSeqIsRepSeq = False
                 if c < 4:
                     print majorSeq
-                    print cluster.rep_seq
+                    print cluster.rep_seq[seq_start_idx:]
                     c += 1
             else:
                 majorSeqIsRepSeq = True
