@@ -61,7 +61,7 @@ with open('clusters.temp', 'wb') as clust_file:
     for cluster in cluster_gen:
         # if fraction of reads 100% similar to representative seq is in majority,
         # skip and write to new file
-        seq_similarity_ranking = cluster.similarity_counter.most_common()
+        seq_similarity_ranking = cluster.editdist_counter.most_common()
         
         print seq_similarity_ranking[0][0]
         

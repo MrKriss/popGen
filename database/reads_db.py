@@ -586,6 +586,10 @@ class Reads_db(SQLdatabase):
                                 majorSeqPerc = ?, selfsimilarity = ? WHERE clusterid = ?'''.format(
                                 cluster_table_name)
             
+                selfsimilaritystring = ''
+                for tup in selfsimilarity:
+                    pass
+            
                 con.execute(sql_query, (majorSeq, majorSeqIsRepSeq, majorSeqPerc, 
                                           str(selfsimilarity), cid) )
     
