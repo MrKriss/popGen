@@ -1,25 +1,15 @@
-'''
+"""
 Created on 24 Apr 2013
 
 @author: musselle
-'''
-import os
-import time
-from collections import defaultdict, Counter
-from editdist import distance
 
-import numpy as np
-from Bio import SeqIO
-
-
-'''
 IO support for CDHIT clustering files in python.
 
 Features
 
     * Iterate through Clusters in a file
     * Return counters for cluster sizes in a file
-    * Analise Distribution of sequences within cluster 
+    * Analise Distribution of sequences within cluster
     (counts dictionary for how far sequences are away from the representative one)
 
 Sample Cluster File:
@@ -38,9 +28,18 @@ Sample Cluster File:
 1    88nt, >55944... at +/100.00%
 2    88nt, >22466... at +/98.86%
 3    88nt, >45463... at +/97.73%
- 
 
-'''
+"""
+import os
+import time
+from collections import defaultdict, Counter
+from editdist import distance
+import subprocess
+
+import Bio
+from Bio.Align.Applications import MuscleCommandline
+from Bio import AlignIO, SeqIO
+import numpy as np
 
 class ClusterObj(object):
     """ Holds all cluster based information. """
@@ -144,22 +143,19 @@ class ClusterObj(object):
     def align(self, start_idx=6):
         """ Create an Allignment of the sequences in the cluster so as to accomodate indels. """
 
-        from Bio.Align.Applications import MuscleCommandline
-        from Bio import Seq, SeqRecord
-        import subprocess
-        import sys
-        from Bio import AlignIO
+
 
         # Get list of sequence Records in fasta format.
-        allSeqRecs = [SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))]
+        allSeqRecs = [Bio.SeqRecord(Bio.Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))]
 
         for i in range(len(self.members_seq)):
-            rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_seq_id[i]), description=str(self.members_sample_id[i]))
+            rec = Bio.SeqRecord(Bio.Seq(self.members_seq[i][start_idx:]), id=str(self.members_seq_id[i]), description=str(self.members_sample_id[i]))
             allSeqRecs.append(rec)
 
         # Align with MUSCLE
         cline = MuscleCommandline()
-        child = subprocess.Popen(str(cline), stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         SeqIO.write(allSeqRecs, child.stdin, format='fasta')
         child.stdin.close()
 
@@ -169,11 +165,36 @@ class ClusterObj(object):
         return align
 
 
-    def genotype(self):
+    def genotype(self, db=None):
         """ Call genotypes on the cluster for each individual """
 
+        # Get all necessary data: seq, phred,
+        if not self.members_seq or not self.members_phred or not self.members_sample_id:
+            assert db, 'Sequence data not present and no lookup database specified.'
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(items=['seq', 'phred', 'sampleId'], target='all', db=db)
 
-        # Arrane
+        # Get multiple sequence alignment for all sequences
+        alignment = self.align(start_idx=6)
+
+        # Use most frequent seq in cluster as reference genotype
+        self.get_unique_seq(db)
+        refseq, number =  self.unique_seqs.most_common()[0]
+
+        self.get_unique_seq_by_individual(db=db,)
+
+        # Commonest Nucleotide not in ref seq
+
+
+
+        # self.
+
+
+
+
+
+
+
 
 
 
@@ -279,7 +300,7 @@ class ClusterObj(object):
         m = len(ranked_seqs)
         freq_matrix = np.zeros([n,m], dtype=int)
 
-        # Store seqs        
+        # Store seqs
         seqs = []
         sampleids = []
         first = 1
@@ -297,8 +318,12 @@ class ClusterObj(object):
         for x in sampleids:
             c = db.con.execute('select description from samples where sampleid = ?', (x,))
             sampledescriptions.append(c.fetchone()['description'])
-            
-        return freq_matrix, sampledescriptions, seqs, ds
+
+        import pandas as pd
+
+        df = pd.DataFrame(data=freq_matrix, index=sampledescriptions, columns=seqs, dtype=int)
+
+        return df, freq_matrix, sampledescriptions, seqs, ds
         
     
     def get_basefraction(self, db=None):
@@ -964,7 +989,7 @@ def summary_counter(handle, mode='cluster_size', report=True):
         return reads_per_cluster
     
 
-def plot_counters_scatter(counters, labels=None, log='xy', xlab="", ylab="", title="", **kwargs):
+def plot_counters_scatter(counters, labels=None, log='xy', xlab="", ylab="", title="", figsize=(6,6), **kwargs):
     ''' Construct a series of scatter plots from a list of Counter Dictionaries '''
     
     import matplotlib.pyplot as plt
@@ -982,7 +1007,9 @@ def plot_counters_scatter(counters, labels=None, log='xy', xlab="", ylab="", tit
     
     if labels is not None:
         assert len(labels) == len(counters), "Number of labels must match number of counters."
-    
+
+    plt.figure(figsize=figsize)
+
     for i in range(len(counters)):
         
         data_xs = [int(k) for k in counters[i].keys()]
