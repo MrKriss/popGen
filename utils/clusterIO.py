@@ -171,8 +171,6 @@ class ClusterObj(object):
         SeqIO.write(allSeqRecs, child.stdin, format='fasta')
         child.stdin.close()
 
-        child.wait()
-
         # Read back in as a mult seq alignment
         align = AlignIO.read(child.stdout, 'fasta')
 
