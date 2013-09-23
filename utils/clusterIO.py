@@ -36,8 +36,9 @@ from collections import defaultdict, Counter
 from editdist import distance
 import subprocess
 
-import Bio
 from Bio.Align.Applications import MuscleCommandline
+from Bio.SeqRecord import SeqRecord
+from Bio.Seq import Seq
 from Bio import AlignIO, SeqIO
 import numpy as np
 
@@ -140,30 +141,42 @@ class ClusterObj(object):
                 if get_sampleid:
                     self.members_sample_id.append(record['sampleId'])
 
-    def align(self, start_idx=6):
+    def align(self, db=None, start_idx=6, muscle_exec_path='~/bin/muscle'):
         """ Create an Allignment of the sequences in the cluster so as to accomodate indels. """
 
-
+        # Assert seq data is present to use
+        if not self.members_seq:
+            assert db, 'Sequence data not present and no lookup database specified.'
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(items=['seq', 'seqid'], target='all', db=db)
+        if not self.rep_seq:
+            assert db, 'Sequence data not present and no lookup database specified.'
+            print "Sequence data not present in cluster. Retrieving from data base..."
+            self.getfromdb(items=['seq', 'seqid'], target='rep', db=db)
 
         # Get list of sequence Records in fasta format.
-        allSeqRecs = [Bio.SeqRecord(Bio.Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))]
+        allSeqRecs = [
+            SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))
+        ]
 
         for i in range(len(self.members_seq)):
-            rec = Bio.SeqRecord(Bio.Seq(self.members_seq[i][start_idx:]), id=str(self.members_seq_id[i]), description=str(self.members_sample_id[i]))
+            rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_id[i]),
+                            description=str(self.members_sample_id[i]))
             allSeqRecs.append(rec)
 
         # Align with MUSCLE
-        cline = MuscleCommandline()
+        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path))
         child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         SeqIO.write(allSeqRecs, child.stdin, format='fasta')
         child.stdin.close()
 
+        child.wait()
+
         # Read back in as a mult seq alignment
-        align = AlignIO.read(child.stdout, "clustal")
+        align = AlignIO.read(child.stdout, 'fasta')
 
         return align
-
 
     def genotype(self, db=None):
         """ Call genotypes on the cluster for each individual """
@@ -177,17 +190,36 @@ class ClusterObj(object):
         # Get multiple sequence alignment for all sequences
         alignment = self.align(start_idx=6)
 
+        # TODO: Use sequence alignment
+
         # Use most frequent seq in cluster as reference genotype
-        self.get_unique_seq(db)
-        refseq, number =  self.unique_seqs.most_common()[0]
+        useq_counter = self.get_unique_seq(db)
+        refseq, number = self.useq_counter.most_common()[0]
 
-        self.get_unique_seq_by_individual(db=db,)
+        out = self.get_unique_seq_by_individual(db=db)
 
-        # Commonest Nucleotide not in ref seq
+        # List the Commonest Nucleotide not in ref seq per base position
+        m = len(useq_counter)
+        n = len(refseq)
+
+        nucArray = np.zeros([m, n], dtype='a1')
+        for i in range(m):
+            for j in range(n):
+                nucArray[i, j] = useq_counter[i][0][j]
+
+        ds = defaultdict(Counter)
+        for bp in range(n):
+            ds[0].update(Counter(nucArray[:, bp]))
+            del ds[0][refseq[bp]]
+
+        return ds, refseq, useq_counter
+
+
+        # Genotyping Calculations
 
 
 
-        # self.
+
 
 
 
@@ -267,7 +299,8 @@ class ClusterObj(object):
         
         seqs = [s[seq_start_idx:] for s in self.members_seq]        
         unique_seq_counter.update(Counter(seqs))
-        self.unique_seqs = unique_seq_counter
+
+        return unique_seq_counter
         
     def get_unique_seq_by_individual(self, db, min_seq_count = 1):
         """ Show the breakdown on sequence counts per individual in the cluster """
@@ -405,7 +438,10 @@ class ClusterObj(object):
         plt.show()
         
     def plot_ATGC(self, db=None):
-        ''' Visualise the presence of nucliotides at each base position. '''
+        ''' Visualise the presence of nucliotides at each base position.
+
+        TODO: Broken, needs to be fixed to work with new get_unique_seq
+        '''
         
         import matplotlib.pyplot as plt
         
@@ -413,7 +449,8 @@ class ClusterObj(object):
         # get the unique sequences 
         if not hasattr(self, 'unique_seqs'):
             self.get_unique_seq(seq_start_idx=6, db=db)
-        
+
+
         
         # Get dimentions
         n = len(self.unique_seqs)
@@ -1030,7 +1067,7 @@ def plot_counters_scatter(counters, labels=None, log='xy', xlab="", ylab="", tit
         plt.xlabel(xlab)
         plt.ylabel(ylab)
 
-    plt.legend(numpoints=1, markerscale=8)
+    plt.legend(numpoints=1, markerscale=3)
     plt.show()
     
 
