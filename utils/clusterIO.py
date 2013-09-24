@@ -41,8 +41,6 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import AlignIO, SeqIO
 import numpy as np
-from sqlalchemy.orm.sync import _raise_col_to_prop
-
 
 class ClusterObj(object):
     """ Holds all cluster based information. """
