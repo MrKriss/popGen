@@ -41,6 +41,8 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import AlignIO, SeqIO
 import numpy as np
+from sqlalchemy.orm.sync import _raise_col_to_prop
+
 
 class ClusterObj(object):
     """ Holds all cluster based information. """
@@ -355,7 +357,7 @@ class ClusterObj(object):
         df = pd.DataFrame(data=freq_matrix, index=sampledescriptions, columns=seqs, dtype=int)
 
         return df, freq_matrix, sampledescriptions, seqs, ds
-        
+
     
     def get_basefraction(self, db=None):
         """ Calculate the fraction of nucleotide bases per base location """
@@ -486,11 +488,13 @@ class ClusterObj(object):
         plt.show()
         
               
-    def write2clstr(self, handle, db=None):
-        """ Write cluster to a .clstr file format like CD-HIT. 
-        
-        e.g.
-        
+    def write2file(self, handle, db=None, format='fasta', start_idx=6, only_unique=False):
+        """ Write cluster to one of the following formats:
+              1.  .clstr file format like CD-HIT.
+              2.  fasta or fastq
+
+        CHHIT cluster file example:
+
         >Cluster 0
         0    88nt, >2096... *
         1    88nt, >25159... at +/100.00%
@@ -499,48 +503,86 @@ class ClusterObj(object):
         4    88nt, >12309... at +/100.00%
         
         """
-        
-        if type(handle) is str:
-            if not handle.endswith('.clstr'):
-                filename = handle + '.clstr'
-            handle = open(handle, 'a')
-        else:
-            assert type(handle) is file, 'Invalid file handle.'
-            if handle.closed:
-                handle = open(handle.name, 'a')
-        
-        # Make sure seq data is available
-        if not self.members_seq:
-            print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['seq'], db=db)
-        if not self.rep_seq:
-            print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(['rep'], db=db)
-        
-        # Derived vars
-        seq_len = str(len(self.rep_seq) - 13)
-        
-        with handle as clust_file:
-            
-            # Write Header 
-            clust_file.write('>Cluster {0}\n'.format(self.id))
-            
-            # Write representative sequence
-            clust_file.write('0\t{length}nt, >{rep_seq_id}... *\n'.format(length=seq_len , rep_seq_desc=self.rep_seq_id))
-            
-            count = 0
-            # Write rest of cluster members
-            for idx, desc in enumerate(self.members_id):
-                
-                count += 1
 
-                # Calculate percentage similarity
-                mismatches = distance(self.members_seq[idx][12:], self.rep_seq[12:])
-                percentage = 100.00 - mismatch2percentage(mismatches, seq_len)
-                
-                clust_file.write('{count}\t{length}nt, >{seq_desc}... at +/{percentage:.2f}%\n'.format(
-                    count=str(count), length=seq_len, seq_desc=desc, percentage=percentage 
-                                                                                                  ))
+        # Input Checks
+        if type(handle) is file:
+            if handle.closed:
+                    handle = open(handle.name, 'a')
+        elif type(handle) is str:
+            if format == 'cdhit':
+                if not handle.endswith('.clstr'):
+                    filename = handle + '.clstr'
+            elif format == 'fasta':
+                if not handle.endswith('.fasta'):
+                    filename = handle + '.fasta'
+            elif format == 'fastq':
+                if not handle.endswith('.fatstq'):
+                    filename = handle + '.fastq'
+            else:
+                raise Exception('Invalide file format specified.')
+
+            handle = open(handle, 'a')
+
+        # Make sure data is available to write
+        if format == 'cdhit' or format == 'fasta':
+            if not self.members_seq or not self.members_sample_id:
+                print "Sequence data not present in cluster. Retrieving from data base..."
+                self.getfromdb(target='all', items=['seq', 'seqid'], db=db)
+        elif format == 'fastq':
+            if not self.members_seq or not self.members_sample_id or not self.members_phred:
+                print "Sequence data not present in cluster. Retrieving from data base..."
+                self.getfromdb(target='all', items=['seq', 'seqid', 'phred'], db=db)
+
+        # Derived vars
+        seq_len = str(len(self.rep_seq[start_idx:]))
+
+        if format == 'cdhit':
+            with handle as clust_file:
+                # Write Header
+                clust_file.write('>Cluster {0}\n'.format(self.id))
+
+                # Write representative sequence
+                clust_file.write('0\t{length}nt, >{rep_seq_id}... *\n'.format(length=seq_len ,
+                                                                              rep_seq_desc=self.rep_seq_id))
+                count = 0
+                # Write rest of cluster members
+                for idx, desc in enumerate(self.members_id):
+
+                    count += 1
+
+                    # Calculate percentage similarity
+                    mismatches = distance(self.members_seq[idx][12:], self.rep_seq[12:])
+                    percentage = 100.00 - mismatch2percentage(mismatches, seq_len)
+
+                    clust_file.write('{count}\t{length}nt, >{seq_desc}... at +/{percentage:.2f}%\n'.format(
+                        count=str(count), length=seq_len, seq_desc=desc, percentage=percentage))
+
+        elif format == 'fastq' or format == 'fasta':
+
+            if only_unique:
+
+                unique_seqs_by_id = self.get_unique_seq_by_individual(seq_start_idx=start_idx)
+
+
+
+
+            else:
+                # Get list of sequence Records in fasta format.
+                allSeqRecs = [
+                    SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))
+                ]
+
+                for i in range(len(self.members_seq)):
+                    rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_id[i]),
+                                    description=str(self.members_sample_id[i]))
+                    allSeqRecs.append(rec)
+
+                SeqIO.write(allSeqRecs, handle, format=format)
+
+
+
+
+
                 
 class ClusterFilter(object):
     """ Holds all methods for parsing and filtering a cluster file from CD-HIT
