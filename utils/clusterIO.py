@@ -179,7 +179,7 @@ class ClusterObj(object):
         child.stdin.flush()
         child.stdin.close()
 
-        child.wait()
+        # child.wait()
 
         align = AlignIO.read(child.stdout, 'fasta')
 
