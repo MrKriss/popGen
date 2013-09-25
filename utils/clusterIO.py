@@ -169,7 +169,6 @@ class ClusterObj(object):
                             description=str(self.members_sample_id[i]))
             allSeqRecs.append(rec)
 
-
         # Write to a tempfile
         temp_file = open('temp_file_in.fasta', 'w')
         SeqIO.write(allSeqRecs, temp_file, format='fasta')
@@ -177,26 +176,14 @@ class ClusterObj(object):
         temp_file.close()
 
         # Align with MUSCLE
-        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_file.name)
+        cmds = os.path.expanduser(muscle_exec_path) + '-in ' + temp_file.name + ' -quiet '
 
-        child = subprocess.Popen(str(cline),
+        child = subprocess.Popen(shlex.split(cmds),
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
         child.wait()
 
-        # Show stderr
-        print child.communicate()[1]
-
         align = AlignIO.read(child.stdout, 'fasta')
-
-
-
-
-
-
-
-
-
 
         # temp_file = open('temp_file_in.fasta', 'w')
         # SeqIO.write(allSeqRecs, temp_file, format='fasta')
