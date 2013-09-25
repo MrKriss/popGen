@@ -166,6 +166,8 @@ class ClusterObj(object):
 
         temp_file = open('temp_file_in.fasta', 'w')
         SeqIO.write(allSeqRecs, temp_file, format='fasta')
+        temp_file.flush()
+        temp_file.close()
 
         # Align with MUSCLE
         cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_file.name)
