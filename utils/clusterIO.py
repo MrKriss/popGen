@@ -167,18 +167,21 @@ class ClusterObj(object):
         # temp_file = open('temp_file_in.fasta', 'w')
 
         # Align with MUSCLE
-        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input='temp_file_in.fasta', out='temp_file_out.fasta')
-        cline()
+        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input='temp_file_in.fasta')
+        stdout, stderr = cline()
 
         # child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
-        #                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
         # SeqIO.write(allSeqRecs, child.stdin, format='fasta')
         #
         # child.stdin.flush()
         # child.stdin.close()
 
         # Read back in as a mult seq alignment
-        align = AlignIO.read(open('temp_file_out.fasta', 'rb'), 'fasta')
+        # align = AlignIO.read(open('temp_file_out.fasta', 'rb'), 'fasta')
+        align = AlignIO.read(stdout, 'fasta')
 
         return align
 
