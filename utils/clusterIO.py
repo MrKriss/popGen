@@ -171,7 +171,7 @@ class ClusterObj(object):
         temp_file.flush()
         temp_file.close()
 
-        temp_filepath = os.path.join(os.path.curdir, temp_file.name)
+        temp_filepath = os.path.join(os.path.abspath(os.path.curdir), temp_file.name)
 
         # Align with MUSCLE
         cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_filepath)
