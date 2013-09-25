@@ -263,6 +263,7 @@ class ClusterObj(object):
         # Use most frequent seq in cluster as reference genotype
         useqs_total = self.uniqueseqs_table.sum()
         refseq = useqs_total.index[0]
+        n = len(refseq)
 
         # List the Commonest Nucleotide not in ref seq per base position
         # Done over all
@@ -278,24 +279,15 @@ class ClusterObj(object):
                     next_common_nuc[bp] = seq[bp]
                     break
 
-        # Done per individual
-
-        m = len(useqs_total)
-        n = len(refseq)
-
-
-        nucArray = np.zeros([m, n], dtype='a1')
-        for i in range(m):
-            for j in range(n):
-                nucArray[i, j] = useqs_total.index[i][j]
-
 
         ds = defaultdict(Counter)
         for bp in range(n):
-            ds[bp].update(Counter(nucArray[:, bp]))
+            for seq in useqs_total.index:
+                ds[bp][seq[bp]] += useqs_total[seq]
+
             del ds[bp][refseq[bp]]
 
-        return ds, refseq, next_common_nuc, useqs_total, nucArray
+        return ds, refseq, next_common_nuc, useqs_total
 
 
         # Genotyping Calculations
