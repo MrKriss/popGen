@@ -279,11 +279,6 @@ class ClusterObj(object):
 
         # Done per individual
 
-
-
-
-
-
         m = len(useqs_total)
         n = len(refseq)
 
@@ -296,10 +291,10 @@ class ClusterObj(object):
 
         ds = defaultdict(Counter)
         for bp in range(n):
-            ds[0].update(Counter(nucArray[:, bp]))
-            del ds[0][refseq[bp]]
+            ds[bp].update(Counter(nucArray[:, bp]))
+            del ds[bp][refseq[bp]]
 
-        return ds, refseq, useqs_total, next_common_nuc
+        return ds, refseq, next_common_nuc, nucArray
 
 
         # Genotyping Calculations
