@@ -36,7 +36,7 @@ import time
 from collections import defaultdict, Counter
 from editdist import distance
 import subprocess
-import StringIO
+from StringIO import StringIO
 
 
 from Bio.Align.Applications import MuscleCommandline
@@ -187,7 +187,9 @@ class ClusterObj(object):
         child = subprocess.Popen(cmds,
                                  stdout=subprocess.PIPE)
 
-        align = AlignIO.read(StringIO.StringIO(child.stdout), 'fasta')
+        stdout = child.communicate()[0]
+
+        align = AlignIO.read(StringIO(stdout), 'fasta')
 
         # temp_file = open('temp_file_in.fasta', 'w')
         # SeqIO.write(allSeqRecs, temp_file, format='fasta')
@@ -204,9 +206,7 @@ class ClusterObj(object):
         #
         # align = AlignIO.read(child.stdout, 'fasta')
 
-
         # SeqIO.write(allSeqRecs, child.stdin, format='fasta')
-        #
 
         # Read back in as a mult seq alignment
         # align = AlignIO.read(open('temp_file_out.fasta', 'rb'), 'fasta')
