@@ -184,6 +184,7 @@ class ClusterObj(object):
 
         child.wait()
 
+        # Show stderr
         print child.communicate()[1]
 
         align = AlignIO.read(child.stdout, 'fasta')
