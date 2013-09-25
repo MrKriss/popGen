@@ -294,7 +294,7 @@ class ClusterObj(object):
             ds[bp].update(Counter(nucArray[:, bp]))
             del ds[bp][refseq[bp]]
 
-        return ds, refseq, next_common_nuc, nucArray
+        return ds, refseq, next_common_nuc, useqs_total, nucArray
 
 
         # Genotyping Calculations
