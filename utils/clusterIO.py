@@ -329,19 +329,24 @@ class ClusterObj(object):
         # print out results
         n = len(ds)
         m = len(ranked_seqs)
-        freq_matrix = np.zeros([n,m], dtype=int)
+        freq_matrix = np.zeros([n, m], dtype=int)
 
         # Store seqs
         seqs = []
-        sampleids = []
         first = 1
-        for i, (sampleId) in enumerate(ds.iterkeys()):
-            sampleids.append(sampleId)
-            
+
+        # Fetch all sampleid present in cluster inascending order
+        sampleids = ds.keys().sort()
+
+        # TODO : Cheack that the sample ids are in the right order, and or map to the right samples
+        # Need a map from sample_id to sample description in the output data.
+
+        for i, id in enumerate(sampleids):
+
             for j, seq_count_tup in enumerate(ranked_seqs):
                 if first:
                     seqs.append(seq_count_tup[0])
-                freq_matrix[i,j] = ds[sampleId][seq_count_tup[0]] 
+                freq_matrix[i,j] = ds[id][seq_count_tup[0]]
             first = 0
                 
         # Get actual description of individuals 
@@ -354,7 +359,7 @@ class ClusterObj(object):
 
         df = pd.DataFrame(data=freq_matrix, index=sampledescriptions, columns=seqs, dtype=int)
 
-        return df, freq_matrix, sampledescriptions, seqs, ds
+        return df, ds
 
     
     def get_basefraction(self, db=None):
