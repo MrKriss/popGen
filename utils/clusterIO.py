@@ -187,7 +187,7 @@ class ClusterObj(object):
         child = subprocess.Popen(cmds,
                                  stdout=subprocess.PIPE)
 
-        align = AlignIO.read(StingIO(child.stdout), 'fasta')
+        align = AlignIO.read(StringIO(child.stdout), 'fasta')
 
         # temp_file = open('temp_file_in.fasta', 'w')
         # SeqIO.write(allSeqRecs, temp_file, format='fasta')
