@@ -184,33 +184,50 @@ class ClusterObj(object):
 
         cmds = shlex.split(cmds)
 
-        child = subprocess.Popen(cmds,
-                                 stdout=subprocess.PIPE)
+        child = subprocess.Popen(cmds, stdout=subprocess.PIPE)
 
         stdout = child.communicate()[0]
 
         align = AlignIO.read(StringIO(stdout), 'fasta')
 
-        # temp_file = open('temp_file_in.fasta', 'w')
-        # SeqIO.write(allSeqRecs, temp_file, format='fasta')
-        # temp_file.flush()
-        # temp_file.close()
-        #
-        # temp_filepath = os.path.join(os.path.abspath(os.path.curdir), temp_file.name)
-        #
-        # # Align with MUSCLE
-        # cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_filepath)
-        # cmds = shlex.split(str(cline))
-        #
-        # child = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        #
-        # align = AlignIO.read(child.stdout, 'fasta')
+        return align
 
-        # SeqIO.write(allSeqRecs, child.stdin, format='fasta')
+    def align2(self, sequences, db=None, start_idx=6, muscle_exec_path='~/bin/muscle'):
+        """ Create an Allignment of the unique sequences in the cluster so as to accomodate indels. """
 
-        # Read back in as a mult seq alignment
-        # align = AlignIO.read(open('temp_file_out.fasta', 'rb'), 'fasta')
-        # align = AlignIO.read(StringIO(stdout), 'fasta')
+        # Optimised version
+        # Get all unique seqs, then find alignment just for them.
+
+        # Assert seq data is present to use
+        if not hasattr(self, 'uniqueseqs_byid'):
+            # Calculate uniq seq for each individual
+            self.get_unique_seq_by_individual(db=db)
+
+        allSeqRecs = []
+
+        # Get list of sequence Records in fasta format.
+        for i, seq in enumerate(self.uniqueseqs_byid.columns):
+            rec = SeqRecord(Seq(seq[start_idx:]), id=str(i))
+            allSeqRecs.append(rec)
+
+        # Write to a tempfile
+        temp_file = open('temp_file_in.fasta', 'w')
+        SeqIO.write(allSeqRecs, temp_file, format='fasta')
+        temp_file.flush()
+        temp_file.close()
+
+        temp_filepath = os.path.join(os.path.abspath(os.getcwd()), temp_file.name)
+
+        # Align with MUSCLE
+        cmds = os.path.expanduser(muscle_exec_path) + ' -in ' + temp_filepath + ' -quiet '
+
+        cmds = shlex.split(cmds)
+
+        child = subprocess.Popen(cmds, stdout=subprocess.PIPE)
+
+        stdout = child.communicate()[0]
+
+        align = AlignIO.read(StringIO(stdout), 'fasta')
 
         return align
 
@@ -223,6 +240,11 @@ class ClusterObj(object):
             print "Sequence data not present in cluster. Retrieving from data base..."
             self.getfromdb(items=['seq', 'phred', 'sampleId'], target='all', db=db)
 
+        # Calculate uniq seq for each individual
+        df, ds, id2desc, desc2id = self.get_unique_seq_by_individual(db=db)
+        uniquseq_totals = df.sum()
+
+
         # Get multiple sequence alignment for all sequences
         alignment = self.align(start_idx=6)
 
@@ -230,9 +252,9 @@ class ClusterObj(object):
 
         # Use most frequent seq in cluster as reference genotype
         useq_counter = self.get_unique_seq(db)
-        refseq, number = self.useq_counter.most_common()[0]
+        refseq, number = useq_counter.most_common()[0]
 
-        out = self.get_unique_seq_by_individual(db=db)
+
 
         # List the Commonest Nucleotide not in ref seq per base position
         m = len(useq_counter)
