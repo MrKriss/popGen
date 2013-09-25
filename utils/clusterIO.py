@@ -183,9 +183,7 @@ class ClusterObj(object):
         cmds = shlex.split(cmds)
 
         child = subprocess.Popen(cmds,
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        child.wait()
+                                 stdout=subprocess.PIPE)
 
         align = AlignIO.read(child.stdout, 'fasta')
 
