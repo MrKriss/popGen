@@ -47,6 +47,8 @@ import numpy as np
 import sys
 
 
+
+
 class ClusterObj(object):
     """ Holds all cluster based information. """
     
@@ -185,7 +187,7 @@ class ClusterObj(object):
         child = subprocess.Popen(cmds,
                                  stdout=subprocess.PIPE)
 
-        align = AlignIO.read(child.stdout, 'fasta')
+        align = AlignIO.read(StingIO(child.stdout), 'fasta')
 
         # temp_file = open('temp_file_in.fasta', 'w')
         # SeqIO.write(allSeqRecs, temp_file, format='fasta')
