@@ -202,7 +202,7 @@ class ClusterObj(object):
         # Get all unique seqs, then find alignment just for them.
 
         # Assert seq data is present to use
-        if not hasattr(self, 'uniqueseqs_byid'):
+        if not hasattr(self, 'uniqueseqs_table'):
             assert db, 'Sequence data not present and no lookup database specified.'
             # Calculate uniq seq for each individual
             self.get_unique_seq_by_individual(db=db)
@@ -252,7 +252,7 @@ class ClusterObj(object):
             self.getfromdb(items=items, target='all', db=db)
 
         # Assert seq data is present to use
-        if not hasattr(self, 'uniqueseqs_byid'):
+        if not hasattr(self, 'uniqueseqs_table'):
             assert db, 'Sequence data not present and no lookup database specified.'
             # Calculate uniq seq for each individual
             self.get_unique_seq_by_individual(db=db)
@@ -660,34 +660,17 @@ class ClusterObj(object):
 
         elif format == 'fastq' or format == 'fasta':
 
-            if only_unique:
+            # Get list of sequence Records in fasta format.
+            allSeqRecs = [
+                SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))
+            ]
 
-                # Fetch unique sequences by individual
-                if not hasattr(self, 'uniqueseqs_byid'):
-                    df, ds, id2desc, desc2id = self.get_unique_seq_by_individual(seq_start_idx=start_idx)
-                else:
-                    df = self.uniqueseqs_table
-                    ds = self.ds
-                    id2desc = self.id2desc
-                    desc2id = self.desc2id
+            for i in range(len(self.members_seq)):
+                rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_id[i]),
+                                description=str(self.members_sample_id[i]))
+                allSeqRecs.append(rec)
 
-
-
-
-
-
-            else:
-                # Get list of sequence Records in fasta format.
-                allSeqRecs = [
-                    SeqRecord(Seq(self.rep_seq[start_idx:]), id=str(self.rep_seq_id), description=str(self.rep_sample_id))
-                ]
-
-                for i in range(len(self.members_seq)):
-                    rec = SeqRecord(Seq(self.members_seq[i][start_idx:]), id=str(self.members_id[i]),
-                                    description=str(self.members_sample_id[i]))
-                    allSeqRecs.append(rec)
-
-                SeqIO.write(allSeqRecs, handle, format=format)
+            SeqIO.write(allSeqRecs, handle, format=format)
 
                 
 class ClusterFilter(object):
