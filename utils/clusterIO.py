@@ -192,7 +192,7 @@ class ClusterObj(object):
 
         return align
 
-    def align2(self, sequences, db=None, start_idx=6, muscle_exec_path='~/bin/muscle'):
+    def align2(self, db=None, start_idx=6, muscle_exec_path='~/bin/muscle'):
         """ Create an Allignment of the unique sequences in the cluster so as to accomodate indels. """
 
         # Optimised version
@@ -200,6 +200,7 @@ class ClusterObj(object):
 
         # Assert seq data is present to use
         if not hasattr(self, 'uniqueseqs_byid'):
+            assert db, 'Sequence data not present and no lookup database specified.'
             # Calculate uniq seq for each individual
             self.get_unique_seq_by_individual(db=db)
 
