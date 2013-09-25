@@ -176,7 +176,7 @@ class ClusterObj(object):
         temp_file.close()
 
         # Align with MUSCLE
-        cmds = os.path.expanduser(muscle_exec_path) + '-in ' + temp_file.name + ' -quiet '
+        cmds = os.path.expanduser(muscle_exec_path) + ' -in ' + temp_file.name + ' -quiet '
 
         child = subprocess.Popen(shlex.split(cmds),
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
