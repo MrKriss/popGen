@@ -261,7 +261,7 @@ class ClusterObj(object):
         alignment = self.align2(start_idx=6)
 
         # Use most frequent seq in cluster as reference genotype
-        useqs_total = self.uniqueseqs_table.sum()[0]
+        useqs_total = self.uniqueseqs_table.sum()
         refseq = useqs_total.index[0]
 
         # List the Commonest Nucleotide not in ref seq per base position
