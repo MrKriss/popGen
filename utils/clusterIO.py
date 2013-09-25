@@ -169,6 +169,8 @@ class ClusterObj(object):
         child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         SeqIO.write(allSeqRecs, child.stdin, format='fasta')
+
+        child.stdin.flush()
         child.stdin.close()
 
         # Read back in as a mult seq alignment
@@ -361,6 +363,12 @@ class ClusterObj(object):
         import pandas as pd
 
         df = pd.DataFrame(data=freq_matrix, index=sampledescriptions, columns=seqs, dtype=int)
+
+        # save as attributes as well as return values
+        self.uniqueseqs_byid = df
+        self.ds = ds
+        self.id2desc = id2desc
+        self.desc2id = desc2id
 
         return df, ds, (id2desc, desc2id)
 
@@ -560,7 +568,6 @@ class ClusterObj(object):
                     # Calculate percentage similarity
                     mismatches = distance(self.members_seq[idx][12:], self.rep_seq[12:])
                     percentage = 100.00 - mismatch2percentage(mismatches, seq_len)
-
                     clust_file.write('{count}\t{length}nt, >{seq_desc}... at +/{percentage:.2f}%\n'.format(
                         count=str(count), length=seq_len, seq_desc=desc, percentage=percentage))
 
@@ -568,7 +575,16 @@ class ClusterObj(object):
 
             if only_unique:
 
-                unique_seqs_by_id = self.get_unique_seq_by_individual(seq_start_idx=start_idx)
+                # Fetch unique sequences by individual
+                if not hasattr(self, 'uniqueseqs_byid'):
+                    df, ds, id2desc, desc2id = self.get_unique_seq_by_individual(seq_start_idx=start_idx)
+                else:
+                    df = self.uniqueseqs_byid
+                    ds = self.ds
+                    id2desc = self.id2desc
+                    desc2id = self.desc2id
+
+
 
 
 
@@ -585,10 +601,6 @@ class ClusterObj(object):
                     allSeqRecs.append(rec)
 
                 SeqIO.write(allSeqRecs, handle, format=format)
-
-
-
-
 
                 
 class ClusterFilter(object):
