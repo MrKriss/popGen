@@ -277,7 +277,8 @@ class ClusterObj(object):
 
         next_common_nuc = ['-'] * len(refseq)
         for bp in range(n):
-            next_common_nuc[bp] = ds[bp].most_common()[0]
+            if ds[bp]:
+                next_common_nuc[bp] = ds[bp].most_common()[0]
 
         return ds, refseq, next_common_nuc, useqs_total
 
