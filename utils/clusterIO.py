@@ -193,7 +193,10 @@ class ClusterObj(object):
         return align
 
     def align2(self, db=None, start_idx=6, muscle_exec_path='~/bin/muscle'):
-        """ Create an Allignment of the unique sequences in the cluster so as to accomodate indels. """
+        """ Create an Allignment of just the unique sequences in the cluster so as to accomodate indels.
+
+        The id in the sequence is the index for the sorted unique sequences table
+        """
 
         # Optimised version
         # Get all unique seqs, then find alignment just for them.
@@ -207,7 +210,7 @@ class ClusterObj(object):
         allSeqRecs = []
 
         # Get list of sequence Records in fasta format.
-        for i, seq in enumerate(self.uniqueseqs_byid.columns):
+        for i, seq in enumerate(self.uniqueseqs_table.columns):
             rec = SeqRecord(Seq(seq[start_idx:]), id=str(i))
             allSeqRecs.append(rec)
 
@@ -236,42 +239,67 @@ class ClusterObj(object):
         """ Call genotypes on the cluster for each individual """
 
         # Get all necessary data: seq, phred,
-        if not self.members_seq or not self.members_phred or not self.members_sample_id:
+        items = []
+        if not self.members_seq:
+            items.append('seq')
+        if not self.members_phred:
+            items.append('phred')
+        if not self.members_sample_id:
+            items.append('seqid')
+        if items:
             assert db, 'Sequence data not present and no lookup database specified.'
             print "Sequence data not present in cluster. Retrieving from data base..."
-            self.getfromdb(items=['seq', 'phred', 'sampleId'], target='all', db=db)
+            self.getfromdb(items=items, target='all', db=db)
 
-        # Calculate uniq seq for each individual
-        df, ds, id2desc, desc2id = self.get_unique_seq_by_individual(db=db)
-        uniquseq_totals = df.sum()
-
+        # Assert seq data is present to use
+        if not hasattr(self, 'uniqueseqs_byid'):
+            assert db, 'Sequence data not present and no lookup database specified.'
+            # Calculate uniq seq for each individual
+            self.get_unique_seq_by_individual(db=db)
 
         # Get multiple sequence alignment for all sequences
-        alignment = self.align(start_idx=6)
-
-        # TODO: Use sequence alignment
+        alignment = self.align2(start_idx=6)
 
         # Use most frequent seq in cluster as reference genotype
-        useq_counter = self.get_unique_seq(db)
-        refseq, number = useq_counter.most_common()[0]
-
-
+        useqs_total = self.uniqueseqs_table.sum()[0]
+        refseq = useqs_total.index[0]
 
         # List the Commonest Nucleotide not in ref seq per base position
-        m = len(useq_counter)
+        # Done over all
+
+        next_common_nuc = ['-'] * len(refseq)
+        for bp in range(len(refseq)):
+            for seq in useqs_total.index:
+
+                # Find the most common bp not in refseq
+                if seq[bp] == refseq[bp]:
+                    continue
+                else:
+                    next_common_nuc[bp] = seq[bp]
+
+        # Done per individual
+
+
+
+
+
+
+        m = len(useqs_total)
         n = len(refseq)
+
 
         nucArray = np.zeros([m, n], dtype='a1')
         for i in range(m):
             for j in range(n):
-                nucArray[i, j] = useq_counter[i][0][j]
+                nucArray[i, j] = useqs_total.index[i][j]
+
 
         ds = defaultdict(Counter)
         for bp in range(n):
             ds[0].update(Counter(nucArray[:, bp]))
             del ds[0][refseq[bp]]
 
-        return ds, refseq, useq_counter
+        return ds, refseq, useqs_total, next_common_nuc
 
 
         # Genotyping Calculations
@@ -401,12 +429,12 @@ class ClusterObj(object):
 
         id2desc = {}
 
-        for i, id in enumerate(sampleids):
+        for i, sid in enumerate(sampleids):
 
             for j, seq_count_tup in enumerate(ranked_seqs):
                 if first:
                     seqs.append(seq_count_tup[0])
-                freq_matrix[i, j] = ds[id][seq_count_tup[0]]
+                freq_matrix[i, j] = ds[sid][seq_count_tup[0]]
             first = 0
 
         # Get actual description of individuals
@@ -424,12 +452,12 @@ class ClusterObj(object):
         df = pd.DataFrame(data=freq_matrix, index=sampledescriptions, columns=seqs, dtype=int)
 
         # save as attributes as well as return values
-        self.uniqueseqs_byid = df
+        self.uniqueseqs_table = df
         self.ds = ds
         self.id2desc = id2desc
         self.desc2id = desc2id
 
-        return df, ds, (id2desc, desc2id)
+        return df, ds, id2desc, desc2id
 
 
     
@@ -638,7 +666,7 @@ class ClusterObj(object):
                 if not hasattr(self, 'uniqueseqs_byid'):
                     df, ds, id2desc, desc2id = self.get_unique_seq_by_individual(seq_start_idx=start_idx)
                 else:
-                    df = self.uniqueseqs_byid
+                    df = self.uniqueseqs_table
                     ds = self.ds
                     id2desc = self.id2desc
                     desc2id = self.desc2id
