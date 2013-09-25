@@ -44,6 +44,8 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 from Bio import AlignIO, SeqIO
 import numpy as np
+import sys
+
 
 class ClusterObj(object):
     """ Holds all cluster based information. """
@@ -174,12 +176,14 @@ class ClusterObj(object):
         child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-        SeqIO.write(allSeqRecs, child.stdin, format='fasta')
+        SeqIO.write(allSeqRecs, sys.stdin, format='fasta')
 
         child.stdin.flush()
         child.stdin.close()
 
         # child.wait()
+
+        x, y = child.communicate()
 
         align = AlignIO.read(child.stdout, 'fasta')
 
