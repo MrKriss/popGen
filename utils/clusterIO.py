@@ -183,6 +183,9 @@ class ClusterObj(object):
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
         child.wait()
+
+        print child.communicate()[1]
+
         align = AlignIO.read(child.stdout, 'fasta')
 
 
