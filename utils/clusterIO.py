@@ -175,7 +175,7 @@ class ClusterObj(object):
         temp_file.flush()
         temp_file.close()
 
-        temp_filepath = os.path.join(os.path.abspath(os.path.curdir), temp_file)
+        temp_filepath = os.path.join(os.path.abspath(os.getcwd()), temp_file.name)
 
         # Align with MUSCLE
         cmds = os.path.expanduser(muscle_exec_path) + ' -in ' + temp_filepath + ' -quiet '
