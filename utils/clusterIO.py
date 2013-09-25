@@ -167,27 +167,47 @@ class ClusterObj(object):
                             description=str(self.members_sample_id[i]))
             allSeqRecs.append(rec)
 
-        temp_file = open('temp_file_in.fasta', 'w')
-        SeqIO.write(allSeqRecs, temp_file, format='fasta')
-        temp_file.flush()
-        temp_file.close()
-
-        temp_filepath = os.path.join(os.path.abspath(os.path.curdir), temp_file.name)
 
         # Align with MUSCLE
-        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_filepath)
+        cline = MuscleCommandline(os.path.expanduser(muscle_exec_path))
 
-        cmds = shlex.split(str(cline))
+        child = subprocess.Popen(str(cline), stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-        child = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        SeqIO.write(allSeqRecs, child.stdin, format='fasta')
+
+        child.stdin.flush()
+        child.stdin.close()
 
         align = AlignIO.read(child.stdout, 'fasta')
 
 
+
+
+
+
+
+
+
+
+        # temp_file = open('temp_file_in.fasta', 'w')
+        # SeqIO.write(allSeqRecs, temp_file, format='fasta')
+        # temp_file.flush()
+        # temp_file.close()
+        #
+        # temp_filepath = os.path.join(os.path.abspath(os.path.curdir), temp_file.name)
+        #
+        # # Align with MUSCLE
+        # cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_filepath)
+        # cmds = shlex.split(str(cline))
+        #
+        # child = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #
+        # align = AlignIO.read(child.stdout, 'fasta')
+
+
         # SeqIO.write(allSeqRecs, child.stdin, format='fasta')
         #
-        # child.stdin.flush()
-        # child.stdin.close()
 
         # Read back in as a mult seq alignment
         # align = AlignIO.read(open('temp_file_out.fasta', 'rb'), 'fasta')
