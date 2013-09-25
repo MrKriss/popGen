@@ -31,6 +31,7 @@ Sample Cluster File:
 
 """
 import os
+import shlex
 import time
 from collections import defaultdict, Counter
 from editdist import distance
@@ -176,7 +177,9 @@ class ClusterObj(object):
         # Align with MUSCLE
         cline = MuscleCommandline(os.path.expanduser(muscle_exec_path), input=temp_filepath)
 
-        child = subprocess.Popen(str(cline), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmds = shlex.split(str(cline))
+
+        child = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         align = AlignIO.read(child.stdout, 'fasta')
 
