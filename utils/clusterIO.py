@@ -268,24 +268,16 @@ class ClusterObj(object):
         # List the Commonest Nucleotide not in ref seq per base position
         # Done over all
 
-        next_common_nuc = ['-'] * len(refseq)
-        for bp in range(len(refseq)):
-            for seq in useqs_total.index:
-
-                # Find the most common bp not in refseq
-                if seq[bp] == refseq[bp]:
-                    continue
-                else:
-                    next_common_nuc[bp] = seq[bp]
-                    break
-
-
         ds = defaultdict(Counter)
         for bp in range(n):
             for seq in useqs_total.index:
                 ds[bp][seq[bp]] += useqs_total[seq]
 
             del ds[bp][refseq[bp]]
+
+        next_common_nuc = ['-'] * len(refseq)
+        for bp in range(n):
+            next_common_nuc[bp] = ds[bp].most_common()[0]
 
         return ds, refseq, next_common_nuc, useqs_total
 
