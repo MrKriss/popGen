@@ -276,6 +276,7 @@ class ClusterObj(object):
                     continue
                 else:
                     next_common_nuc[bp] = seq[bp]
+                    break
 
         # Done per individual
 
