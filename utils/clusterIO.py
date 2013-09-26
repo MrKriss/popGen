@@ -284,15 +284,15 @@ class ClusterObj(object):
                 # Delete those that are the same as the reference genome.
                 del ds[indiv][bp][refseq[bp]]
 
-
-
         next_common_nuc = defaultdict(lambda: ['-'] * n)
 
         # for each inidvidual
         for indiv in self.uniqueseqs_table.index:
             for bp in range(n):
                 if ds[indiv][bp]:
-                    next_common_nuc[indiv][bp] = ds[indiv][bp].most_common()[0]
+                    next_common_nucleotide_tuple = ds[indiv][bp].most_common()[0]
+                    if next_common_nucleotide_tuple[1] != 0:
+                        next_common_nuc[indiv][bp] = next_common_nucleotide_tuple
 
 
         return ds, refseq, next_common_nuc, useqs_total
