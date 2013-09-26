@@ -38,6 +38,8 @@ from editdist import distance
 import subprocess
 from StringIO import StringIO
 
+import pandas as pd
+
 
 from Bio.Align.Applications import MuscleCommandline
 from Bio.SeqRecord import SeqRecord
@@ -231,9 +233,31 @@ class ClusterObj(object):
 
         stdout = child.communicate()[0]
 
-        align = AlignIO.read(StringIO(stdout), 'fasta')
+        alignment = AlignIO.read(StringIO(stdout), 'fasta')
 
-        return align
+        # Update columns in uniqueseqs_table to be aligned sequences
+        new_idx = [0] * len(self.uniqueseqs_table.columns)
+
+        for seqrec in alignment:
+            new_idx[int(seqrec.id)] = seqrec.seq.tostring()
+
+        self.uniqueseqs_table.columns = pd.Index(new_idx)
+
+
+    def align2seq(self, alignedseq):
+        """ Utility function to convert aligned sequences back to original seq by stripping '-' characters """
+
+        import Bio
+        from Bio import SeqRecord, Seq
+
+        if type(alignedseq) is Bio.SeqRecord.SeqRecord:
+            alignedseq = alignedseq.seq.tostring().replace('-', '')
+
+        elif type(alignedseq) is Bio.Seq.Seq:
+            alignedseq = alignedseq.tostring().replace('-', '')
+
+        return alignedseq
+
 
     def genotype(self, db=None):
         """ Call genotypes on the cluster for each individual """
@@ -257,8 +281,8 @@ class ClusterObj(object):
             # Calculate uniq seq for each individual
             self.get_unique_seq_by_individual(db=db)
 
-        # Get multiple sequence alignment for all sequences
-        alignment = self.align2(start_idx=6)
+        # Set columns in uniqueseqs_table to multiple sequence alignment.
+        self.align2(start_idx=0)
 
         # Use most frequent seq in cluster as reference genotype
         useqs_total = self.uniqueseqs_table.sum()
@@ -267,7 +291,7 @@ class ClusterObj(object):
         m = len(self.uniqueseqs_table.index)
 
         # List the Commonest Nucleotide not in ref seq per base position
-        # Done for each individual
+        # Done for each individual separately
 
         # D = { 'individual' :  defaultd{ baseposition : Counter }
 
@@ -285,7 +309,7 @@ class ClusterObj(object):
                 # Delete those that are the same as the reference genome.
                 del ds[indiv][bp][refseq[bp]]
 
-        next_common_nuc = defaultdict(lambda: ['-'] * n)
+        next_common_nuc = defaultdict(lambda: [''] * n)
 
         # for each inidvidual
         for indiv in self.uniqueseqs_table.index:
@@ -315,12 +339,39 @@ class ClusterObj(object):
         #
         # return ds, refseq, next_common_nuc, useqs_total
 
+        # -----------------------
         # Genotyping Calculations
-
+        # -----------------------
 
         # For each individual
 
-        nu = np.zeros((m, n))
+        pm1_nu = np.zeros((m, n))
+        pm2_nu = np.zeros((m, n))
+        pm3_nu = np.zeros((m, n))
+
+
+        for j, indiv in enumerate(self.uniqueseqs_table.index):
+
+            for i in range(n):
+
+                # Fetch all reads for the individual
+
+                idx = np.where(np.array(self.members_sample_id + self.rep_sample_id) == self.desc2id[indiv])
+                allreads = np.array(self.members_seq + [self.rep_seq])[idx]
+                allphreds = np.array(self.members_phred + [self.rep_phred])[idx]
+
+
+
+
+                seq_counts = self.uniqueseqs_table.ix[indiv]
+
+                # Fetch Phred scores for base position for individaul
+
+
+
+
+
+
 
 
 
