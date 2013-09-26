@@ -279,7 +279,8 @@ class ClusterObj(object):
                 indiv_total_useqs = self.uniqueseqs_table.ix[indiv]
                 for seq in indiv_total_useqs.index:
                     # Count up base paires for each individual and position
-                    ds[indiv][bp][seq[bp]] += indiv_total_useqs[seq]
+                    if indiv_total_useqs[seq] > 0:
+                        ds[indiv][bp][seq[bp]] += indiv_total_useqs[seq]
 
                 # Delete those that are the same as the reference genome.
                 del ds[indiv][bp][refseq[bp]]
