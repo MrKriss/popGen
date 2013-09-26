@@ -271,7 +271,7 @@ class ClusterObj(object):
 
         # D = { 'individual' :  defaultd{ baseposition : Counter }
 
-        ds = defaultdict(defaultdict(Counter))
+        ds = defaultdict(lambda: defaultdict(Counter))
 
         # for each inidvidual
         for indiv in self.uniqueseqs_table.index:
@@ -286,7 +286,7 @@ class ClusterObj(object):
 
 
 
-        next_common_nuc = defaultdict(['-'] * len(refseq))
+        next_common_nuc = defaultdict(lambda: ['-'] * n)
 
         # for each inidvidual
         for indiv in self.uniqueseqs_table.index:
