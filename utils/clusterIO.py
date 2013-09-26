@@ -264,30 +264,62 @@ class ClusterObj(object):
         useqs_total = self.uniqueseqs_table.sum()
         refseq = useqs_total.index[0]
         n = len(refseq)
+        m = len(self.uniqueseqs_table.index)
 
         # List the Commonest Nucleotide not in ref seq per base position
-        # Done over all
+        # Done for each individual
 
-        ds = defaultdict(Counter)
-        for bp in range(n):
-            for seq in useqs_total.index:
-                ds[bp][seq[bp]] += useqs_total[seq]
+        # D = { 'individual' :  defaultd{ baseposition : Counter }
 
-            del ds[bp][refseq[bp]]
+        ds = defaultdict(defaultdict(Counter))
 
-        next_common_nuc = ['-'] * len(refseq)
-        for bp in range(n):
-            if ds[bp]:
-                next_common_nuc[bp] = ds[bp].most_common()[0]
+        # for each inidvidual
+        for indiv in self.uniqueseqs_table.index:
+            for bp in range(n):
+                indiv_total_useqs = self.uniqueseqs_table.ix[indiv]
+                for seq in indiv_total_useqs.index:
+                    # Count up base paires for each individual and position
+                    ds[indiv][bp][seq[bp]] += indiv_total_useqs[seq]
+
+                # Delete those that are the same as the reference genome.
+                del ds[indiv][bp][refseq[bp]]
+
+
+
+        next_common_nuc = defaultdict(['-'] * len(refseq))
+
+        # for each inidvidual
+        for indiv in self.uniqueseqs_table.index:
+            for bp in range(n):
+                if ds[indiv][bp]:
+                    next_common_nuc[indiv][bp] = ds[indiv][bp].most_common()[0]
+
 
         return ds, refseq, next_common_nuc, useqs_total
 
+        # # List the Commonest Nucleotide not in ref seq per base position
+        # # Done over all
+        #
+        # ds = defaultdict(Counter)
+        # for bp in range(n):
+        #     for seq in useqs_total.index:
+        #         ds[bp][seq[bp]] += useqs_total[seq]
+        #
+        #     del ds[bp][refseq[bp]]
+        #
+        # next_common_nuc = ['-'] * len(refseq)
+        # for bp in range(n):
+        #     if ds[bp]:
+        #         next_common_nuc[bp] = ds[bp].most_common()[0]
+        #
+        # return ds, refseq, next_common_nuc, useqs_total
 
         # Genotyping Calculations
 
 
+        # For each individual
 
-
+        nu = np.zeros((m, n))
 
 
 
@@ -370,7 +402,7 @@ class ClusterObj(object):
 
         return unique_seq_counter
         
-    def get_unique_seq_by_individual(self, db, min_seq_count = 1):
+    def get_unique_seq_by_individual(self, db):
         """ Show the breakdown on sequence counts per individual in the cluster """
             
         # ds = { sampleId : { unique_seq : count } }
