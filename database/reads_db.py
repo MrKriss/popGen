@@ -150,12 +150,15 @@ class Reads_db(SQLdatabase):
 
         Barcodes for the MIDtag samples are added to the database if given.
 
+
+
         The list of Barcodes in the files given must be unique.
         Therefore if there are duplicates, the data and barcodes must be added in sets of
         unique barcodes for the data files added.
 
         If 'data_files' or 'barcode_files' is a str, it is interpreted as a glob to the
         data_path / barcode_path respecively.
+
         """
 
         if barcode_files:
@@ -207,6 +210,25 @@ class Reads_db(SQLdatabase):
 
                         barcode_dict = dict(zip(MIDs, ids))
                         MIDlength = len(MIDs[0])
+        else:
+            # There are no barcode files, so each file is assigned a new sample id incrementally
+            # MIDtags are assumed to have been stripped.
+            # File name is stored in description and MIDtag left as Null
+            with self.con as con:
+                curs = con.cursor()
+
+                ids = []
+                for i, fname in enumerate(data_files):
+
+                    curs.execute('''INSERT OR IGNORE INTO samples(description)
+                                        VALUES(?)''', (fname,))
+                    # Find ID of last scanned Barcode
+                    curs.execute('''SELECT sampleId FROM samples WHERE description=?''', (fname,))
+                    ids.append(curs.fetchone()['sampleId'])
+
+                barcode_dict = dict(zip(data_files, ids))
+                MIDlength = 0
+
 
         # Setup Files generator
         if type(data_files) is file:
@@ -233,10 +255,14 @@ class Reads_db(SQLdatabase):
                 # Store sequence MIDtag and phred info 
                 fullseq = rec.seq.tostring()
                 MIDseq = fullseq[:MIDlength]
+
                 if barcode_files:
                     sampleId = barcode_dict[MIDseq]
+                else:
+                    sampleId = barcode_dict[SeqRecGen.curfilename]
 
-                # Sequence stored does not include MID tag, this is stored separately.
+
+                # Sequence stored does not include MID tag, this is stored separately if present.
                 seq = fullseq[MIDlength:]
                 length = len(seq)
 
@@ -260,7 +286,7 @@ class Reads_db(SQLdatabase):
                 controlBits = data[1][2]
                 indexSeq = data[1][3]
 
-                # Write data to memory file 
+                # Append data to buffer
                 data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
                                     pairedEnd, illuminaFilter, controlBits, indexSeq))
                 data_buffer_count += 1

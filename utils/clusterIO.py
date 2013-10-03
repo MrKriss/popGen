@@ -3,10 +3,10 @@ Created on 24 Apr 2013
 
 @author: musselle
 
-IO support for CDHIT clustering files in python.
+Defines a cluster class to hold all processing methods, as well as IO methods to extract information about sequence
+and sampleid from the database.
 
-Features
-
+Also includes utility funtions to provide IO support for CDHIT clustering files in python, such as:
     * Iterate through Clusters in a file
     * Return counters for cluster sizes in a file
     * Analise Distribution of sequences within cluster
@@ -320,7 +320,7 @@ class ClusterObj(object):
                         next_common_nuc[indiv][bp] = next_common_nucleotide_tuple
 
 
-        return ds, refseq, next_common_nuc, useqs_total
+
 
         # # List the Commonest Nucleotide not in ref seq per base position
         # # Done over all
@@ -343,32 +343,202 @@ class ClusterObj(object):
         # Genotyping Calculations
         # -----------------------
 
+        # predefined error rates
+        epsilon_insert = 0.001
+        epsilon_deletion = 0.001
+
+        m = len(refseq)
+
+        #map from seq to aligned seq
+        seq2aligned = {}
+        for aligned_seq in self.uniqueseqs_table.columns:
+            seq2aligned[aligned_seq.replace('-', '')] = aligned_seq
+
         # For each individual
+        for k, indiv in enumerate(self.uniqueseqs_table.index):
 
-        pm1_nu = np.zeros((m, n))
-        pm2_nu = np.zeros((m, n))
-        pm3_nu = np.zeros((m, n))
+            # Fetch all reads for the individual
+            idx = np.where(np.array(self.members_sample_id + [self.rep_sample_id]) == self.desc2id[indiv])
+            allreads = np.array(self.members_seq + [self.rep_seq])[idx]
+            allphreds = np.array(self.members_phred + [self.rep_phred])[idx]
+
+            m = len(refseq)
+            n = len(allreads)
+
+            # Reset model probabilities
+            # True Nuc in ref Nuc
+            pm1_nu = np.zeros((m, n))
+            # True Nuc is alternative Nuc
+            pm2_nu = np.zeros((m, n))
+            # Individual is heterozygos
+            pm3_nu = np.zeros((m, n))
+
+            # for all reads for that individual
+            for j, read in enumerate(allreads):
+
+                # Get aligned seq
+                alignedread = seq2aligned[read]
+
+                # Get phred score for read,
+                phred = allphreds[idx]
+
+                # find inserted dash positions
+                insert_idxs = []
+                start_idx = 0
+                value_idx = 0
+                while value_idx != -1:
+                    value_idx = alignedread.find('-', start_idx)
+                    if value_idx != -1:
+                        insert_idxs.append(value_idx)
+                        start_idx = value_idx + 1
+
+                # insert -1 where there is a dash in phred score
+                phred = phred.tolist()
+                for position in insert_idxs:
+                    phred.insert(-1, position)
+
+                # For each base position
+                for bp in range(len(refseq)):
+
+                    # 8 possibilities
+                    #
+                    # b = base
+                    # - = no base
+                    #                            seq = ref      seq = Nmcn    seq = ref or Nmcn
+                    #     Ref nmun seq  epsilon   pm1.1    1.2   pm2.1   2.2   pm3.1   3.2    3.3
+                    # 1    b   b    b    phred
+                    # 2    b   b    -    edel      edel             edel         2 * edel / 3
+                    # 3    b   -    b    phred     1 - e             e           (1 - e) / 2
+                    # 4    b   -    -
+                    # 5    -   b    b
+                    # 6    -   b    -
+                    # 7    -   -    b
+                    # 8    -   -    -
 
 
-        for j, indiv in enumerate(self.uniqueseqs_table.index):
 
-            for i in range(n):
-
-                # Fetch all reads for the individual
-
-                idx = np.where(np.array(self.members_sample_id + self.rep_sample_id) == self.desc2id[indiv])
-                allreads = np.array(self.members_seq + [self.rep_seq])[idx]
-                allphreds = np.array(self.members_phred + [self.rep_phred])[idx]
+                    # Deal with insertions and deletions
+                    if refseq[bp] == '-' and next_common_nuc[indiv][bp] == '-' :
 
 
+                        if read[bp] == '-':
+                            # Condition 8: Treat '-' as a 5th base
 
-
-                seq_counts = self.uniqueseqs_table.ix[indiv]
-
-                # Fetch Phred scores for base position for individaul
+                            pm1_nu[bp, j] =  1 - epsilon
+                            pm2_nu[bp, j] =  1 - epsilon
+                            pm3_nu[bp, j] = (2 * epsilon) / 3.
 
 
 
+
+                        else:
+                            # Condition 7:
+                            pass
+
+
+
+
+
+
+
+
+                    if read[bp] == '-' and refseq[bp] == '-':
+
+                        # check if next most common is not a gap
+                        if next_common_nuc[indiv][bp] == '-':
+
+
+
+
+
+
+                            continue
+                        else:
+
+                            # TODO: Find the phred for the alternative sequences
+
+                            epsilon = 10 ** () #
+
+                            # bp != either ref or next nuc
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = epsilon
+                            pm3_nu[bp, j] = (2 * epsilon) / 3.
+
+                    elif read[bp] == '-' and refseq[bp] != '-':
+                        # There has been a deletion in read relative to refseq
+                        # no phred will be present, so assume epsilon of 0.01
+                        epsilon = epsilon_deletion
+
+                        if read[bp] == next_common_nuc[indiv][bp]:
+                            # bp = next most common nuc for that individual
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = 1 - epsilon
+                            pm3_nu[bp, j] = ((1 - epsilon) / 2.) + (epsilon / 6.)
+                        else:
+                            # bp != either ref or next nuc
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = epsilon
+                            pm3_nu[bp, j] = (2 * epsilon) / 3.
+
+
+                    elif refseq[bp] == '-' and read[bp] != '-':
+                        # There has been an insertion in read relative to refseq
+
+                        epsilon = epsilon_insert
+
+                        if read[bp] == next_common_nuc[indiv][bp]:
+                            # bp = next most common nuc for that individual
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = 1 - epsilon
+                            pm3_nu[bp, j] = ((1 - epsilon) / 2.) + (epsilon / 6.)
+
+
+
+
+
+
+
+
+
+
+
+                    else:
+                        # Check for SNPs
+
+                        epsilon = 10 ** (-phred[idx][bp] / 10.)
+
+                        # Record probabilities for models
+                        if read[bp] == refseq[bp]:
+                            # bp = refseq
+                            pm1_nu[bp, j] = 1 - epsilon
+                            pm2_nu[bp, j] = epsilon
+                            pm3_nu[bp, j] = ((1 - epsilon) / 2.) + (epsilon / 6.)
+
+                        elif read[bp] == next_common_nuc[indiv][bp]:
+                            # bp = next most common nuc for that individual
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = 1 - epsilon
+                            pm3_nu[bp, j] = ((1 - epsilon) / 2.) + (epsilon / 6.)
+
+                        else:
+                            # bp != either ref or next nuc
+                            pm1_nu[bp, j] = epsilon
+                            pm2_nu[bp, j] = epsilon
+                            pm3_nu[bp, j] = (2 * epsilon) / 3.
+
+
+
+
+
+
+
+                    if read[bp] == refseq[bp]:
+                        pass
+
+
+
+
+        return ds, refseq, next_common_nuc, useqs_total
 
 
 
@@ -914,15 +1084,17 @@ def input_check(handle):
 
     return handle 
 
-def getfromdb(cluster_list, items, db=None):
+def getfromdb(cluster_list, items, target, db=None):
     """ Adds the specified items to each cluster in list, looked up from the main db.
     
-    items - list of things to fetch for the cluster. Option of either/both 'seq' and 'phred'
-            'rep' will fetch just the seq and phred info for the representative sequence.
+    items - list of things to fetch for the cluster. Option of 'seq', 'phred' or 'seqid'
+
+    target - 'rep' will fetch just the items for the representative sequence,
+             'all' will fetch the items for all cluster members includeing representative sequence.
             
     """
     for cluster in cluster_list:
-        cluster.getfromdb(items, db)
+        cluster.getfromdb(items=items, target=target, db=db)
         
     return cluster_list
 
