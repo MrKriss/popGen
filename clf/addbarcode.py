@@ -20,6 +20,7 @@ def main(args, loglevel):
 
         filename = args.inputs[i]
 
+
         while True:
             # Generate barcode
             tag = ''.join(random.choice(bases) for x in range(6))
@@ -28,14 +29,27 @@ def main(args, loglevel):
                 barcode_dict[tag] = filename
                 break
 
-        # Append to all sequences in the description
+                # Append to all sequences in the description
         seqgen = SeqIO.parse(open(filename), 'fastq')
 
         outfile = open(os.path.join(args.outputpath, filename + '.temp'), 'wb')
 
+        buffer = []
+        buffer_count = 0
+        buffer_limit = 10000
+
         for seq in seqgen:
+
             seq.description += tag
-            SeqIO.write(seq, outfile, 'fastq')
+            buffer.append(seq)
+            buffer_count += 1
+            if buffer_count > buffer_limit:
+                SeqIO.write(buffer, outfile, 'fastq')
+                buffer = []
+                buffer_count = 0
+
+        if buffer:
+            SeqIO.write(buffer, outfile, 'fastq')
 
         outfile.flush()
         outfile.close()
