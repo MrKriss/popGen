@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-o", "outputpath",
-        dest=outputpath,
+        dest='outputpath',
         default='',
         help="Path to write output files to.")
 
