@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 # import modules used here -- sys is a very standard one
+import os
 import sys, argparse, logging
 from Bio import SeqIO
 import random
@@ -30,7 +31,7 @@ def main(args, loglevel):
         # Append to all sequences in the description
         seqgen = SeqIO.parse(open(filename), 'fastq')
 
-        outfile = open(filename + '.temp', 'wb')
+        outfile = open(os.path.join(args.outputpath, filename + '.temp'), 'wb')
 
         for seq in seqgen:
             seq.description += tag
@@ -50,6 +51,12 @@ if __name__ == '__main__':
         "inputs",
         help="List of inputs files to process",
         nargs='+')
+
+    parser.add_argument(
+        "-o", "outputpath",
+        dest=outputpath,
+        default='',
+        help="Path to write output files to.")
 
     parser.add_argument(
         "-v",
