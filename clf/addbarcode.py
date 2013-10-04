@@ -37,7 +37,16 @@ def main(args, loglevel):
             seq.description += tag
             SeqIO.write(seq, outfile, 'fastq')
 
+        outfile.flush()
+        outfile.close()
+
         logging.info('Finished processing {}. Written to {}'.format(filename, outfile.name))
+
+    barcodes = open(os.path.join(args.outputpath, 'barcodes.txt'), 'wb')
+    barcodes.writelines(barcode_dict.keys())
+    barcodes.flush()
+    barcodes.close()
+
 
 
 # Standard boilerplate to call the main() function to begin
@@ -53,7 +62,7 @@ if __name__ == '__main__':
         nargs='+')
 
     parser.add_argument(
-        "-o", "outputpath",
+        "-o",
         dest='outputpath',
         default='',
         help="Path to write output files to.")
