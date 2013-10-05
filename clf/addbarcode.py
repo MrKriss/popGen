@@ -19,7 +19,7 @@ def main(args, loglevel):
         barcode_dict[line[1]] = line[0] # Midtag \t filename pairs per line. Need tomap filename 2 MID
     f.close()
 
-    assert args.input in barcode_dict
+    assert args.input in barcode_dict, "{} not found in barcode_dict".format(args.input)
 
     # Append to all sequences in the description
     seqgen = SeqIO.parse(open(args.input), 'fastq')
