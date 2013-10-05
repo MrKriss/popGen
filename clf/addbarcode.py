@@ -56,11 +56,18 @@ def main(args, loglevel):
 
         logging.info('Finished processing {}. Written to {}'.format(filename, outfile.name))
 
-    barcodes = open(os.path.join(args.outputpath, 'barcodes.txt'), 'wb')
-    barcodes.writelines(barcode_dict.keys())
-    barcodes.flush()
-    barcodes.close()
+    # write barcodes only (for input to stacks)
+    barcodes_only = open(os.path.join(args.outputpath, 'barcodes_only.txt'), 'wb')
+    barcodes_only.writelines("\n".join(barcode_dict.keys()))
+    barcodes_only.flush()
+    barcodes_only.close()
 
+    # Write barcode filename pairs for reference later
+    barcodes_filenams = open(os.path.join(args.outputpath, 'barcodes_filenames.txt'), 'wb')
+    for k, v in barcode_dict.iteritems():
+        barcodes_filenams.write(k + '\t' + str(v) + '\n')
+    barcodes_filenams.flush()
+    barcodes_filenams.close()
 
 
 # Standard boilerplate to call the main() function to begin
