@@ -11,82 +11,59 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
-    num_files = len(args.inputs)
-    bases = 'ATGC'
+    # Read in barcodes
+    f = open(args.barcodes, 'rb')
     barcode_dict ={}
+    for line in f:
+        line = line.strip().split('\t')
+        barcode_dict[line[1]] = line[0] # Midtag \t filename pairs per line. Need tomap filename 2 MID
+    f.close()
 
-    # For each file, generate a barcode, append it to all sequence descriptions in the file
-    for i in range(num_files):
+    assert args.input in barcode_dict
 
-        filename = args.inputs[i]
+    # Append to all sequences in the description
+    seqgen = SeqIO.parse(open(args.input), 'fastq')
 
+    outfile = open(os.path.join(args.outputpath, args.input + '.temp'), 'wb')
 
-        while True:
-            # Generate barcode
-            tag = ''.join(random.choice(bases) for x in range(6))
-            # check its different from all others
-            if not tag in barcode_dict:
-                barcode_dict[tag] = filename
-                break
+    writebuffer = []
+    buffer_count = 0
+    buffer_limit = 10000
 
-                # Append to all sequences in the description
-        seqgen = SeqIO.parse(open(filename), 'fastq')
+    for seq in seqgen:
+        seq.description += barcode_dict[args.input]
+        writebuffer.append(seq)
+        buffer_count += 1
+        if buffer_count > buffer_limit:
+            SeqIO.write(writebuffer, outfile, 'fastq')
+            writebuffer = []
+            buffer_count = 0
 
-        outfile = open(os.path.join(args.outputpath, filename + '.temp'), 'wb')
+    if writebuffer:
+        SeqIO.write(writebuffer, outfile, 'fastq')
 
-        buffer = []
-        buffer_count = 0
-        buffer_limit = 10000
+    outfile.flush()
+    outfile.close()
 
-        for seq in seqgen:
-
-            seq.description += tag
-            buffer.append(seq)
-            buffer_count += 1
-            if buffer_count > buffer_limit:
-                SeqIO.write(buffer, outfile, 'fastq')
-                buffer = []
-                buffer_count = 0
-
-        if buffer:
-            SeqIO.write(buffer, outfile, 'fastq')
-
-        outfile.flush()
-        outfile.close()
-
-        logging.info('Finished processing {}. Written to {}'.format(filename, outfile.name))
-
-    # write barcodes only (for input to stacks)
-    barcodes_only = open(os.path.join(args.outputpath, 'barcodes_only.txt'), 'wb')
-    barcodes_only.writelines("\n".join(barcode_dict.keys()))
-    barcodes_only.flush()
-    barcodes_only.close()
-
-    # Write barcode filename pairs for reference later
-    barcodes_filenams = open(os.path.join(args.outputpath, 'barcodes_filenames.txt'), 'wb')
-    for k, v in barcode_dict.iteritems():
-        barcodes_filenams.write(k + '\t' + str(v) + '\n')
-    barcodes_filenams.flush()
-    barcodes_filenams.close()
+    logging.info('Finished processing {}. Written to {}'.format(args.input, outfile.name))
 
 
 # Standard boilerplate to call the main() function to begin
 # the program.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Takes a list of preprocessed files from Floragenics and inserts a dummy barcode on the front so they can be "
-                    "rerun through a preprocessing step using STACKS.",)
+        description="Takes a single preprocessed file from Floragenics and inserts a dummy barcode on the front so they"
+                    "can be rerun through a preprocessing step using STACKS.",)
 
     parser.add_argument(
-        "inputs",
-        help="List of inputs files to process",
-        nargs='+')
+        "input",
+        help="Single input fastq file to process")
 
     parser.add_argument(
         "-o",
         dest='outputpath',
         default='',
-        help="Path to write output files to.")
+        help="Path to write output file to.")
 
     parser.add_argument(
         "-v",
