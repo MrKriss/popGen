@@ -14,23 +14,46 @@ clf.make_suparparent.py
 # import modules used here -- sys is a very standard one
 import os, argparse, logging
 import subprocess
+import glob
 
 # Gather code in a main() function
 def main(args, loglevel):
     # Setup Logging
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
+    # Load in barcode dictionary
+    f = open(args.barcodes, 'rb')
+    mid2file = {}
+    file2mid = {}
+    for line in f:
+        line = line.strip().split('\t')
+        mid2file[line[0]] = line[1] # Midtag \t filename pairs per line. Need to map filename 2 MID
+        file2mid[line[1]] = line[0] # Midtag \t filename pairs per line. Need to map filename 2 MID
+    f.close()
+
+    # List of raw filenames
+    filenames = file2mid.keys()
+
     for i, subpop in enumerate(args.subpops):
 
-        # Find all raw files that you want to merge and concatonate them
-        output_filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
-        cat_cmd = 'cat {}/*{}* > {}'.format(args.input_path, subpop, output_filepath)
+        # Filenames and barcodes corresponding to subpopulation
+        files = [fname for fname in filenames if subpop in fname]
+        barcodes = [file2mid[fname] for fname in filenames]
+
+        # Find all processed files correesponding to the subpopulation
+        processed_files = []
+        for b in barcodes:
+            processed_files.extend(glob.glob(os.path.join(args.input_path, 'sample_' + b + '*')))
+
+        # Concatonate files
+        merged_filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
+        cat_cmd = 'cat {} > {}'.format(' '.join(processed_files), merged_filepath)
         subprocess.check_call(cat_cmd.split())
         logging.info('Superparent created for {} and written to\n{}\n'.format(subpop, args.sup_parent_path))
 
         # Run ustacks on the Superparent
-        # ustacks -t file_type -f file_path [-d] [-r] [-o path] [-i id] [-m min_cov] [-M max_dist] [-p num_threads] [-R] [-H] [-h]
-
+        # ustacks -t file_type -f file_path [-d] [-r] [-o path] [-i id] [-m min_cov] [-M max_dist] [-p num_threads]
+        # [-R] [-H] [-h]
         ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(args.sup_parent_path,
                                                                               args.stack_path,
                                                                               subpop,
@@ -45,7 +68,7 @@ def main(args, loglevel):
 
         logging.debug("About to run ustacks with following comandline arguments:\n{}\n".format(str(ustacks_cmd.split())))
         subprocess.check_call(ustacks_cmd.split())
-        logging.info("Finished processing {} of {} subpopulations.".format(i ,len(args.subpops)))
+        logging.info("Finished processing {} of {} subpopulations.".format(i, len(args.subpops)))
 
 # Standard boilerplate to call the main() function to begin
 # the program.
@@ -56,52 +79,56 @@ if __name__ == '__main__':
                     'cstacks.')
 
     parser.add_argument(
-        "input_path",
-        help="Location of input files")
+        "-i", "--processed_files_path",
+        required=True,
+        help="Location of preprocessed input files")
 
     parser.add_argument(
-        "sup_parent_path",
-        help="Location to write superparent output")
+        "-b", "--barcodes",
+        required=True,
+        help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
-        "stack_path",
-        help="Location to write superparent output")
-
-    parser.add_argument(
-        "-subpops",
+        "-s" "-subpops",
         default=None,
         nargs='+',
         help="List of string patterns denoting files that make up separate Subpopulations. ")
 
     parser.add_argument(
-        "-p",
+        "-u", "--sup_parent_path",
+        required=True,
+        help="Location to write superparent output")
+
+    parser.add_argument(
+        "-t", "--stack_path",
+        required=True,
+        help="Location to write ustacks output")
+
+    parser.add_argument(
+        "-p", "--processors",
         help="Number of processors to run ustacks with.",
-        metavar="processors",
         default=1)
 
     parser.add_argument(
-        "-m",
+        "-m", "--mindepth",
         help="Minimum depth of coverage required to create a stack in ustacks (default 2).",
-        metavar="mindepth",
         default=None)
 
     parser.add_argument(
-        "-M",
+        "-M", "--maxdist_between_stacks",
         help="Maximum distance (in nucleotides) allowed between stacks in ustacks (default 2).",
-        metavar="maxdist_between_stacks",
         default=None)
 
     parser.add_argument(
-        "-N",
+        "-N", "--maxdist_second2primary",
         help="Maximum distance allowed to align secondary reads to primary stacks in ustacks (default: M + 2).",
-        metavar="maxdist_second2primary",
         default=None)
 
     parser.add_argument(
-        "-v",
-        "--verbose",
+        "-v", "--verbose",
         help="increase output verbosity",
         action="store_true")
+
     args = parser.parse_args()
 
     # Setup logging
