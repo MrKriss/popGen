@@ -91,7 +91,7 @@ if __name__ == '__main__':
         help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
-        "-s" "--subpops",
+        "-s", "--subpops",
         default=None,
         nargs='+',
         help="List of string patterns denoting files that make up separate Subpopulations. ")
