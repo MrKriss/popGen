@@ -21,6 +21,8 @@ def main(args, loglevel):
     # Setup Logging
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
+    logging.debug('Argumnets passed:\n{}'.format(str(dir(args))))
+
     # Load in barcode dictionary
     f = open(args.barcodes, 'rb')
     mid2file = {}
