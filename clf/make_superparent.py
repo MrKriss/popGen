@@ -50,6 +50,8 @@ def main(args, loglevel):
         # Concatonate files
         merged_filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
         cat_cmd = 'cat {} > {}'.format(' '.join(processed_files), merged_filepath)
+        print cat_cmd
+        raise
         subprocess.check_call(cat_cmd.split())
         logging.info('Superparent created for {} and written to\n{}\n'.format(subpop, args.sup_parent_path))
 
