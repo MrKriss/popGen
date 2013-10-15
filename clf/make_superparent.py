@@ -49,10 +49,10 @@ def main(args, loglevel):
 
         # Concatonate files
         merged_filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
-        cat_cmd = 'cat {} > {}'.format(' '.join(processed_files), merged_filepath)
+        cat_cmd = 'cat {}'.format(' '.join(processed_files))
         print cat_cmd
-        subprocess.check_call(cat_cmd.split())
-        raise
+        with open(merged_filepath, 'wb') as merged_file:
+            subprocess.check_call(cat_cmd.split(), stdout=merged_file)
         logging.info('Superparent created for {} and written to\n{}\n'.format(subpop, args.sup_parent_path))
 
         # Run ustacks on the Superparent
