@@ -60,7 +60,7 @@ def main(args, loglevel):
         # [-R] [-H] [-h]
         ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(args.sup_parent_path,
                                                                               args.stack_path,
-                                                                              subpop,
+                                                                              i,
                                                                               args.processors)
         # Add extra options if present
         if args.mindepth:
