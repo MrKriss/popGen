@@ -58,7 +58,7 @@ def main(args, loglevel):
         # Run ustacks on the Superparent
         # ustacks -t file_type -f file_path [-d] [-r] [-o path] [-i id] [-m min_cov] [-M max_dist] [-p num_threads]
         # [-R] [-H] [-h]
-        ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(args.sup_parent_path,
+        ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(merged_filepath,
                                                                               args.stack_path,
                                                                               i,
                                                                               args.processors)
