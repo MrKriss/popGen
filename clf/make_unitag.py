@@ -42,10 +42,14 @@ def main(args, loglevel):
         s = seqRec.seq.tostring()
         read_counter[s] += 1
 
+    to_delete = []
     # Trim counter
     for k, v in read_counter.iteritems():
         if v < args.min or v > args.max:
-            del read_counter[k]
+            to_delete.append(k)
+
+    for k in to_delete:
+        del read_counter[k]
 
     # Write to file, using a buffer for speed
     if os.path.exists(args.outputfile_path):
