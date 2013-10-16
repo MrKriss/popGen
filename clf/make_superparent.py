@@ -54,14 +54,17 @@ def main(args, loglevel):
         cat_cmd = 'cat {}'.format(' '.join(processed_files))
         print cat_cmd
         with open(merged_filepath, 'wb') as merged_file:
-            subprocess.check_call(cat_cmd.split(), stdout=merged_file)
+            subprocess.check_call(cat_cmd.split(), stdout=merged_file, stderr=subprocess.STDOUT)
         logging.info('Superparent created for {} and written to\n{}\n'.format(subpop, args.sup_parent_path))
 
         # Run ustacks on the Superparent
         # ustacks -t file_type -f file_path [-d] [-r] [-o path] [-i id] [-m min_cov] [-M max_dist] [-p num_threads]
         # [-R] [-H] [-h]
+
+
+
         ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(merged_filepath,
-                                                                              args.stack_path,
+                                                                              merged_filepath + '.stacks',
                                                                               i,
                                                                               args.processors)
         # Add extra options if present
