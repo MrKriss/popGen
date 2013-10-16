@@ -42,8 +42,8 @@ def main(args, loglevel):
         s = seqRec.seq.tostring()
         read_counter[s] += 1
 
-    to_delete = []
     # Trim counter
+    to_delete = []
     for k, v in read_counter.iteritems():
         if v < args.min or v > args.max:
             to_delete.append(k)
@@ -54,13 +54,13 @@ def main(args, loglevel):
     # Write to file, using a buffer for speed
     if os.path.exists(args.outputfile_path):
         os.remove(args.outputfile_path)
-    outfile = open(args.outputfile_path , 'a')
+    outfile = open(args.outputfile_path, 'a')
 
     seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
     seqRec_buffer = []
     count = 0
     for seqRec in seqGen:
-        if seqRec.seq in read_counter:
+        if seqRec.seq.tostring() in read_counter:
             seqRec_buffer.append(seqRec)
             count += 1
             if count < 1000:
