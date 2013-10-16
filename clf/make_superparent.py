@@ -64,7 +64,7 @@ def main(args, loglevel):
 
 
         ustacks_cmd = 'ustacks -t fastq -f {} -o {} -i {} -p {} -r -d'.format(merged_filepath,
-                                                                              merged_filepath + '.stacks',
+                                                                              args.stack_path,
                                                                               i,
                                                                               args.processors)
         # Add extra options if present
