@@ -40,7 +40,9 @@ def main(args, loglevel):
 
         # Filenames and barcodes corresponding to subpopulation
         files = [fname for fname in filenames if subpop in fname]
-        barcodes = [file2mid[fname] for fname in filenames]
+        barcodes = [file2mid[fname] for fname in files]
+
+        assert len(barcodes) == len(files)
 
         # Find all processed files correesponding to the subpopulation
         processed_files = []
