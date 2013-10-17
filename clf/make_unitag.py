@@ -71,7 +71,7 @@ def main(args, loglevel):
         if s in read_counter:
             seqRec_buffer.append(seqRec)
             buf_count += 1
-            if buf_count < 1000:
+            if buf_count >= 1000:
                 # write batch to file
                 c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
                 write_count += c
@@ -80,6 +80,13 @@ def main(args, loglevel):
                 buf_count = 0
         else:
             continue
+
+    # Flush remainder of buffer
+    if seqRec_buffer:
+        # write batch to file
+        c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
+        write_count += c
+
 
     logging.info('Wrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
                                     write_count, read_count, read_count-write_count))
