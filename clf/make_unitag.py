@@ -129,11 +129,13 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-m", "--min",
+        type=int,
         help="Minimum depth of coverage allowed for a unique sequence to be used in unitag reference.",
         default=None)
 
     parser.add_argument(
         "-M", "--max",
+        type=int,
         help="Maximum depth of coverage allowed for a unique sequence to be used in unitag reference",
         default=None)
 
