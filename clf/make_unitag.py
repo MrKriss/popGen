@@ -48,8 +48,12 @@ def main(args, loglevel):
         if v < args.min or v > args.max:
             to_delete.append(k)
 
+    logging.info('Found {} unique reads.'.format(len(read_counter)))
+
     for k in to_delete:
         del read_counter[k]
+
+    logging.info('{} remain after filtering.'.format(len(read_counter)))
 
     # Write to file, using a buffer for speed
     if os.path.exists(args.outputfile_path):
@@ -58,19 +62,27 @@ def main(args, loglevel):
 
     seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
     seqRec_buffer = []
-    count = 0
+    buf_count = 0
+    write_count = 0
+    read_count = 0
     for seqRec in seqGen:
-        if seqRec.seq.tostring() in read_counter:
+        read_count += 1
+        s = seqRec.seq.tostring()
+        if s in read_counter:
             seqRec_buffer.append(seqRec)
-            count += 1
-            if count < 1000:
+            buf_count += 1
+            if buf_count < 1000:
                 # write batch to file
-                SeqIO.write(seqRec_buffer, outfile, 'fasta')
+                c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
+                write_count += c
                 # Reset buffer
                 seqRec_buffer = []
-                count = 0
+                buf_count = 0
         else:
             continue
+
+    logging.info('Wrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
+                                    write_count, read_count, read_count-write_count))
 
 
 # Standard boilerplate to call the main() function to begin
