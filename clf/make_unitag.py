@@ -87,7 +87,6 @@ def main(args, loglevel):
         c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
         write_count += c
 
-
     logging.info('Wrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
                                     write_count, read_count, read_count-write_count))
 
