@@ -209,7 +209,7 @@ class RecordPreprocessor(object):
                     
                 # RECORD HAS PASSED ALL FILTERS
             
-                if args.errorcorrecting_editdist:
+                if args.err_correct:
                     
                     MID_corrected = False
             
@@ -225,7 +225,7 @@ class RecordPreprocessor(object):
                         distvec_min = min(distvec)
                         count_distvec_min = distvec.count(distvec_min)
                         
-                        if distvec_min > self.args.errorcorrecting_editdist:
+                        if distvec_min > self.args.err_correct:
                             self.skipped_count += 1
                             continue
                             
@@ -264,7 +264,7 @@ class RecordPreprocessor(object):
     
                         min_cutsite_dist = min(cutsite_dists)
                         
-                        if min_cutsite_dist > self.args.errorcorrecting_editdist:
+                        if min_cutsite_dist > self.args.err_correct:
                             # Amount of error in cut site is too large to correct 
                             # May also be from contaminants. So read is skipped altogether 
                             self.skipped_count += 1
@@ -415,48 +415,44 @@ if __name__ == '__main__':
     
         
     parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
-    parser.add_argument('-i',  dest='input', required=True, nargs='+',
+    parser.add_argument('-i', '--input', required=True, nargs='+',
                         help='Input file(s) to process (/path/filename). Will accept a glob')
     parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
                         help='Barcodes accociated with input file(s) (/path/filename). Will accept a glob')
     
     # Output parameters
-    parser.add_argument('-o',  dest='output_postfix',
+    parser.add_argument('-o', '--out_postfix',
                         help='Output file postfix to use when writing to file.')
-    parser.add_argument('-p',  dest='output_path', default='.',
+    parser.add_argument('-p',  '--output_path', default='.',
                         help='Output path to write reads to. Missing dirs will be created.')
     
-    parser.add_argument('--version', action='version', version='%(prog)s 1.0')
-    
     # Filter Parameters
-    parser.add_argument('-d', action='store_true', dest='filter_defaults',
-                        help='Use default values for all filters. n = 0.1, f = 20, c=TGCAGG, e=2, r=2, f=1')
-    
-    parser.add_argument('-n', dest='n_thresh', type=float,
+    parser.add_argument('-n', '--n_thresh', type=float,
                         help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
-    parser.add_argument('-f',  dest='phred_thresh', type=int,
+    parser.add_argument('-f',  '--phred_thresh', type=int,
                         help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
-    
-    parser.add_argument('-l', action='store_false', dest='illumina_filter', default=True, 
+
+    parser.add_argument('-l', action='store_false', dest='illumina_filter', default=True,
                         help='Do not use the Illumina machine filter. On by Default.')
-    
-    parser.add_argument('-c', dest='cutsites', nargs = '*',  default=[],
+
+    parser.add_argument('-c', '--cutsites', nargs='*',  default=[],
                         help='Filter reads that do not have one of the cutsites specified.')
-    parser.add_argument('-e', dest='cutsite_editdist', default=1,
+
+    parser.add_argument('-e', '--cutsite_editdist', default=1,
                         help='Max edit distance allowed between target cutsite and read.')
     
     # Cleanup parameters
-    parser.add_argument('-r', dest='overhang_idx', type=int, 
+    parser.add_argument('-r', '--overhang_idx', type=int,
                         help=('Number of bases in cutsite that make up the overhang. Reads are filtered out which' 
                         'have errors in the overhang of the cut site.'))
     
-    parser.add_argument('-g', dest='errorcorrecting_editdist', type=int,
+    parser.add_argument('-g', '--err_correct', type=int,
                         help='Max edit distance that is corrected between target MIDtag/cutsite and actual read.'
                         'If matched to more than one candidate barcode, the read is discarded due to abiguity of identity.')
     
     # For displaying filter results to stderr 
     parser.add_argument('-v', '--verbose', action='store_true', default=False, 
-                        help='Whether to log the Sequence IDs of reads that fail the filtering')
+                        help='Whether to print out the filtering summary to stdout.')
     
     #===============================================================================
     # Main Fucntion loop
@@ -493,12 +489,12 @@ if __name__ == '__main__':
         
         # DEfine output location
         # Output Path and file variables
-        if args.output_postfix:
+        if args.out_postfix:
     
             # Construct file names
             tail, head =  os.path.split(reads_generator.curfilename)
             name = head.split('.')  
-            pass_filename = '.'.join([name[0] + args.output_postfix] + name[1:]) 
+            pass_filename = '.'.join([name[0] + args.out_postfix] + name[1:]) 
             pass_file = os.path.join(args.output_path, pass_filename)
             name = '.'.join(name)
             outputnames.append(pass_filename) 
@@ -518,7 +514,7 @@ if __name__ == '__main__':
             # Output is written to std out
             pass_filehdl = sys.stdout
         
-        if args.output_postfix:          
+        if args.out_postfix:          
             print >> sys.stderr, 'Writing passes to \n{0} ....'.format(pass_filename)
         else:
             print >> sys.stderr, 'Writing to stdout ....'
