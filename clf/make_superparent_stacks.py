@@ -25,7 +25,7 @@ def main(args, loglevel):
 
     for i, subpop in enumerate(args.subpops):
 
-        filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
+        filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop + '.fq')
 
         # Run ustacks on the Superparent
         # ustacks -t file_type -f file_path [-d] [-r] [-o path] [-i id] [-m min_cov] [-M max_dist] [-p num_threads]

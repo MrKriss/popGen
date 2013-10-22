@@ -408,13 +408,12 @@ class RecordPreprocessor(object):
         return overhang_filter
 
 
-
 #===============================================================================
 
 if __name__ == '__main__':
     
-        
     parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
+
     parser.add_argument('-i', '--input', required=True, nargs='+',
                         help='Input file(s) to process (/path/filename). Will accept a glob')
     parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
@@ -423,12 +422,14 @@ if __name__ == '__main__':
     # Output parameters
     parser.add_argument('-o', '--out_postfix',
                         help='Output file postfix to use when writing to file.')
+
     parser.add_argument('-p',  '--output_path', default='.',
                         help='Output path to write reads to. Missing dirs will be created.')
     
     # Filter Parameters
     parser.add_argument('-n', '--n_thresh', type=float,
                         help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
+
     parser.add_argument('-f',  '--phred_thresh', type=int,
                         help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
 
