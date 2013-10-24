@@ -129,8 +129,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-a", dest="bowtie_args", default='',
-        help="Further Arguments to pass to bowtie.",
-        default=None)
+        help="Further Arguments to pass to bowtie.")
 
     parser.add_argument(
         "-v", "--verbose",
