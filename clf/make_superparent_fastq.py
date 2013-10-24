@@ -66,28 +66,28 @@ if __name__ == '__main__':
                     'cstacks.')
 
     parser.add_argument(
-        "-i", "--processed_files_path",
+        "-i", dest="processed_files_path",
         required=True,
         help="Location of preprocessed input files")
 
     parser.add_argument(
-        "-b", "--barcodes",
+        "-b", dest="barcodes",
         required=True,
         help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
-        "-s", "--subpops",
+        "-s", dest="subpops",
         default=None,
         nargs='+',
         help="List of string patterns denoting files that make up separate Subpopulations. ")
 
     parser.add_argument(
-        "-u", "--sup_parent_path",
+        "-u", dest="sup_parent_path",
         required=True,
         help="Location to write superparent output")
 
     parser.add_argument(
-        "-v", "--verbose",
+        "-v", dest="verbose",
         help="increase output verbosity",
         action="store_true")
 

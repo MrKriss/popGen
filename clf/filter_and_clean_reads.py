@@ -414,36 +414,36 @@ if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
 
-    parser.add_argument('-i', '--input', required=True, nargs='+',
+    parser.add_argument('input', nargs='+',
                         help='Input file(s) to process (/path/filename). Will accept a glob')
-    parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
+    parser.add_argument('-b', '--barcodes', required=True, nargs='+',
                         help='Barcodes accociated with input file(s) (/path/filename). Will accept a glob')
     
     # Output parameters
-    parser.add_argument('-o', '--out_postfix',
+    parser.add_argument('-o', dest='out_postfix',
                         help='Output file postfix to use when writing to file.')
 
-    parser.add_argument('-p',  '--output_path', default='.',
+    parser.add_argument('-p',  dest='output_path', default='.',
                         help='Output path to write reads to. Missing dirs will be created.')
     
     # Filter Parameters
-    parser.add_argument('-n', '--n_thresh', type=float,
+    parser.add_argument('-n', dest='n_thresh', type=float,
                         help='Threshold maximum for filtering by proportion of Ns in the read. Default = 0.1. Set to 0 to skip.')
 
-    parser.add_argument('-f',  '--phred_thresh', type=int,
+    parser.add_argument('-f',  dest='phred_thresh', type=int,
                         help='Threshold minimum for filtering by mean phred of the read. Default = 20. Set to 0 to skip.')
 
     parser.add_argument('-l', action='store_false', dest='illumina_filter', default=True,
                         help='Do not use the Illumina machine filter. On by Default.')
 
-    parser.add_argument('-c', '--cutsites', nargs='*',  default=[],
-                        help='Filter reads that do not have one of the cutsites specified.')
+    parser.add_argument('-c', dest='cutsites', nargs='*',  default=[],
+                        help='Filter reads that are not within -e edits of the cutsites specified.')
 
-    parser.add_argument('-e', '--cutsite_editdist', default=1,
+    parser.add_argument('-e', dest='cutsite_editdist', default=1,
                         help='Max edit distance allowed between target cutsite and read.')
     
     # Cleanup parameters
-    parser.add_argument('-r', '--overhang_idx', type=int,
+    parser.add_argument('-r', dest='overhang_idx', type=int,
                         help=('Number of bases in cutsite that make up the overhang. Reads are filtered out which' 
                         'have errors in the overhang of the cut site.'))
     
