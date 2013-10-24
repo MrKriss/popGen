@@ -121,13 +121,11 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-p", dest="processors", default=1,
-        help="Number of processors to run bowtie with.",
-        default=1)
+        help="Number of processors to run bowtie with.")
 
     parser.add_argument(
         "-k", dest="numhits", default=1,
-        help="Number of alignments to report for each read aligned with bowtie.",
-        default=1)
+        help="Number of alignments to report for each read aligned with bowtie.")
 
     parser.add_argument(
         "-a", dest="bowtie_args", default='',
