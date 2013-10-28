@@ -199,7 +199,7 @@ def outputfile_check(handle, overwrite=False, mode='wb'):
 
     elif type(handle) is str:
         # Check if a file already exists with the name
-        lif os.path.exists(handle):
+        if os.path.exists(handle):
             if overwrite:
                 print >> sys.stderr, 'File {0} already present.\nOverwriting... '.format(handle)
             else:
