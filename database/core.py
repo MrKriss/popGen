@@ -45,7 +45,6 @@ class SQLdatabase(object):
             print 'Creating new Database file: {0}'.format(dbfile) 
                 
         # Stored Vars
-        print dbfile
         self.con = sqlite3.connect(dbfile)
         self.dbfilepath = os.path.abspath(dbfile) 
         self.recbyname = recbyname
