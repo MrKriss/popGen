@@ -22,7 +22,7 @@ if cpu_name == 'yildun':
     work_prefix = '/home/pgrad/musselle/ubuntu/workspace/popGen/'
         
        
-elif cpu_name == 'gg-pc6':
+elif cpu_name == 'gg-pc6' or cpu_name == 'gg-pc3':
     data_prefix = '/home/musselle/san/data'
     work_prefix = '/home/musselle/popGen/'
 
