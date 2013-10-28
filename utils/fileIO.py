@@ -101,7 +101,7 @@ class SeqRecCycler(object):
 
             # Check file extensions
             if (filename.endswith('.gz') or filename.endswith('.bgzf') or
-                                            filename.endswith('.fastq')):
+                                            filename.endswith('.fastq') or filename.endswith('.fq')):
                 try:
                     yield SeqIO.parse(smartopen(filename), format='fastq')
                 except IOError as e:
@@ -199,7 +199,7 @@ def outputfile_check(handle, overwrite=False, mode='wb'):
 
     elif type(handle) is str:
         # Check if a file already exists with the name
-        if os.path.exists(handle):
+        lif os.path.exists(handle):
             if overwrite:
                 print >> sys.stderr, 'File {0} already present.\nOverwriting... '.format(handle)
             else:
