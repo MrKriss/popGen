@@ -137,7 +137,7 @@ def pklsave(obj, filename):
     with open(filename, 'wb') as f:
         pkl.dump(obj, f)
         
-def smartopen(filename,*args,**kwargs):
+def smartopen(filename, *args, **kwargs):
     '''opens with open unless file ends in .gz or .bgzf, then use gzip.open
 
     in theory should transparently allow reading of files regardless of compression
@@ -145,9 +145,9 @@ def smartopen(filename,*args,**kwargs):
     gzip can read in both .gz and .bgzf files.
     '''
     if filename.endswith('.gz') or filename.endswith('.bgzf'):
-        return gzip.open(filename,*args,**kwargs)
+        return gzip.open(filename, *args, **kwargs)
     else:
-        return open(filename,*args,**kwargs)
+        return open(filename, *args, **kwargs)
     
 def inputfile_check(handle):
     """ Check if input is a valid file object or a string for a file name.
