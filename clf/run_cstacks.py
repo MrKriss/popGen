@@ -13,6 +13,8 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
+    path = os.split(args.input[0])[0]
+
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
     basenames = [(os.path.split(name)[1]).split('.')[0] for name in args.input]
@@ -27,7 +29,7 @@ def main(args, loglevel):
     sample_files = ''
 
     for name in basenames:
-        sample_files += ' -s {}'.format(name)
+        sample_files += ' -s {}'.format(os.path.join(path, name))
 
     # Run cstacks
     cmd = 'cstacks {samplefiles} -b {batch_id} -o {outpath} -n {num_mismatch} -p {num_threads}'.format(
