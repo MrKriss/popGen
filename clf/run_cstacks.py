@@ -13,18 +13,14 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
-    path = os.split(args.input[0])[0]
+    path = os.path.split(args.input[0])[0]
 
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
     basenames = [(os.path.split(name)[1]).split('.')[0] for name in args.input]
 
-    print basenames
-
     # get unique baseneamse
     basenames = list(set(basenames))
-
-    print basenames
 
     sample_files = ''
 
