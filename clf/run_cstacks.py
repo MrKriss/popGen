@@ -12,6 +12,8 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
+    print args.input
+
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
     basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in args.input]
