@@ -15,7 +15,7 @@ def main(args, loglevel):
 
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
-    basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in args.input]
+    basenames = [(os.path.split(name)[1]).split('.')[0] for name in args.input]
 
     print basenames
 
