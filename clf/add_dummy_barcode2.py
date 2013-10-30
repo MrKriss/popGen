@@ -14,7 +14,7 @@ def main(args, loglevel):
     # Append to all sequences in the description
     seqgen = SeqIO.parse(open(args.input), 'fastq')
 
-    outfile = open(os.path.join(args.outputpath, args.input + '.temp'), 'wb')
+    outfile = open(os.path.join(args.outputpath, os.path.split(args.input)[1] + '.temp'), 'wb')
 
     writebuffer = []
     buffer_count = 0
@@ -29,7 +29,7 @@ def main(args, loglevel):
 
         # Letter annotations must be removed before editing rec.seq
         temp_var = rec.letter_annotations
-        rec.letter_annotations['phred_quality'] = [40]*len(barcode_dict[args.input]) \
+        rec.letter_annotations['phred_quality'] = [40]*len(bar) \
                                                   + rec.letter_annotations['phred_quality']
 
         rec.seq = Seq.Seq(bar + seq_str)
