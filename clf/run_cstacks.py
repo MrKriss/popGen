@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 # import modules used here -- sys is a very standard one
+import glob
 import os
 import subprocess
 import sys, argparse, logging
@@ -14,9 +15,12 @@ def main(args, loglevel):
 
     print args.input
 
+    # Run glob on inputs as not using the shell in subprocess
+    inputs = glob.glob(args.input)
+
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
-    basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in args.input]
+    basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in inputs]
 
     # get unique baseneamse
     basenames = list(set(basenames))
