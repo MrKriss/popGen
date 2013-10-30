@@ -72,10 +72,6 @@ if __name__ == '__main__':
         help="Single input fastq file to process")
 
     parser.add_argument(
-        "barcodes",
-        help="List of all barcodes for all file names.")
-
-    parser.add_argument(
         "-o",
         dest='outputpath',
         default='',
