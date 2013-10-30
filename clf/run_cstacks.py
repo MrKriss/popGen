@@ -13,17 +13,16 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
-    print args.input
-
-    # Run glob on inputs as not using the shell in subprocess
-    inputs = glob.glob(args.input)
-
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
-    basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in inputs]
+    basenames = [os.path.splitext(os.path.split(name)[1])[0] for name in args.inputs]
+
+    print basenames
 
     # get unique baseneamse
     basenames = list(set(basenames))
+
+    print basenames
 
     sample_files = ''
 
@@ -55,6 +54,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-i", dest="input",
         required=True,
+        nargs='+',
         help="Location of input stacks files")
 
     parser.add_argument(
