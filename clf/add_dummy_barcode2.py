@@ -29,7 +29,7 @@ def main(args, loglevel):
 
         # Letter annotations must be removed before editing rec.seq
         temp_dict = { 'phred_quality' : [40]*len(bar) + rec.letter_annotations['phred_quality']}
-        rec.letter_annotations['phred_quality'] = {}
+        rec.letter_annotations = {}
         rec.letter_annotations.update(temp_dict)
 
         rec.seq = Seq.Seq(bar + seq_str)
