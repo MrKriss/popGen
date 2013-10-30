@@ -11,16 +11,6 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
-    # Read in barcodes
-    f = open(args.barcodes, 'rb')
-    barcode_dict = {}
-    for line in f:
-        line = line.strip().split('\t')
-        barcode_dict[line[1]] = line[0] # Midtag \t filename pairs per line. Need tomap filename 2 MID
-    f.close()
-
-    assert args.input in barcode_dict, "{} not found in barcode_dict".format(args.input)
-
     # Append to all sequences in the description
     seqgen = SeqIO.parse(open(args.input), 'fastq')
 
