@@ -31,9 +31,9 @@ def main(args, loglevel):
         temp_var =  [40]*len(bar) + rec.letter_annotations['phred_quality']
         # temp_dict = { 'phred_quality' : [40]*len(bar) + rec.letter_annotations['phred_quality']}
 
+        rec.letter_annotations = {}
         dict.__setitem__(rec._per_letter_annotations, "phred_quality", temp_var)
 
-        #rec.letter_annotations = {}
         #rec.letter_annotations.update(temp_dict)
 
         rec.seq = Seq.Seq(bar + seq_str)
