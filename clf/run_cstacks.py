@@ -55,7 +55,6 @@ if __name__ == '__main__':
     parser.add_argument(
         "-i", dest="input",
         required=True,
-        nargs='+',
         help="Location of input stacks files")
 
     parser.add_argument(
