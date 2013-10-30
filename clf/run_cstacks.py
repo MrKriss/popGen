@@ -27,7 +27,7 @@ def main(args, loglevel):
     # Run cstacks
     cmd = 'cstacks {samplefiles} -b {batch_id} -o {outpath} -n {num_mismatch} -p {num_threads}'.format(
         samplefiles=sample_files, batch_id=args.batch_id, outpath=args.outputpath, num_mismatch=args.num_mismatch,
-        num_threads=args.num_threads)
+        num_threads=args.processors)
 
     if args.genomic:
         cmd += ' -g'
@@ -81,6 +81,10 @@ if __name__ == '__main__':
         dest='outputpath',
         default='.',
         help="Path to write output file to.")
+
+    parser.add_argument(
+        "-p", dest="processors", default=1,
+        help="Number of processors to run cstacks with.")
 
     parser.add_argument(
         "-v",
