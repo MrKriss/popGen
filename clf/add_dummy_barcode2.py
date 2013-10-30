@@ -28,9 +28,8 @@ def main(args, loglevel):
         seq_str = rec.seq.tostring()
 
         # Letter annotations must be removed before editing rec.seq
-        temp_var = rec.letter_annotations
-        rec.letter_annotations['phred_quality'] = [40]*len(bar) \
-                                                  + rec.letter_annotations['phred_quality']
+        temp_var = [40]*len(bar) + rec.letter_annotations['phred_quality']
+        rec.letter_annotations['phred_quality'] = temp_var
 
         rec.seq = Seq.Seq(bar + seq_str)
 
