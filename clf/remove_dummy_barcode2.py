@@ -14,7 +14,7 @@ def main(args, loglevel):
     # Append to all sequences in the description
     seqgen = SeqIO.parse(open(args.input), 'fastq')
 
-    outfile = open(os.path.join(args.outputpath, os.path.split(args.input)[1] + '.bar_add'), 'wb')
+    outfile = open(os.path.join(args.outputpath, os.path.split(args.input)[1] + '.bar_rm'), 'wb')
 
     writebuffer = []
     buffer_count = 0
@@ -30,9 +30,9 @@ def main(args, loglevel):
         rec.letter_annotations = {}
 
         seq_str = rec.seq.tostring()
-        rec.seq = Seq.Seq(bar + seq_str)
+        rec.seq = Seq.Seq(seq_str[len(bar):])
 
-        temp_var =  [40]*len(bar) + phred_scores
+        temp_var = phred_scores[len(bar):]
         dict.__setitem__(rec._per_letter_annotations, "phred_quality", temp_var)
 
         writebuffer.append(rec)
@@ -48,7 +48,7 @@ def main(args, loglevel):
     outfile.flush()
     outfile.close()
 
-    logging.info('Finished Adding barcodes to {}. Written to {}'.format(args.input, outfile.name))
+    logging.info('Finished removing barcodes from {}. Written to {}'.format(args.input, outfile.name))
 
 
 # Standard boilerplate to call the main() function to begin
