@@ -56,34 +56,53 @@ class Reads_db(SQLdatabase):
 
         SQLdatabase.__init__(self, db_file, recbyname)
 
-    def create_seqs_table(self, table_name='seqs', overwrite=False):
+    def create_seqs_table(self, table_name='seqs', overwrite=False, read_header='Casava'):
 
         with self.con as con:
             curs = con.cursor()
 
             # TODO: Write function to infer description format and use this to creste specific tables.
-            # Currently only does Casava 1.8 format
+            # Currently only does Casava 1.8 format and stacks output.
 
-            if overwrite:
-                curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
-            curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
-            seqId INTEGER PRIMARY KEY NOT NULL,
-            sampleId INTEGER,
-            
-            MIDphred TEXT NOT NULL,
-            seq TEXT NOT NULL,
-            phred TEXT NOT NULL, 
-            length INTEGER NOT NULL,
-            
-            meanPhred INTEGER, 
-            description TEXT,
-            
-            pairedEnd INTEGER,
-            illuminaFilter TEXT,
-            controlBits INTEGER,
-            indexSeq TEXT) '''.format(table_name))
-            self.tables.append('{0}'.format(table_name))
-            self.seqs_table_name = table_name
+            if read_header == 'Casava':
+                if overwrite:
+                    curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
+                curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
+                seqId INTEGER PRIMARY KEY NOT NULL,
+                sampleId INTEGER,
+
+                MIDphred TEXT NOT NULL,
+                seq TEXT NOT NULL,
+                phred TEXT NOT NULL,
+                length INTEGER NOT NULL,
+
+                meanPhred INTEGER,
+                description TEXT,
+
+                pairedEnd INTEGER,
+                illuminaFilter TEXT,
+                controlBits INTEGER,
+                indexSeq TEXT) '''.format(table_name))
+                self.tables.append('{0}'.format(table_name))
+                self.seqs_table_name = table_name
+
+            elif read_header == 'stacks':
+                if overwrite:
+                    curs.execute('DROP TABLE IF EXISTS {0}'.format(table_name))
+                curs.execute(''' CREATE TABLE IF NOT EXISTS {0} (
+                seqId INTEGER PRIMARY KEY NOT NULL,
+                sampleId INTEGER,
+
+                MIDphred TEXT NOT NULL,
+                seq TEXT NOT NULL,
+                phred TEXT NOT NULL,
+                length INTEGER NOT NULL,
+
+                meanPhred INTEGER,
+                description TEXT) '''.format(table_name))
+                self.tables.append('{0}'.format(table_name))
+                self.seqs_table_name = table_name
+
 
     def create_cluster_table(self, table_name=None, overwrite=False):
         """ Create a cluster table in database with the specified name.
@@ -145,7 +164,8 @@ class Reads_db(SQLdatabase):
 
             self.tables.append(table_name)
 
-    def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs', buffer_max=100000):
+    def load_seqs(self, data_files=None, barcode_files=None, table_name='seqs', buffer_max=100000,
+                  read_header='Casava'):
         """ Load in all sequences in the specified files to the database
 
         Barcodes for the MIDtag samples are added to the database if given.
@@ -250,7 +270,7 @@ class Reads_db(SQLdatabase):
             for rec in recgen:
 
                 # TODO: Write function to infer description format and use this to create specific tables.
-                # Currently only does Casava 1.8 format
+                # Currently only does Casava 1.8 format and stacks output.
 
                 # Store sequence MIDtag and phred info 
                 fullseq = rec.seq.tostring()
@@ -273,48 +293,71 @@ class Reads_db(SQLdatabase):
                 phred = ''.join(phred)
                 meanPhred = round(sum(rec.letter_annotations['phred_quality']) / float(len(fullseq)))
 
-                # Store data in Sequence ID string
-                data = rec.description.split()
-                data = [i.split(':') for i in data]
-                # Format is 
-                # [['@HWI-ST0747', '233', 'C0RH3ACXX', '6', '2116', '17762', '96407'], ['1', 'N', '0', '']]
 
-                description = ':'.join(data[0])
+                if read_header == 'Casava':
 
-                pairedEnd = data[1][0]
-                illuminaFilter = data[1][1]
-                controlBits = data[1][2]
-                indexSeq = data[1][3]
+                    # Store data in Sequence ID string
+                    data = rec.description.split()
+                    data = [i.split(':') for i in data]
+                    # Format is
+                    # [['@HWI-ST0747', '233', 'C0RH3ACXX', '6', '2116', '17762', '96407'], ['1', 'N', '0', '']]
 
-                # Append data to buffer
-                data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
-                                    pairedEnd, illuminaFilter, controlBits, indexSeq))
-                data_buffer_count += 1
+                    description = ':'.join(data[0])
 
-                if data_buffer_count > buffer_max:
-                    # Insert data and reset buffer
+                    pairedEnd = data[1][0]
+                    illuminaFilter = data[1][1]
+                    controlBits = data[1][2]
+                    indexSeq = data[1][3]
 
-                    con.executemany('''INSERT INTO {0}
-                     (seq, phred, MIDphred, sampleId, meanPhred, length, 
-                     description,pairedEnd, illuminaFilter, controlBits, indexSeq) 
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
+                    # Append data to buffer
+                    data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description,
+                                        pairedEnd, illuminaFilter, controlBits, indexSeq))
+                    data_buffer_count += 1
 
-                    data_buffer = []
-                    data_buffer_count = 0
+                    if data_buffer_count > buffer_max:
+                        # Insert data and reset buffer
+
+                        con.executemany('''INSERT INTO {0}
+                         (seq, phred, MIDphred, sampleId, meanPhred, length,
+                         description,pairedEnd, illuminaFilter, controlBits, indexSeq)
+                         VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
+
+                        data_buffer = []
+                        data_buffer_count = 0
+
+                elif read_header == 'stacks':
+
+                    # Example header: @6_1101_1668_2155_1
+
+                    # Store data in Sequence ID string as description
+                    description = rec.description.strip()
+
+                    # Append data to buffer
+                    data_buffer.append((seq, phred, MIDphred, str(sampleId), str(meanPhred), str(length), description))
+                    data_buffer_count += 1
+
+                    if data_buffer_count > buffer_max:
+                        # Insert data and reset buffer
+
+                        con.executemany('''INSERT INTO {0}
+                         (seq, phred, MIDphred, sampleId, meanPhred, length, description)
+                         VALUES (?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
+
+                        data_buffer = []
+                        data_buffer_count = 0
 
             # End of generator. Flush remaining data buffer
+            if read_header == 'Casava':
+                con.executemany('''INSERT INTO {0}
+                 (seq, phred, MIDphred, sampleId, meanPhred, length, description,
+                  pairedEnd, illuminaFilter, controlBits, indexSeq)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
 
-            con.executemany('''INSERT INTO {0}
-             (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-              pairedEnd, illuminaFilter, controlBits, indexSeq) 
-             VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
+            elif read_header == 'stacks':
+                con.executemany('''INSERT INTO {0}
+                 (seq, phred, MIDphred, sampleId, meanPhred, length, description)
+                 VALUES (?,?,?,?,?,?,?);'''.format(table_name), data_buffer)
 
-            #                 curs.execute('''INSERT INTO {0}
-            #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-            #                   pairedEnd, illuminaFilter, controlBits, indexSeq)
-            #                  VALUES (?,?,?,?,?,?,?,?,?,?,?);'''.format(table_name),
-            #                  (seq, phred, MIDphred, sampleId, meanPhred, length, description,
-            #                   pairedEnd, illuminaFilter, controlBits, indexSeq));
 
             # Rebuild index on sampleID
             con.execute('''CREATE INDEX {indexname} ON {tablename}(sampleId)'''.format(

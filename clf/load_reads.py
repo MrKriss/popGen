@@ -13,12 +13,15 @@ from database.reads_db import Reads_db
 
 # Load in data to SQLite database 
 parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')
-parser.add_argument('-i',  dest='input', default = '-', nargs='+',
+parser.add_argument('-i',  dest='input', default='-', nargs='+',
                     help='Input file(s) to process (/path/filename). Will accept a glob')
 parser.add_argument('-b',  dest='barcodes', required=True, nargs='+',
                     help='Barcodes accociated with input file(s) (/path/filename). Will accept a glob')
 parser.add_argument('--buffer',  dest='buffer_max', type=int, default=100000,
                     help='Max number of reads that are written in batch to database. Default=1000000.')
+parser.add_argument('--format',  dest='header_format', default='Casava',
+                    help='Format of sequence ID header. Casava 1.8 is the default. currently "stacks" is the only other '
+                         'option to parse reads preprocessed with the stacks pipeline.')
 
 # Output parameters
 parser.add_argument('-d',  dest='database_filepath', required=True,
@@ -26,7 +29,6 @@ parser.add_argument('-d',  dest='database_filepath', required=True,
 
 parser.add_argument('-f',  dest='force_overwrite', action='store_true', default=False,
                     help='Overwrite previous tables with the same name.')
-
 
 args = parser.parse_args()
 
@@ -39,8 +41,8 @@ if args.input == '-':
 db = Reads_db(db_file=args.database_filepath, recbyname=True)
 
 if ('seqs' not in db.tables) or (args.force_overwrite == True):
-    db.create_seqs_table(overwrite=args.force_overwrite)
-    
+    db.create_seqs_table(overwrite=args.force_overwrite, read_header=args.header_format)
+
 if ('samples' not in db.tables) or (args.force_overwrite == True):
     db.create_samples_table(overwrite=args.force_overwrite)
     
