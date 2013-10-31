@@ -46,7 +46,8 @@ if ('seqs' not in db.tables) or (args.force_overwrite == True):
 if ('samples' not in db.tables) or (args.force_overwrite == True):
     db.create_samples_table(overwrite=args.force_overwrite)
     
-db.load_seqs(data_files=args.input, barcode_files=args.barcodes, buffer_max=args.buffer_max)
+db.load_seqs(data_files=args.input, barcode_files=args.barcodes, buffer_max=args.buffer_max,
+             read_header=args.header_format)
 
 total_t = time.time() - toc    
 print >> sys.stderr, 'Loaded processed reads file in {0}'.format(
