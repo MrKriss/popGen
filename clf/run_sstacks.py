@@ -29,8 +29,14 @@ def main(args, loglevel):
     # Get generators for filepaths
     if 'all' in args.subpops:
 
-        # Generator to get all processed files.
-        file_gen = (x for x in glob.glob(os.path.join(args.infilepath, "sample_*")))
+        all_files = glob.glob(os.path.join(args.inpath, "sample_*"))
+        basenames = [(os.path.split(name)[1]).split('.')[0] for name in all_files]
+
+        # get unique baseneamse
+        basenames = list(set(basenames))
+
+        # Generator to return all file basenames.
+        file_gen = (x for x in basenames)
         file_gen_list = [file_gen]
     else:
         # Load in barcode dictionary
@@ -53,37 +59,39 @@ def main(args, loglevel):
             files = [fname for fname in filenames if subpop in fname]
             barcodes = [file2mid[fname] for fname in files]
 
-            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '*')) for b in barcodes)
+            file_gen = (os.path.join(args.inpath, 'sample_' + b) for b in barcodes)
             file_gen_list.append(file_gen)
 
-    # Align file with bowtie to index, then run on pstacks
-    sqlindex = 1
+    # MAtch all files to cataloge with sstacks
+    sqlidx = args.start_sqlidx
     for gen in file_gen_list:
-        for filepath in gen:
+        for sample_filepath in gen:
 
-            # n = max number of mismatchs between
-            # l = number of bases over which to test for mismatches
-            # --best = report in best to worst order
+            sqlidx += 1
+            # sstacks -b batch_id -c catalog_file -s sample_file [-r sample_file] [-o path] [-p num_threads]
+            #[-g] [-x]
 
-            sg = SeqIO.parse(filepath, 'fastq')
-            len_seq = len(sg.next().seq)
+            #p — enable parallel execution with num_threads threads.
+            #b — MySQL ID of this batch.
+            #c — TSV file from which to load the catalog RAD-Tags.
+            #r — Load the TSV file of a single sample instead of a catalog.
+            #s — TSV file from which to load sample RAD-Tags.
+            #o — output path to write results.
+            #g — base matching on genomic location, not sequence identity.
+            #x — don’t verify haplotype of matching locus.
 
-            bowtie_ouput_filename = os.path.splitext(os.path.basename(filepath))[0] + '.bowtie'
-            bowtie_cmd = 'bowtie -n 3 -l {seqlen} -k {numhits} --best -q -p {threads} {moreargs} {index} {input} {output}'.format(
-                seqlen=len_seq, numhits=args.numhits, threads=args.processors, moreargs=args.bowtie_args,
-                index=args.index, input=filepath, output=bowtie_ouput_filename)
+            cmd = "sstacks -b {batch_id} -c {catalog_file} -s {sample_file} -o {outpath} -p {num_threads}".format(
+                    batch_id=sqlidx, cataloue_file=args.catalogue_filepath, sample_file=sample_filepath,
+                    outpath=args.outpath, num_threads=args.processors)
 
-            logging.debug("About to run Bowtie with following comandline arguments:\n{}\n".format(str(bowtie_cmd.split())))
-            subprocess.check_call(bowtie_cmd.split())
-            logging.info("Finished Aligning {} with Bowtie".format(filepath))
+            if args.use_genomic_location:
+                cmd += ' -g'
+            if args.skip_verify_haplotype:
+                cmd += ' -x'
 
-
-            pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex}'.format(
-                threads=args.processors, input=bowtie_ouput_filename, output=args.out_path, sqlindex=sqlindex)
-            logging.debug("About to run pstacks with following comandline arguments:\n{}\n".format(str(pstacks_cmd.split())))
-            subprocess.check_call(pstacks_cmd.split())
-            sqlindex += 1
-            logging.info("Finished Running pstacks for {}".format(filepath))
+            logging.debug("About to run sstacks with following comandline arguments:\n{}\n".format(str(cmd.split())))
+            subprocess.check_call(cmd.split())
+            logging.info("Finished matching {} with sstacks".format(sample_filepath))
 
 
 # Standard boilerplate to call the main() function to begin
@@ -101,34 +109,38 @@ if __name__ == '__main__':
              "from all subpopulations.")
 
     parser.add_argument(
-        "-i", dest="infilepath",
+        "-p", dest="inpath",
         help="Input file path for all processed files if not specifying a subpop.")
 
     parser.add_argument(
-        "-x", dest="index",
-        required=True,
-        help="Location of superparent input files")
+        "-c", dest="catalogue_filepath",
+        help="File path location of catalogue to use.")
+
+    parser.add_argument(
+        "-x", dest="start_sqlidx",
+        default=1,
+        help="Starting index to use for MySql index when storing data. Value is incremented for multiple input subpops")
 
     parser.add_argument(
         "-b", dest="barcodes",
         help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
-        "-o", dest="out_path",
+        "-g", dest="use_genomic_location",
+        help="Base matching on genomic location, not sequence identity.")
+
+    parser.add_argument(
+        "-X", dest="skip_verify_haplotype",
+        help="don’t verify haplotype of matching locus.")
+
+    parser.add_argument(
+        "-o", dest="outpath",
         required=True,
-        help="Location to write ustacks output")
+        help="Location to write sstacks output")
 
     parser.add_argument(
         "-p", dest="processors", default=1,
-        help="Number of processors to run bowtie with.")
-
-    parser.add_argument(
-        "-k", dest="numhits", default=1,
-        help="Number of alignments to report for each read aligned with bowtie.")
-
-    parser.add_argument(
-        "-a", dest="bowtie_args", default='',
-        help="Further Arguments to pass to bowtie.")
+        help="Number of processors to run sstacks with.")
 
     parser.add_argument(
         "-v", "--verbose",
