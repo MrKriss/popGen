@@ -188,13 +188,5 @@ class SQLdatabase(object):
             os.wait()
             #Remove the named pipe file we created because its junk and we dont want a clash
             os.unlink(data_pipe)
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     
