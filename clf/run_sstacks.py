@@ -109,7 +109,7 @@ if __name__ == '__main__':
              "from all subpopulations.")
 
     parser.add_argument(
-        "-p", dest="inpath",
+        "-P", dest="inpath",
         help="Input file path for all processed files if not specifying a subpop.")
 
     parser.add_argument(
