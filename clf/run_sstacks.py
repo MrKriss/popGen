@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-x", dest="start_sqlidx",
-        default=1,
+        default=1, type=int,
         help="Starting index to use for MySql index when storing data. Value is incremented for multiple input subpops")
 
     parser.add_argument(
