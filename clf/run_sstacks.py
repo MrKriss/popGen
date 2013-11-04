@@ -36,7 +36,7 @@ def main(args, loglevel):
         basenames = list(set(basenames))
 
         # Generator to return all file basenames.
-        file_gen = (x for x in basenames)
+        file_gen = (os.path.join(args.inpath, x) for x in basenames)
         file_gen_list = [file_gen]
     else:
         # Load in barcode dictionary
