@@ -81,7 +81,7 @@ def main(args, loglevel):
             #x — don’t verify haplotype of matching locus.
 
             cmd = "sstacks -b {batch_id} -c {catalog_file} -s {sample_file} -o {outpath} -p {num_threads}".format(
-                    batch_id=sqlidx, cataloue_file=args.catalogue_filepath, sample_file=sample_filepath,
+                    batch_id=sqlidx, catalog_file=args.catalogue_filepath, sample_file=sample_filepath,
                     outpath=args.outpath, num_threads=args.processors)
 
             if args.use_genomic_location:
