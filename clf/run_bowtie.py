@@ -65,7 +65,7 @@ def main(args, loglevel):
             # n = max number of mismatchs between
             # l = number of bases over which to test for mismatches
             # --best = report in best to worst order
-
+            print filepath
             sg = SeqIO.parse(filepath, 'fastq')
             len_seq = len(sg.next().seq)
 
