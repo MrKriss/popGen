@@ -47,12 +47,17 @@ def main(args, loglevel):
         # List of raw filenames
         filenames = file2mid.keys()
 
+        logging.debug("Subpops passed {}".format(str(args.subpops)))
+
         file_gen_list = []
+
         for i, subpop in enumerate(args.subpops):
 
             # Filenames and barcodes corresponding to subpopulation
             files = [fname for fname in filenames if subpop in fname]
             barcodes = [file2mid[fname] for fname in files]
+
+            logging.debug("Subpops passed {}".format(str(barcodes)))
 
             file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '*')) for b in barcodes)
             file_gen_list.append(file_gen)
