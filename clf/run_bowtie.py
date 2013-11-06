@@ -59,7 +59,7 @@ def main(args, loglevel):
 
             logging.debug("Subpops passed {}".format(str(barcodes)))
 
-            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '*')) for b in barcodes)
+            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '.fq.bar_rm'))[0] for b in barcodes)
             file_gen_list.append(file_gen)
 
     # Align file with bowtie to index, then run on pstacks
