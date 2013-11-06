@@ -63,7 +63,7 @@ def main(args, loglevel):
             file_gen_list.append(file_gen)
 
     # Align file with bowtie to index, then run on pstacks
-    sqlindex = 1
+    sqlindex = args.sqlindex_start
     for gen in file_gen_list:
         for filepath in gen:
 
@@ -82,7 +82,6 @@ def main(args, loglevel):
             logging.debug("About to run Bowtie with following comandline arguments:\n{}\n".format(str(bowtie_cmd.split())))
             subprocess.check_call(bowtie_cmd.split())
             logging.info("Finished Aligning {} with Bowtie".format(filepath))
-
 
             pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex}'.format(
                 threads=args.processors, input=bowtie_ouput_filename, output=args.out_path, sqlindex=sqlindex)
@@ -113,7 +112,12 @@ if __name__ == '__main__':
     parser.add_argument(
         "-x", dest="index",
         required=True,
-        help="Location of superparent input files")
+        help="File path to bowtie index file")
+
+    parser.add_argument(
+        "-q", dest="sqlindex_start",
+        required=True,
+        help="Starting index for sqlindex.")
 
     parser.add_argument(
         "-b", dest="barcodes",
