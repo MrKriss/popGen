@@ -47,7 +47,7 @@ def main(args, loglevel):
         # Find all processed files correesponding to the subpopulation
         processed_files = []
         for b in barcodes:
-            processed_files.extend(glob.glob(os.path.join(args.processed_files_path, 'sample_' + b + '*')))
+            processed_files.extend(glob.glob(os.path.join(args.processed_files_path, 'sample_' + b + '.fq.bar_rm')))
 
         # Concatonate files
         merged_filepath = os.path.join(args.sup_parent_path, 'superparent_' + subpop)
