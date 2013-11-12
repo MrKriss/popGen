@@ -117,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "-q", dest="sqlindex_start",
         required=True,
+        type=int,
         help="Starting index for sqlindex.")
 
     parser.add_argument(
