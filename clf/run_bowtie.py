@@ -83,8 +83,9 @@ def main(args, loglevel):
             subprocess.check_call(bowtie_cmd.split())
             logging.info("Finished Aligning {} with Bowtie".format(filepath))
 
-            pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex}'.format(
-                threads=args.processors, input=bowtie_ouput_filename, output=args.out_path, sqlindex=sqlindex)
+            pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
+                threads=args.processors, input=bowtie_ouput_filename, output=args.out_path, sqlindex=sqlindex,
+                min_depth=args.min_depth)
             logging.debug("About to run pstacks with following comandline arguments:\n{}\n".format(str(pstacks_cmd.split())))
             subprocess.check_call(pstacks_cmd.split())
             sqlindex += 1
@@ -121,13 +122,19 @@ if __name__ == '__main__':
         help="Starting index for sqlindex.")
 
     parser.add_argument(
+        "-m", dest="min_depth",
+        default=1,
+        type=int,
+        help="Minimum depth of coverage to be considered a stack in pstacks.")
+
+    parser.add_argument(
         "-b", dest="barcodes",
         help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
         "-o", dest="out_path",
         required=True,
-        help="Location to write ustacks output")
+        help="Location to write pstacks output")
 
     parser.add_argument(
         "-p", dest="processors", default=1,
