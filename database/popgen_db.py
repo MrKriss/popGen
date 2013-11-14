@@ -4,20 +4,13 @@ Created on 27 Jun 2013
 @author: musselle
 '''
 import os
-import sys
 import cPickle as pkl
-from subprocess import PIPE, Popen
 import glob
 
-import gzip
-import numpy as np
-from Bio import SeqIO
-
-import sqlite3
 from utils import get_path_prefix
 from general_utilities import set_trace
 
-from database.core import SQLdatabase
+from release.lib.core_db import SQLdatabase
 
 class Popgen_db(SQLdatabase):  
    
@@ -376,8 +369,7 @@ class Popgen_db(SQLdatabase):
 if __name__ == '__main__':
     
         # Create Database for Gazelles and Zebras
-        import cPickle as pickle
-        
+
         # Config setup
         class Config(object):
             pass

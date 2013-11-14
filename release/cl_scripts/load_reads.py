@@ -4,12 +4,11 @@ Created on 3 Jul 2013
 
 @author: musselle
 '''
-import sys, os
-import _addpaths
+import sys
 import argparse
 import time
 
-from database.reads_db import Reads_db 
+from release.lib.reads_db import Reads_db
 
 # Load in data to SQLite database 
 parser = argparse.ArgumentParser(description='Filter and clean up FastQ files.')

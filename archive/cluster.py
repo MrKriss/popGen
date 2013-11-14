@@ -6,15 +6,15 @@ Created on 17 Jul 2013
 @author: musselle
 '''
 
-import _addpaths
-import os, sys, time, gzip, argparse  
-import numpy as np 
-
+import sys
+import time
+import argparse
 from editdist import distance
-from Bio import SeqIO, bgzf 
-from collections import Counter
 
-from database.reads_db import Reads_db
+import numpy as np
+
+from release.lib.reads_db import Reads_db
+
 
 class ClusterReadsObj():
     

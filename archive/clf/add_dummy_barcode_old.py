@@ -11,29 +11,35 @@ import random
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
 
+    # Read in barcodes
+    f = open(args.barcodes, 'rb')
+    barcode_dict = {}
+    for line in f:
+        line = line.strip().split('\t')
+        barcode_dict[line[1]] = line[0] # Midtag \t filename pairs per line. Need tomap filename 2 MID
+    f.close()
+
+    assert args.input in barcode_dict, "{} not found in barcode_dict".format(args.input)
+
     # Append to all sequences in the description
     seqgen = SeqIO.parse(open(args.input), 'fastq')
 
-    outfile = open(os.path.join(args.outputpath, os.path.split(args.input)[1] + '.bar_add'), 'wb')
+    outfile = open(os.path.join(args.outputpath, args.input + '.temp'), 'wb')
 
     writebuffer = []
     buffer_count = 0
     buffer_limit = 10000
 
-    file_basename = os.path.splitext(os.path.split(args.input)[1])[0]
-    bar = file_basename.split('_')[1]
-
     for rec in seqgen:
 
-        # Letter annotations must be removed before editing rec.seq
-        phred_scores = rec.letter_annotations['phred_quality']
-        rec.letter_annotations = {}
-
         seq_str = rec.seq.tostring()
-        rec.seq = Seq.Seq(bar + seq_str)
 
-        temp_var =  [40]*len(bar) + phred_scores
-        dict.__setitem__(rec._per_letter_annotations, "phred_quality", temp_var)
+        # Letter annotations must be removed before editing rec.seq
+        temp_var = rec.letter_annotations
+        rec.letter_annotations['phred_quality'] = [40]*len(barcode_dict[args.input]) \
+                                                  + rec.letter_annotations['phred_quality']
+
+        rec.seq = Seq.Seq(barcode_dict[args.input] + seq_str)
 
         writebuffer.append(rec)
         buffer_count += 1
@@ -48,7 +54,7 @@ def main(args, loglevel):
     outfile.flush()
     outfile.close()
 
-    logging.info('Finished Adding barcodes to {}. Written to {}'.format(args.input, outfile.name))
+    logging.info('Finished processing {}. Written to {}'.format(args.input, outfile.name))
 
 
 # Standard boilerplate to call the main() function to begin
@@ -61,6 +67,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "input",
         help="Single input fastq file to process")
+
+    parser.add_argument(
+        "barcodes",
+        help="List of all barcode-filename pairs for all file names, one per line.")
 
     parser.add_argument(
         "-o",

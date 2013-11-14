@@ -11,14 +11,11 @@ from subprocess import call
 from collections import Counter
 import glob
 import re
+import editdist as ed
 
 import numpy as np
 from Bio import SeqIO, bgzf
-import editdist as ed
 
-from general_utilities import set_trace
-
-from utils.fileIO import smartopen, SeqRecCycler
 
 class ConfigClass(object):
     pass
@@ -842,8 +839,7 @@ class Preprocessor(object):
         ''' Remove intermediate files that are not needed '''      
         # Choices of 'filtered', 'tag_processed', 'all'
         # Raw inputs are always unchanged, and output .fasta is always kept
-             
-        import fnmatch
+
         import os
         
         files2remove = []

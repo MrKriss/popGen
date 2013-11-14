@@ -40,7 +40,6 @@ from StringIO import StringIO
 
 import pandas as pd
 
-
 from Bio.Align.Applications import MuscleCommandline
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq

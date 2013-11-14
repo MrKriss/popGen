@@ -6,17 +6,11 @@ Created on 17 Jul 2013
 @author: musselle
 '''
 
-import _addpaths
-import os, sys, time, gzip, argparse
-import shlex, subprocess
-  
-import numpy as np 
+import sys
+import time
+import argparse
 
-from editdist import distance
-from Bio import SeqIO, bgzf 
-from collections import Counter, defaultdict
-
-from database.reads_db import Reads_db
+from release.lib.reads_db import Reads_db
   
 if __name__ == '__main__':
     
@@ -64,6 +58,6 @@ if __name__ == '__main__':
     if args.query_expression:
         fastafile_handle = db.write_reads(args.pattern, args.output, 
                                       use_type_column=args.typeflag, format='fasta')
-    else:
+
     
     

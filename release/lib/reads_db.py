@@ -13,9 +13,9 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-from database.core import SQLdatabase
-from utils.fileIO import SeqRecCycler, inputfile_check, outputfile_check
-from utils.clusterIO import ClusterObj, parse, sortby
+from release.lib.core_db import SQLdatabase
+from release.lib.fileIO import SeqRecCycler, inputfile_check, outputfile_check
+from release.lib.clusterIO import ClusterObj, parse, sortby
 
 
 class Reads_db(SQLdatabase):

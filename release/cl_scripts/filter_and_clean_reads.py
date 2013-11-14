@@ -5,19 +5,22 @@ Created on 3 Jul 2013
 
 @author: musselle
 '''
-import os, sys, time, glob, gzip, argparse
+import os
+import sys
+import time
+import glob
+import gzip
+import argparse
 import StringIO
 import pprint
- 
-import numpy as np 
 import editdist
-
-from Bio import SeqIO, bgzf 
 from collections import Counter
 
-import _addpaths
+import numpy as np
+from Bio import SeqIO, bgzf
 
-from utils.fileIO import SeqRecCycler
+from release.lib.fileIO import SeqRecCycler
+
 
 class RecordPreprocessor(object):
     
