@@ -13,7 +13,7 @@ from editdist import distance
 
 import numpy as np
 
-from release.lib.reads_db import Reads_db
+from rapier.lib.reads_db import Reads_db
 
 
 class ClusterReadsObj():
