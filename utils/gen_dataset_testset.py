@@ -4,16 +4,12 @@ Created on 30 Nov 2012
 @author: musselle
 '''
 import os 
-import sys 
 
-import numpy as np 
-import matplotlib.pyplot as plt
 import time 
 
 
 from Bio import SeqIO, bgzf
 from rapier.lib.fileIO import SeqRecCycler
-
 
 start_dir = os.getcwd()
 
