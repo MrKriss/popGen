@@ -1,0 +1,1162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AnalysisUIOptions">
+    <option name="ANALYSIS_IN_BACKGROUND" value="true" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="543baeb9-e24b-4f71-a42b-7e7921cfa9ab" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/lib/bin/cd-hit-est" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/testdata/testset_100k.fastq" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/testdata/barcodes/120531_Z1map_8.txt" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/README.md" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/lib/basicAnalysis.py" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/batchscript_example.sh" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/testdata/barcodes/lane3_newzebra.txt" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/rapier/__init__.py" afterPath="" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/__init__.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/__init__.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/cluster_CDHIT.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/cluster_CDHIT.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/extract_clusters.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/extract_clusters.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/extract_reads.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/extract_reads.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/filter_and_clean_reads.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/filter_and_clean_reads.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/load_CDHIT_cluster.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/load_CDHIT_cluster.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/cl_scripts/load_reads.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/load_reads.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/__init__.py" afterPath="$PROJECT_DIR$/rapier/lib/__init__.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/clusterIO.py" afterPath="$PROJECT_DIR$/rapier/lib/clusterIO.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/core_db.py" afterPath="$PROJECT_DIR$/rapier/lib/core_db.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/fileIO.py" afterPath="$PROJECT_DIR$/rapier/lib/fileIO.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/plot_utils.py" afterPath="$PROJECT_DIR$/rapier/lib/plot_utils.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/lib/reads_db.py" afterPath="$PROJECT_DIR$/rapier/lib/reads_db.py" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/notebook_examples/Overall Pipeline on Linux.ipynb" afterPath="$PROJECT_DIR$/rapier/notebook_examples/Overall Pipeline on Linux.ipynb" />
+      <change type="MOVED" beforePath="$PROJECT_DIR$/release/notebook_examples/Overall Pipeline on Mac.ipynb" afterPath="$PROJECT_DIR$/rapier/notebook_examples/Overall Pipeline on Mac.ipynb" />
+    </list>
+    <list id="460e98eb-2d68-47ae-9fa1-0dc740b3eb55" name="Failed commit: Default" comment="Major Code refactoring and clean up &#10;">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/archive/testData/barcodes/120505_G1map_6.txt" afterPath="$PROJECT_DIR$/archive/testData/barcodes/120505_G1map_6.txt" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/archive/testData/barcodes/120505_Z2map_6.txt" afterPath="$PROJECT_DIR$/archive/testData/barcodes/120505_Z2map_6.txt" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/archive/testData/barcodes/120531_G2map_8.txt" afterPath="$PROJECT_DIR$/archive/testData/barcodes/120531_G2map_8.txt" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/archive/testData/barcodes/120531_Z1map_8.txt" afterPath="$PROJECT_DIR$/archive/testData/barcodes/120531_Z1map_8.txt" />
+    </list>
+    <ignored path="code.iws" />
+    <ignored path=".idea/workspace.xml" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
+  <component name="CreatePatchCommitExecutor">
+    <option name="PATCH_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="DaemonCodeAnalyzer">
+    <disable_hints />
+  </component>
+  <component name="DatabaseView">
+    <flatten value="false" />
+    <groupTables value="false" />
+    <sortChildren value="false" />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
+  <component name="FavoritesManager">
+    <favorites_list name="code" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file leaf-file-name="basicAnalysis.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/basicAnalysis.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="367" column="27" selection-start="13220" selection-end="13220" vertical-scroll-proportion="0.0" vertical-offset="5505" max-vertical-offset="6450">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="cluster_hist_compare_sb.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/plotscripts/cluster_hist_compare_sb.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="16" column="36" selection-start="298" selection-end="298" vertical-scroll-proportion="0.0" vertical-offset="240" max-vertical-offset="1050">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="gen_dataset_5percent.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/gen_dataset_5percent.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="21" column="0" selection-start="347" selection-end="347" vertical-scroll-proportion="0.0" vertical-offset="315" max-vertical-offset="960">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="gen_dataset_testset.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/utils/gen_dataset_testset.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="11" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1065">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="_addpaths.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="16" column="0" selection-start="359" selection-end="359" vertical-scroll-proportion="0.2813599" vertical-offset="0" max-vertical-offset="853">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FindManager">
+    <FindUsagesManager>
+      <setting name="OPEN_NEW_TAB" value="false" />
+    </FindUsagesManager>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitLogSettings">
+    <option name="myDateState">
+      <MyDateState />
+    </option>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="changedFiles">
+      <list>
+        <option value="$PROJECT_DIR$/clf/remove_dummy_barcode2.py" />
+        <option value="$PROJECT_DIR$/clf/add_dummy_barcode2.py" />
+        <option value="$PROJECT_DIR$/clf/load_reads.py" />
+        <option value="$PROJECT_DIR$/database/reads_db.py" />
+        <option value="$PROJECT_DIR$/clf/run_sstacks.py" />
+        <option value="$PROJECT_DIR$/clf/make_superparent_fastq.py" />
+        <option value="$PROJECT_DIR$/clf/run_bowtie.py" />
+        <option value="$PROJECT_DIR$/archive/clf/add_dummy_barcode_old.py" />
+        <option value="$PROJECT_DIR$/clf/add_dummy_barcode.py" />
+        <option value="$PROJECT_DIR$/release/cl_scripts/extract_clusters.py" />
+        <option value="$PROJECT_DIR$/release/lib/clusterIO.py" />
+        <option value="$PROJECT_DIR$/basicAnalysis.py" />
+        <option value="$PROJECT_DIR$/gen_dataset_5percent.py" />
+        <option value="$PROJECT_DIR$/utils/gen_dataset_testset.py" />
+        <option value="$PROJECT_DIR$/rapier/cl_scripts/filter_and_clean_reads.py" />
+        <option value="$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="1285" />
+    <option name="y" value="26" />
+    <option name="width" value="1252" />
+    <option name="height" value="1409" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="true" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="2" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
+  </component>
+  <component name="ProjectReloadState">
+    <option name="STATE" value="0" />
+  </component>
+  <component name="ProjectView">
+    <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
+      <flattenPackages />
+      <showMembers />
+      <showModules />
+      <showLibraryContents />
+      <hideEmptyPackages />
+      <abbreviatePackageNames />
+      <autoscrollToSource />
+      <autoscrollFromSource />
+      <sortByType />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="code" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="code" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="code" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="code" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="code" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value=".settings" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="options.splitter.main.proportions" value="0.3" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="options.lastSelected" value="com.jetbrains.python.configuration.PythonSdkConfigurable" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="FullScreen" value="false" />
+    <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <PyConsoleSettings />
+    </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/release/notebook_examples" />
+      <recent name="$PROJECT_DIR$/clf" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/archive" />
+      <recent name="$PROJECT_DIR$/release/lib" />
+      <recent name="$PROJECT_DIR$/release/cl_scripts" />
+      <recent name="$PROJECT_DIR$/archive/clf" />
+      <recent name="$PROJECT_DIR$/clf" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="DjangoTestsConfigurationType" factoryName="Django tests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="TARGET" value="" />
+      <option name="SETTINGS_FILE" value="" />
+      <option name="CUSTOM_SETTINGS" value="false" />
+      <option name="USE_OPTIONS" value="false" />
+      <option name="OPTIONS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="py.test">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="testToRun" value="" />
+      <option name="keywords" value="" />
+      <option name="params" value="" />
+      <option name="USE_PARAM" value="false" />
+      <option name="USE_KEYWORD" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Nosetests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Unittests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug" singleton="true">
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Doctests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Attests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="code" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <list size="0" />
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false" />
+  <component name="StructureViewFactory">
+    <option name="ACTIVE_ACTIONS" value="SHOW_INHERITED" />
+  </component>
+  <component name="SvnConfiguration" maxAnnotateRevisions="500" myUseAcceleration="nothing" myAutoUpdateAfterCommit="false" cleanupOnStartRun="false" SSL_PROTOCOLS="sslv3">
+    <option name="USER" value="" />
+    <option name="PASSWORD" value="" />
+    <option name="mySSHConnectionTimeout" value="30000" />
+    <option name="mySSHReadTimeout" value="30000" />
+    <option name="LAST_MERGED_REVISION" />
+    <option name="MERGE_DRY_RUN" value="false" />
+    <option name="MERGE_DIFF_USE_ANCESTRY" value="true" />
+    <option name="UPDATE_LOCK_ON_DEMAND" value="false" />
+    <option name="IGNORE_SPACES_IN_MERGE" value="false" />
+    <option name="CHECK_NESTED_FOR_QUICK_MERGE" value="false" />
+    <option name="IGNORE_SPACES_IN_ANNOTATE" value="true" />
+    <option name="SHOW_MERGE_SOURCES_IN_ANNOTATE" value="true" />
+    <option name="FORCE_UPDATE" value="false" />
+    <option name="IGNORE_EXTERNALS" value="false" />
+    <myIsUseDefaultProxy>false</myIsUseDefaultProxy>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="543baeb9-e24b-4f71-a42b-7e7921cfa9ab" name="Default" comment="" />
+      <created>1379594475462</created>
+      <updated>1379594475462</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Formating of selfsimilarity metric">
+      <created>1379601896831</created>
+      <updated>1379601896831</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Formating of selfsimilarity metric">
+      <created>1379602101361</created>
+      <updated>1379602101361</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Formating of selfsimilarity metric">
+      <created>1379602519348</created>
+      <updated>1379602519348</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Testing is Rep seq == majority seq&#10;">
+      <created>1379605271087</created>
+      <updated>1379605271087</updated>
+    </task>
+    <task id="LOCAL-00005" summary="    Testing is Rep seq == majority seq&#10;">
+      <created>1379605440132</created>
+      <updated>1379605440132</updated>
+    </task>
+    <task id="LOCAL-00006" summary="    Testing is Rep seq == majority seq&#10;">
+      <created>1379605662777</created>
+      <updated>1379605662777</updated>
+    </task>
+    <task id="LOCAL-00007" summary="    Testing is Rep seq == majority seq&#10;">
+      <created>1379627908580</created>
+      <updated>1379627908580</updated>
+    </task>
+    <task id="LOCAL-00008" summary="    Testing is Rep seq == majority seq&#10;">
+      <created>1379932667910</created>
+      <updated>1379932667910</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Testing Genotype and align functions">
+      <created>1379949115905</created>
+      <updated>1379949115905</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Testing Genotype and align functions">
+      <created>1379963313763</created>
+      <updated>1379963313763</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Testing Genotype and align functions">
+      <created>1380032248686</created>
+      <updated>1380032248686</updated>
+    </task>
+    <task id="LOCAL-00012" summary="Testing Genotype and align functions">
+      <created>1380032313224</created>
+      <updated>1380032313224</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Testing Genotype and align functions">
+      <created>1380101831488</created>
+      <updated>1380101831488</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Testing Genotype and align functions">
+      <created>1380102488886</created>
+      <updated>1380102488886</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Testing Genotype and align functions">
+      <created>1380104283715</created>
+      <updated>1380104283715</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Testing Genotype and align functions">
+      <created>1380109858241</created>
+      <updated>1380109858241</updated>
+    </task>
+    <task id="LOCAL-00017" summary="Testing Genotype and align functions">
+      <created>1380110443976</created>
+      <updated>1380110443976</updated>
+    </task>
+    <task id="LOCAL-00018" summary="Testing Genotype and align functions">
+      <created>1380110616295</created>
+      <updated>1380110616295</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Testing Genotype and align functions">
+      <created>1380110875934</created>
+      <updated>1380110875935</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Testing Genotype and align functions">
+      <created>1380111603771</created>
+      <updated>1380111603771</updated>
+    </task>
+    <task id="LOCAL-00021" summary="Testing Genotype and align functions">
+      <created>1380111861053</created>
+      <updated>1380111861054</updated>
+    </task>
+    <task id="LOCAL-00022" summary="Testing Genotype and align functions">
+      <created>1380112104484</created>
+      <updated>1380112104485</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Testing Genotype and align functions">
+      <created>1380112717170</created>
+      <updated>1380112717170</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Testing Genotype and align functions">
+      <created>1380113175349</created>
+      <updated>1380113175349</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Testing Genotype and align functions">
+      <created>1380113220528</created>
+      <updated>1380113220588</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Testing Genotype and align functions">
+      <created>1380114507010</created>
+      <updated>1380114507010</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Testing Genotype and align functions">
+      <created>1380123280546</created>
+      <updated>1380123280546</updated>
+    </task>
+    <task id="LOCAL-00028" summary="Testing Genotype and align functions">
+      <created>1380124576484</created>
+      <updated>1380124576484</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Testing Genotype and align functions">
+      <created>1380124646256</created>
+      <updated>1380124646256</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Testing Genotype and align functions">
+      <created>1380124719964</created>
+      <updated>1380124719964</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Testing Genotype and align functions">
+      <created>1380126266331</created>
+      <updated>1380126266331</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Testing Genotype and align functions">
+      <created>1380126553145</created>
+      <updated>1380126553145</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Testing Genotype and align functions">
+      <created>1380126922423</created>
+      <updated>1380126922423</updated>
+    </task>
+    <task id="LOCAL-00034" summary="Testing Genotype and align functions">
+      <created>1380127108939</created>
+      <updated>1380127108939</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Testing Genotype and align functions">
+      <created>1380127334125</created>
+      <updated>1380127334125</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Testing Genotype and align functions">
+      <created>1380127568117</created>
+      <updated>1380127568117</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Testing Genotype and align functions">
+      <created>1380127628569</created>
+      <updated>1380127628569</updated>
+    </task>
+    <task id="LOCAL-00038" summary="Testing Genotype and align functions">
+      <created>1380127799352</created>
+      <updated>1380127799352</updated>
+    </task>
+    <task id="LOCAL-00039" summary="Testing Genotype and align functions">
+      <created>1380135193572</created>
+      <updated>1380135193573</updated>
+    </task>
+    <task id="LOCAL-00040" summary="Testing Genotype and align functions">
+      <created>1380147469394</created>
+      <updated>1380147469394</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Testing Genotype and align functions">
+      <created>1380147639167</created>
+      <updated>1380147639167</updated>
+    </task>
+    <task id="LOCAL-00042" summary="Testing Genotype and align functions">
+      <created>1380149198207</created>
+      <updated>1380149198207</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Testing Genotype and align functions">
+      <created>1380149449408</created>
+      <updated>1380149449408</updated>
+    </task>
+    <task id="LOCAL-00044" summary="Testing Genotype and align functions">
+      <created>1380149609009</created>
+      <updated>1380149609009</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Testing Genotype and align functions">
+      <created>1380149971847</created>
+      <updated>1380149971847</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Testing Genotype and align functions">
+      <created>1380150313368</created>
+      <updated>1380150313368</updated>
+    </task>
+    <task id="LOCAL-00047" summary="Testing Genotype and align functions">
+      <created>1380150446177</created>
+      <updated>1380150446177</updated>
+    </task>
+    <task id="LOCAL-00048" summary="Testing Genotype and align functions">
+      <created>1380151090576</created>
+      <updated>1380151090576</updated>
+    </task>
+    <task id="LOCAL-00049" summary="Testing Genotype and align functions">
+      <created>1380151556345</created>
+      <updated>1380151556345</updated>
+    </task>
+    <task id="LOCAL-00050" summary="Testing Genotype and align functions">
+      <created>1380151620998</created>
+      <updated>1380151620999</updated>
+    </task>
+    <task id="LOCAL-00051" summary="Testing Genotype and align functions">
+      <created>1380204505509</created>
+      <updated>1380204505510</updated>
+    </task>
+    <task id="LOCAL-00052" summary="Testing Genotype and align functions">
+      <created>1380204772079</created>
+      <updated>1380204772079</updated>
+    </task>
+    <task id="LOCAL-00053" summary="Testing Genotype function">
+      <created>1380205177249</created>
+      <updated>1380205177249</updated>
+    </task>
+    <task id="LOCAL-00054" summary="Testing Genotype function">
+      <created>1380205551592</created>
+      <updated>1380205551592</updated>
+    </task>
+    <task id="LOCAL-00055" summary="Testing Genotype function">
+      <created>1380214770666</created>
+      <updated>1380214770667</updated>
+    </task>
+    <task id="LOCAL-00056" summary="Working on Genotype function&#10;Added nobarcodes option to db.load">
+      <created>1380816558573</created>
+      <updated>1380816558573</updated>
+    </task>
+    <task id="LOCAL-00057" summary="Added clf to add dummy bacodes to RADseq files&#10;">
+      <created>1380895985443</created>
+      <updated>1380895985443</updated>
+    </task>
+    <task id="LOCAL-00058" summary="Added clf to add dummy bacodes to RADseq files&#10;">
+      <created>1380896121150</created>
+      <updated>1380896121150</updated>
+    </task>
+    <task id="LOCAL-00059" summary="Added clf to add dummy bacodes to RADseq files&#10;">
+      <created>1380896707676</created>
+      <updated>1380896707676</updated>
+    </task>
+    <task id="LOCAL-00060" summary="Made executable">
+      <created>1380896897178</created>
+      <updated>1380896897178</updated>
+    </task>
+    <task id="LOCAL-00061" summary="Made executable">
+      <created>1380897856976</created>
+      <updated>1380897856977</updated>
+    </task>
+    <task id="LOCAL-00062" summary="Made executable">
+      <created>1380898325354</created>
+      <updated>1380898325354</updated>
+    </task>
+    <task id="LOCAL-00063" summary="Made executable">
+      <created>1380921291111</created>
+      <updated>1380921291111</updated>
+    </task>
+    <task id="LOCAL-00064" summary="Add barcode only output and barcode-filename output&#10;">
+      <created>1380994961245</created>
+      <updated>1380994961245</updated>
+    </task>
+    <task id="LOCAL-00065" summary="Add funtion to generate barcodes, and a separate one to process all files so as to enable parallelisation.">
+      <created>1380996763369</created>
+      <updated>1380996763369</updated>
+    </task>
+    <task id="LOCAL-00066" summary="Add funtion to generate barcodes, and a separate one to process all files so as to enable parallelisation.">
+      <created>1380997256535</created>
+      <updated>1380997256536</updated>
+    </task>
+    <task id="LOCAL-00067" summary="Add funtion to generate barcodes, and a separate one to process all files so as to enable parallelisation.">
+      <created>1380997548693</created>
+      <updated>1380997548693</updated>
+    </task>
+    <task id="LOCAL-00068" summary="Added a function to create Supper parents out of subpopulations">
+      <created>1381490446630</created>
+      <updated>1381490446630</updated>
+    </task>
+    <task id="LOCAL-00069" summary="Added a function to run batch cstacks and sstacks">
+      <created>1381491125177</created>
+      <updated>1381491125178</updated>
+    </task>
+    <task id="LOCAL-00070" summary="Finished  writing make superparents script">
+      <created>1381497814583</created>
+      <updated>1381497814584</updated>
+    </task>
+    <task id="LOCAL-00071" summary="Finished  writing make superparents script">
+      <created>1381511477649</created>
+      <updated>1381511477649</updated>
+    </task>
+    <task id="LOCAL-00072" summary="Finished  writing make superparents script">
+      <created>1381835208036</created>
+      <updated>1381835208036</updated>
+    </task>
+    <task id="LOCAL-00073" summary="Finished  writing make superparents script">
+      <created>1381835494898</created>
+      <updated>1381835494898</updated>
+    </task>
+    <task id="LOCAL-00074" summary="Finished  writing make superparents script">
+      <created>1381835598478</created>
+      <updated>1381835598536</updated>
+    </task>
+    <task id="LOCAL-00075" summary="Finished  writing make superparents script">
+      <created>1381836051682</created>
+      <updated>1381836051682</updated>
+    </task>
+    <task id="LOCAL-00076" summary="Finished  writing make superparents script">
+      <created>1381836363380</created>
+      <updated>1381836363380</updated>
+    </task>
+    <task id="LOCAL-00077" summary="Finished  writing make superparents script">
+      <created>1381836616997</created>
+      <updated>1381836617000</updated>
+    </task>
+    <task id="LOCAL-00078" summary="Finished  writing make superparents script">
+      <created>1381873793305</created>
+      <updated>1381873793305</updated>
+    </task>
+    <task id="LOCAL-00079" summary="Finished  writing make superparents script">
+      <created>1381917853017</created>
+      <updated>1381917853029</updated>
+    </task>
+    <task id="LOCAL-00080" summary="Finished  writing make superparents script">
+      <created>1381918163095</created>
+      <updated>1381918163096</updated>
+    </task>
+    <task id="LOCAL-00081" summary="Debugging make superparents script">
+      <created>1381925125261</created>
+      <updated>1381925125262</updated>
+    </task>
+    <task id="LOCAL-00082" summary="Debugging make superparents script">
+      <created>1381926096198</created>
+      <updated>1381926096198</updated>
+    </task>
+    <task id="LOCAL-00083" summary="Debugging make superparents script">
+      <created>1381932322010</created>
+      <updated>1381932322010</updated>
+    </task>
+    <task id="LOCAL-00084" summary="Added script for making unitage reference">
+      <created>1381939182050</created>
+      <updated>1381939182050</updated>
+    </task>
+    <task id="LOCAL-00085" summary="Added script for making unitage reference">
+      <created>1381941862770</created>
+      <updated>1381941862771</updated>
+    </task>
+    <task id="LOCAL-00086" summary="Debugging script for making unitage reference">
+      <created>1382020322631</created>
+      <updated>1382020322631</updated>
+    </task>
+    <task id="LOCAL-00087" summary="Changed scripts to separate out concatonation and execution of ustacks due to memory constraints">
+      <created>1382022233251</created>
+      <updated>1382022233251</updated>
+    </task>
+    <task id="LOCAL-00088" summary="Debugging make_unitag&#10;">
+      <created>1382026848772</created>
+      <updated>1382026848772</updated>
+    </task>
+    <task id="LOCAL-00089" summary="Debugging make_unitag&#10;">
+      <created>1382033946012</created>
+      <updated>1382033946012</updated>
+    </task>
+    <task id="LOCAL-00090" summary="Added make_superparent_stacks that only runs ustacks over the pregenerated suparparant files &#10;">
+      <created>1382096586812</created>
+      <updated>1382096586812</updated>
+    </task>
+    <task id="LOCAL-00091" summary="Adding Documentation and cleaning up help for filter.py">
+      <created>1382370422878</created>
+      <updated>1382370422878</updated>
+    </task>
+    <task id="LOCAL-00092" summary="minor edits">
+      <created>1382446852913</created>
+      <updated>1382446852913</updated>
+    </task>
+    <task id="LOCAL-00093" summary=" minor edits + added bowtie wrapper">
+      <created>1382629387648</created>
+      <updated>1382629387648</updated>
+    </task>
+    <task id="LOCAL-00094" summary="Debugging">
+      <created>1382629850280</created>
+      <updated>1382629850280</updated>
+    </task>
+    <task id="LOCAL-00095" summary="Debugging">
+      <created>1382629891583</created>
+      <updated>1382629891583</updated>
+    </task>
+    <task id="LOCAL-00096" summary="Added pc3 to list of paths">
+      <created>1382970741963</created>
+      <updated>1382970741963</updated>
+    </task>
+    <task id="LOCAL-00097" summary="debug database error in core.py">
+      <created>1382971502590</created>
+      <updated>1382971502590</updated>
+    </task>
+    <task id="LOCAL-00098" summary="make file assertions include .fq">
+      <created>1382971757333</created>
+      <updated>1382971757334</updated>
+    </task>
+    <task id="LOCAL-00099" summary="make file assertions include .fq">
+      <created>1382971829462</created>
+      <updated>1382971829462</updated>
+    </task>
+    <task id="LOCAL-00100" summary="removed debug info">
+      <created>1382971853185</created>
+      <updated>1382971853186</updated>
+    </task>
+    <task id="LOCAL-00101" summary="bug fix">
+      <created>1382971935327</created>
+      <updated>1382971935327</updated>
+    </task>
+    <task id="LOCAL-00102" summary="Script to add dummy barcode to beginning of each read">
+      <created>1383127555942</created>
+      <updated>1383127555942</updated>
+    </task>
+    <task id="LOCAL-00103" summary="version 1 works on original files. version 2 on processed files">
+      <created>1383128095037</created>
+      <updated>1383128095037</updated>
+    </task>
+    <task id="LOCAL-00104" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383128481712</created>
+      <updated>1383128481712</updated>
+    </task>
+    <task id="LOCAL-00105" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383129936690</created>
+      <updated>1383129936690</updated>
+    </task>
+    <task id="LOCAL-00106" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383130124018</created>
+      <updated>1383130124018</updated>
+    </task>
+    <task id="LOCAL-00107" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383130373681</created>
+      <updated>1383130373681</updated>
+    </task>
+    <task id="LOCAL-00108" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383130548814</created>
+      <updated>1383130548814</updated>
+    </task>
+    <task id="LOCAL-00109" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383130603190</created>
+      <updated>1383130603190</updated>
+    </task>
+    <task id="LOCAL-00110" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383130960296</created>
+      <updated>1383130960296</updated>
+    </task>
+    <task id="LOCAL-00111" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383131009888</created>
+      <updated>1383131009889</updated>
+    </task>
+    <task id="LOCAL-00112" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383131092239</created>
+      <updated>1383131092239</updated>
+    </task>
+    <task id="LOCAL-00113" summary="version 2 on processed files does not need barcodes as input">
+      <created>1383131432780</created>
+      <updated>1383131432780</updated>
+    </task>
+    <task id="LOCAL-00114" summary="writen wrapper for cstacks catalogue construction.">
+      <created>1383136612073</created>
+      <updated>1383136612073</updated>
+    </task>
+    <task id="LOCAL-00115" summary="Added processors argument">
+      <created>1383137807489</created>
+      <updated>1383137807489</updated>
+    </task>
+    <task id="LOCAL-00116" summary="debugging">
+      <created>1383138101673</created>
+      <updated>1383138101673</updated>
+    </task>
+    <task id="LOCAL-00117" summary="debugging">
+      <created>1383138229519</created>
+      <updated>1383138229519</updated>
+    </task>
+    <task id="LOCAL-00118" summary="debugging">
+      <created>1383138300327</created>
+      <updated>1383138300327</updated>
+    </task>
+    <task id="LOCAL-00119" summary="debugging">
+      <created>1383138569345</created>
+      <updated>1383138569345</updated>
+    </task>
+    <task id="LOCAL-00120" summary="debugging">
+      <created>1383138605651</created>
+      <updated>1383138605651</updated>
+    </task>
+    <task id="LOCAL-00121" summary="debugging">
+      <created>1383143653314</created>
+      <updated>1383143653314</updated>
+    </task>
+    <task id="LOCAL-00122" summary="debugging">
+      <created>1383144045259</created>
+      <updated>1383144045259</updated>
+    </task>
+    <task id="LOCAL-00123" summary="debugging">
+      <created>1383144146819</created>
+      <updated>1383144146819</updated>
+    </task>
+    <task id="LOCAL-00124" summary="Added the opposite function to add_dummy_barcodes">
+      <created>1383145551255</created>
+      <updated>1383145551255</updated>
+    </task>
+    <task id="LOCAL-00125" summary="Adding ability to parse reads preprocessed by stacks">
+      <created>1383230748009</created>
+      <updated>1383230748009</updated>
+    </task>
+    <task id="LOCAL-00126" summary="Added function to run sstacks over a batch of files">
+      <created>1383230797646</created>
+      <updated>1383230797646</updated>
+    </task>
+    <task id="LOCAL-00127" summary="Debugging">
+      <created>1383231432539</created>
+      <updated>1383231432539</updated>
+    </task>
+    <task id="LOCAL-00128" summary="First draft complete">
+      <created>1383235034184</created>
+      <updated>1383235034184</updated>
+    </task>
+    <task id="LOCAL-00129" summary="minor ammendments&#10;">
+      <created>1383566609882</created>
+      <updated>1383566609882</updated>
+    </task>
+    <task id="LOCAL-00130" summary="minor ammendments&#10;">
+      <created>1383566848880</created>
+      <updated>1383566848880</updated>
+    </task>
+    <task id="LOCAL-00131" summary="changed dtype for sqli index to int">
+      <created>1383577122452</created>
+      <updated>1383577122452</updated>
+    </task>
+    <task id="LOCAL-00132" summary="bug squished">
+      <created>1383577249605</created>
+      <updated>1383577249605</updated>
+    </task>
+    <task id="LOCAL-00133" summary="fixed path prefix bug">
+      <created>1383577497998</created>
+      <updated>1383577497998</updated>
+    </task>
+    <task id="LOCAL-00134" summary="fixed path prefix bug">
+      <created>1383660147231</created>
+      <updated>1383660147231</updated>
+    </task>
+    <task id="LOCAL-00135" summary="Added debugging helper lines">
+      <created>1383660414903</created>
+      <updated>1383660414903</updated>
+    </task>
+    <task id="LOCAL-00136" summary="debugging &#10;">
+      <created>1383746701307</created>
+      <updated>1383746701307</updated>
+    </task>
+    <task id="LOCAL-00137" summary="debugging &#10;">
+      <created>1383750807750</created>
+      <updated>1383750807750</updated>
+    </task>
+    <task id="LOCAL-00138" summary="debugging &#10;">
+      <created>1384248368644</created>
+      <updated>1384248368644</updated>
+    </task>
+    <task id="LOCAL-00139" summary="debugging &#10;">
+      <created>1384263795806</created>
+      <updated>1384263795807</updated>
+    </task>
+    <task id="LOCAL-00140" summary="debugging &#10;">
+      <created>1384348440048</created>
+      <updated>1384348440048</updated>
+    </task>
+    <task id="LOCAL-00141" summary="Major Code refactoring&#10;">
+      <created>1384435116094</created>
+      <updated>1384435116094</updated>
+    </task>
+    <option name="localTasksCounter" value="142" />
+    <servers />
+  </component>
+  <component name="TodoView" selected-index="4">
+    <todo-panel id="selected-file">
+      <are-packages-shown value="false" />
+      <are-modules-shown value="false" />
+      <flatten-packages value="false" />
+      <is-autoscroll-to-source value="false" />
+    </todo-panel>
+    <todo-panel id="all">
+      <are-packages-shown value="false" />
+      <are-modules-shown value="false" />
+      <flatten-packages value="false" />
+      <is-autoscroll-to-source value="false" />
+    </todo-panel>
+    <todo-panel id="default-changelist">
+      <are-packages-shown value="false" />
+      <are-modules-shown value="false" />
+      <flatten-packages value="false" />
+      <is-autoscroll-to-source value="false" />
+    </todo-panel>
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="1285" y="26" width="1252" height="1409" extended-state="0" />
+    <editor active="false" />
+    <layout>
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32874617" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32874617" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3298217" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.40130964" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.15854602" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.1398079" sideWeight="0.45555556" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32874617" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32952815" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22443439" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24959481" sideWeight="0.77522933" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.23003195" sideWeight="0.67047185" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32964602" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.22146119" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" x="0" y="22" width="1280" height="721" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+    </layout>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="myTodoPanelSettings">
+      <TodoPanelSettings />
+    </option>
+    <MESSAGE value=" minor edits + added bowtie wrapper" />
+    <MESSAGE value="Added pc3 to list of paths" />
+    <MESSAGE value="debug database error in core.py" />
+    <MESSAGE value="make file assertions include .fq" />
+    <MESSAGE value="removed debug info" />
+    <MESSAGE value="bug fix" />
+    <MESSAGE value="Script to add dummy barcode to beginning of each read" />
+    <MESSAGE value="version 1 works on original files. version 2 on processed files" />
+    <MESSAGE value="version 2 on processed files does not need barcodes as input" />
+    <MESSAGE value="writen wrapper for cstacks catalogue construction." />
+    <MESSAGE value="Added processors argument" />
+    <MESSAGE value="debugging" />
+    <MESSAGE value="Added the opposite function to add_dummy_barcodes" />
+    <MESSAGE value="Adding ability to parse reads preprocessed by stacks" />
+    <MESSAGE value="Added function to run sstacks over a batch of files" />
+    <MESSAGE value="Debugging" />
+    <MESSAGE value="First draft complete" />
+    <MESSAGE value="minor ammendments&#10;" />
+    <MESSAGE value="changed dtype for sqli index to int" />
+    <MESSAGE value="bug squished" />
+    <MESSAGE value="fixed path prefix bug" />
+    <MESSAGE value="Added debugging helper lines" />
+    <MESSAGE value="debugging &#10;" />
+    <MESSAGE value="Major Code refactoring&#10;" />
+    <MESSAGE value="Major Code refactoring and clean up &#10;" />
+    <option name="LAST_COMMIT_MESSAGE" value="Major Code refactoring and clean up &#10;" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <option name="time" value="2" />
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="uml://Python/#/Users/chris/Dropbox/work/popGen/code/release/cl_scripts/filter_and_clean_reads.py">
+      <provider selected="true" editor-type-id="UmlEditorProvider">
+        <state>
+          <ID>Python</ID>
+          <OriginalElement>#/Users/chris/Dropbox/work/popGen/code/release/cl_scripts/filter_and_clean_reads.py</OriginalElement>
+          <nodes>
+            <node x="" y="">release.cl_scripts.filter_and_clean_reads.RecordPreprocessor</node>
+            <node x="" y="">object</node>
+            <node x="" y="">_abcoll.Hashable</node>
+          </nodes>
+          <notes />
+          <edges />
+          <settings layout="Hierarchic Group" zoom="1.0" x="207.0" y="94.0" />
+          <SelectedNodes />
+          <Categories />
+          <SCOPE>All</SCOPE>
+        </state>
+      </provider>
+    </entry>
+    <entry file="uml://Python/#/Users/chris/Dropbox/work/popGen/code/clf/batch_cstacks.py">
+      <provider selected="true" editor-type-id="UmlEditorProvider">
+        <state>
+          <ID>Python</ID>
+          <OriginalElement>#/Users/chris/Dropbox/work/popGen/code/clf/batch_cstacks.py</OriginalElement>
+          <nodes />
+          <notes />
+          <edges />
+          <settings layout="Hierarchic Group" zoom="1.0" x="1111.0" y="604.0" />
+          <SelectedNodes />
+          <Categories />
+          <SCOPE>All</SCOPE>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/basicAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="367" column="27" selection-start="13220" selection-end="13220" vertical-scroll-proportion="0.0" vertical-offset="5051" max-vertical-offset="6330">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/plotscripts/cluster_hist_compare_sb.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="16" column="36" selection-start="298" selection-end="298" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="930">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/archive/testData/synthetic/test_seqs.fasta">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="405090" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/gen_testdata.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1212" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gen_dataset_5percent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="21" column="0" selection-start="347" selection-end="347" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="825">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="27" selection-start="1645" selection-end="1645" vertical-scroll-proportion="0.5074257" vertical-offset="0" max-vertical-offset="5880" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/utils/gen_dataset_testset.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="0" selection-start="139" selection-end="139" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1065">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="16" column="0" selection-start="359" selection-end="359" vertical-scroll-proportion="0.2813599" vertical-offset="0" max-vertical-offset="853">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>
+
