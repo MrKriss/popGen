@@ -6,11 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="543baeb9-e24b-4f71-a42b-7e7921cfa9ab" name="Default" comment="">
       <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/rapier/__init__.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/dictionaries/chris.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/_addpaths.py" afterPath="$PROJECT_DIR$/_addpaths.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py" afterPath="$PROJECT_DIR$/rapier/cl_scripts/_addpaths.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/utils/gen_dataset_testset.py" afterPath="$PROJECT_DIR$/utils/gen_dataset_testset.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <list id="460e98eb-2d68-47ae-9fa1-0dc740b3eb55" name="Failed commit: Default" comment="Major Code refactoring and clean up &#10;" />
@@ -81,7 +77,7 @@
       <file leaf-file-name="_addpaths.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/_addpaths.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="11" column="0" selection-start="129" selection-end="129" vertical-scroll-proportion="0.16582915" vertical-offset="0" max-vertical-offset="995">
+            <state line="40" column="56" selection-start="1040" selection-end="1040" vertical-scroll-proportion="0.60301507" vertical-offset="0" max-vertical-offset="995">
               <folding />
             </state>
           </provider>
@@ -257,7 +253,7 @@
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="options.lastSelected" value="project.propVCSSupport.Mappings" />
+    <property name="options.lastSelected" value="vcs.Git" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="FullScreen" value="false" />
     <property name="options.searchVisible" value="true" />
@@ -1029,7 +1025,11 @@
       <created>1384435116094</created>
       <updated>1384435116094</updated>
     </task>
-    <option name="localTasksCounter" value="142" />
+    <task id="LOCAL-00142" summary="Minor refactoring">
+      <created>1384875888313</created>
+      <updated>1384875888313</updated>
+    </task>
+    <option name="localTasksCounter" value="143" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -1085,7 +1085,6 @@
     <option name="myTodoPanelSettings">
       <TodoPanelSettings />
     </option>
-    <MESSAGE value=" minor edits + added bowtie wrapper" />
     <MESSAGE value="Added pc3 to list of paths" />
     <MESSAGE value="debug database error in core.py" />
     <MESSAGE value="make file assertions include .fq" />
@@ -1110,7 +1109,8 @@
     <MESSAGE value="debugging &#10;" />
     <MESSAGE value="Major Code refactoring&#10;" />
     <MESSAGE value="Major Code refactoring and clean up &#10;" />
-    <option name="LAST_COMMIT_MESSAGE" value="Major Code refactoring and clean up &#10;" />
+    <MESSAGE value="Minor refactoring" />
+    <option name="LAST_COMMIT_MESSAGE" value="Minor refactoring" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1206,7 +1206,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/_addpaths.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="0" selection-start="129" selection-end="129" vertical-scroll-proportion="0.16582915" vertical-offset="0" max-vertical-offset="995">
+        <state line="40" column="56" selection-start="1040" selection-end="1040" vertical-scroll-proportion="0.60301507" vertical-offset="0" max-vertical-offset="995">
           <folding />
         </state>
       </provider>
