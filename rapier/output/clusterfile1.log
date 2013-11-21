@@ -1,0 +1,40 @@
+=========================================================
+Program     : lib/bin/cd-hit-est
+Input File  : /Users/chris/Dropbox/work/popGen/code/rapier/output/testset100k_precluster.fasta
+Output File : output/testset100k_cluster
+Commands    : -c 0.95 -n 8 -d 0 -r 0 -s 0.8 -M 0 -T 2 -g 1
+
+Started     : Thu, 21 Nov 2013, 10:44:56
+=========================================================
+
+                       Report Log
+---------------------------------------------------------
+Total number of reads     : 71603
+Total number of clusters  : 55181
+Read length Min and Max    : 95 and 95
+Time taken                 : 00:00:15
+
+Top 20 Percentage Reads per cluster 
+---------------------------------------------------------
+Cluster Size    No. Clusters    Total Reads         %    
+---------------------------------------------------------
+1               43497           43497             60.75%
+2               9371            18742             26.17%
+3               1712            5136              7.17%
+4               303             1212              1.69%
+5               94              470               0.66%
+6               56              336               0.47%
+7               35              245               0.34%
+23              6               138               0.19%
+8               14              112               0.16%
+14              8               112               0.16%
+11              10              110               0.15%
+103             1               103               0.14%
+17              6               102               0.14%
+10              10              100               0.14%
+9               11              99                0.14%
+16              6               96                0.13%
+19              5               95                0.13%
+12              7               84                0.12%
+79              1               79                0.11%
+13              6               78                0.11%

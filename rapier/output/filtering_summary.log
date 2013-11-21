@@ -1,0 +1,39 @@
+Filtering and Cleaning Parameters:
+------------------
+{'barcodes': ['testdata/barcodes/lane3_newzebra.txt']
+ 'cutsite_editdist': 1
+ 'cutsites': ['TGCAGG']
+ 'err_correct': 2
+ 'illumina_filter': True
+ 'input': ['testdata/testset_100k.fastq']
+ 'n_thresh': 0.1
+ 'out_postfix': None
+ 'output_path': '/Users/chris/Dropbox/work/popGen/code/rapier/output'
+ 'overhang_idx': 2
+ 'phred_thresh': 20
+ 'verbose': False}
+
+Filter stats:
+-------------------------------------------
+Filter			Hits
+-------------------------------------------
+illumina_filter		7397	(26.07 %)
+propN_filter		577	(2.03 %)
+phred_filter		2365	(8.34 %)
+cutsite_filter		15138	(53.36 %)
+overhang_filter		2894	(10.20 %)
+
+Total No. Reads Processed:  		100000
+Total reads filtered out:  		28371 (28.37 %)
+
+
+Total reads skipped in cleaning: 	26 (0.03%)
+
+Total reads corrected: 			3094 (3.09%)
+
+Total reads with MIDtags corrected: 	2825 (2.83%)
+
+Total reads with cutsite corrected: 	292 (0.29%)
+
+
+Total No. reads passed : 		71603 (71.60%)
