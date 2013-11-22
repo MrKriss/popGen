@@ -17,7 +17,7 @@ def main(args, loglevel):
 
     # format cmd string
     # inputs is a glob, filter so each base fileneame occurs only once
-    basenames = [(os.path.split(name)[1]).split('.')[:-2] for name in args.input]
+    basenames = ['.'.join((os.path.split(name)[1]).split('.')[:-2]) for name in args.input]
 
     # get unique baseneamse
     basenames = list(set(basenames))
