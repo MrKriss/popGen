@@ -53,7 +53,7 @@ if __name__ == '__main__':
                     "tab delimited text file, 1 pair per line.")
 
     parser.add_argument(
-        "inputs",
+        "-i", dest="input",
         help="List of inputs files to generate barcodes for.",
         nargs='+')
 

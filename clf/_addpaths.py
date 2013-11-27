@@ -27,6 +27,7 @@ elif cpu_name == 'gg-pc6' or cpu_name == 'gg-pc3':
     work_prefix = '/home/musselle/popGen/'
     stacks_bins = '/home/musselle/bin/stacks/bin'
     sys.path.append(stacks_bins)
+
 # elif cpu_name == "Musselles-MacBook":
 else:
     data_prefix = '/Users/chris/data'
