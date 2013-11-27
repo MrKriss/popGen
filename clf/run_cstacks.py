@@ -9,6 +9,8 @@ import sys, argparse, logging
 from Bio import SeqIO
 import random
 
+import _addpaths
+
 # Gather code in a main() function
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
