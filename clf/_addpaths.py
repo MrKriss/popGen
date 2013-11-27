@@ -25,7 +25,8 @@ if cpu_name == 'yildun':
 elif cpu_name == 'gg-pc6' or cpu_name == 'gg-pc3':
     data_prefix = '/home/musselle/san/data'
     work_prefix = '/home/musselle/popGen/'
-
+    stacks_bins = '/home/musselle/bin/stacks/bin'
+    sys.path.append(stacks_bins)
 # elif cpu_name == "Musselles-MacBook":
 else:
     data_prefix = '/Users/chris/data'
@@ -36,7 +37,9 @@ sys.path.append(os.path.join(work_prefix, 'utils'))
 sys.path.append(os.path.join(work_prefix, 'plotscripts'))
 sys.path.append(os.path.join(work_prefix, 'runscripts'))
 sys.path.append(os.path.join(work_prefix, 'clf'))
-    
+sys.path.append(stacks_bins)
+
+
 del work_prefix
 del data_prefix
 
