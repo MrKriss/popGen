@@ -29,10 +29,13 @@ def main(args, loglevel):
     for name in basenames:
         sample_files += ' -s {}'.format(os.path.join(path, name))
 
+    pgm_filepath = os.path.expanduser(args.stackspath)
+    pgm_filepath = os.path.join(pgm_filepath, 'cstacks')
+
     # Run cstacks
-    cmd = 'cstacks {samplefiles} -b {batch_id} -o {outpath} -n {num_mismatch} -p {num_threads}'.format(
-        samplefiles=sample_files, batch_id=args.batch_id, outpath=args.outputpath, num_mismatch=args.num_mismatch,
-        num_threads=args.processors)
+    cmd = '{pgm_filepath} {samplefiles} -b {batch_id} -o {outpath} -n {num_mismatch} -p {num_threads}'.format(
+        pgm_filepath=pgm_filepath, samplefiles=sample_files, batch_id=args.batch_id, outpath=args.outputpath,
+        num_mismatch=args.num_mismatch, num_threads=args.processors)
 
     if args.genomic:
         cmd += ' -g'
@@ -90,6 +93,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "-p", dest="processors", default=1,
         help="Number of processors to run cstacks with.")
+
+    parser.add_argument(
+        "--stackspath", dest="stackspath", default='~/bin/',
+        help="Location of where stacks binaries are installed.")
 
     parser.add_argument(
         "-v",
