@@ -47,7 +47,8 @@ def main(args, loglevel):
     f.close()
 
     # Find top samples for retained read count
-    df = pd.read_csv('processed_radtags.tsv', sep='\t')
+    filepath = os.path.join(os.path.abspath(args.inputpath), 'processed_radtags.tsv' )
+    df = pd.read_csv(filepath, sep='\t')
     df = df.sort(column='Retained Reads', ascending=0)
     top_samples = df.ix[0:5, ['File', 'Retained Reads']]
 
