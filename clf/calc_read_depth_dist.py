@@ -50,7 +50,7 @@ def main(args, loglevel):
     # Find top samples for retained read count
     filepath = os.path.join(os.path.abspath(args.inputpath), 'process_radtags.tsv' )
     df = pd.read_csv(filepath, sep='\t')
-    df = df.sort(column='Retained Reads', ascending=0)
+    df = df.sort(columns='Retained Reads', ascending=0)
     top_samples = df.ix[0:5, ['File', 'Retained Reads']]
 
     # Populate counters for retained reads
@@ -58,6 +58,10 @@ def main(args, loglevel):
     for row in top_samples.iterrows():
 
         filename = row[1]['File']
+
+        if filename.endswith('.temp'):
+            filename = ''.join(filename.split('.')[:-1])
+
         infilepath = os.path.join(os.path.abspath(args.inputpath), 'sample_' + file2mid[filename] + '.fq')
 
         # Populate counter
