@@ -136,7 +136,7 @@ if __name__ == '__main__':
         description='Calculate distributions of read depth for top x samples with highest total read count.')
 
     parser.add_argument(
-        "-p", desp="inputpath",
+        "-p", dest="inputpath",
         required=True,
         help="Input path for files preprocessed with stacks.")
 
