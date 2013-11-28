@@ -37,7 +37,8 @@ def main(args, loglevel):
     logging.debug('Argumnets passed:\n{}'.format(args_str))
 
     # Load in barcode dictionary
-    f = open(args.barcodes, 'rb')
+    barfilepath = os.path.abspath(args.barcodes)
+    f = open(barfilepath, 'rb')
     mid2file = {}
     file2mid = {}
     for line in f:
