@@ -51,9 +51,8 @@ def main(args, loglevel):
 # the program.
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Constructs a "superparent" from all sequences in a specified subpopulation by concatonating them '
-                    'and running on ustacks. This "superparent" can then be used to create a single catalogue using '
-                    'cstacks.')
+        description='Reads in a "superparent" for all sequences in a specified subpopulation and runs ustacks on it. '
+                    'This "superparent" can then be used to create a single catalogue using cstacks.')
 
     parser.add_argument(
         "-i", "--sup_parent_path",

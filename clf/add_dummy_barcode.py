@@ -5,7 +5,6 @@
 import os
 import sys, argparse, logging
 from Bio import SeqIO, Seq
-import random
 
 # Gather code in a main() function
 def main(args, loglevel):
@@ -56,7 +55,7 @@ def main(args, loglevel):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Takes a single preprocessed file from stacks process_RADtags and inserts a dummy barcode on the front so they"
-                    "can be inserted into the database.",)
+                    "can be inserted into the database. Barcodes are take from the filenames",)
 
     parser.add_argument(
         "input",
