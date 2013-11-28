@@ -59,10 +59,7 @@ def main(args, loglevel):
 
         filename = row[1]['File']
 
-        if filename.endswith('.temp'):
-            filename = '.'.join(filename.split('.')[:-1])
-
-        infilepath = os.path.join(os.path.abspath(args.inputpath), 'sample_' + file2mid[filename] + '.fq.bar_rm')
+        infilepath = os.path.join(os.path.abspath(args.inputpath), 'sample_' + file2mid[filename] + '.fq')
 
         # Populate counter
         read_counter = Counter()
