@@ -51,9 +51,7 @@ def main(args, loglevel):
     filepath = os.path.join(os.path.abspath(args.inputpath), 'process_radtags.tsv' )
     df = pd.read_csv(filepath, sep='\t')
     df = df.sort(columns='Retained Reads', ascending=0)
-    top_samples = df.ix[0:args.topx, ['File', 'Retained Reads']]
-
-    print top_samples.shape
+    top_samples = df.iloc[0:args.topx, :2]
 
     # Populate counters for retained reads
     counter_dict = {}
