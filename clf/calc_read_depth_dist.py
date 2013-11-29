@@ -51,11 +51,15 @@ def main(args, loglevel):
     filepath = os.path.join(os.path.abspath(args.inputpath), 'process_radtags.tsv' )
     df = pd.read_csv(filepath, sep='\t')
     df = df.sort(columns='Retained Reads', ascending=0)
-    top_samples = df.ix[0:5, ['File', 'Retained Reads']]
+    top_samples = df.ix[0:args.topx, ['File', 'Retained Reads']]
 
     # Populate counters for retained reads
-    counter_list = []
+    counter_dict = {}
+    c = 0
     for row in top_samples.iterrows():
+
+        c += 1
+        logging.info('Populating counter for file {} of {}'.format(c , len(top_samples)))
 
         filename = row[1]['File']
 
@@ -68,14 +72,13 @@ def main(args, loglevel):
             s = seqRec.seq.tostring()
             read_counter[s] += 1
 
-        counter_list.append(read_counter)
+        counter_dict[filename + '-' + file2mid[filename]] = read_counter
 
     # pickle data to disk
     logging.info('Begining to write to pkl file')
-    pkl.dump(counter_list, open(args.outfile_path + '.pkl', 'w'))
+    pkl.dump(counter_dict, open(args.outfile_path + '.pkl', 'w'))
     logging.info('Finished writing to pkl file')
 
-    #
     ## Populate counter
     #read_counter = Counter()
     #seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
