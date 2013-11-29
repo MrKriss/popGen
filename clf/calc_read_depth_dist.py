@@ -53,6 +53,8 @@ def main(args, loglevel):
     df = df.sort(columns='Retained Reads', ascending=0)
     top_samples = df.ix[0:args.topx, ['File', 'Retained Reads']]
 
+    print top_samples.shape
+
     # Populate counters for retained reads
     counter_dict = {}
     c = 0
