@@ -79,61 +79,6 @@ def main(args, loglevel):
     pkl.dump(counter_dict, open(args.outfile_path + '.pkl', 'w'))
     logging.info('Finished writing to pkl file')
 
-    ## Populate counter
-    #read_counter = Counter()
-    #seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
-    #for seqRec in seqGen:
-    #    s = seqRec.seq.tostring()
-    #    read_counter[s] += 1
-    #
-    ## Trim counter
-    #to_delete = []
-    #for k, v in read_counter.iteritems():
-    #    if v < args.min or v > args.max:
-    #        to_delete.append(k)
-    #
-    #logging.info('Found {} unique reads.'.format(len(read_counter)))
-    #
-    #for k in to_delete:
-    #    del read_counter[k]
-    #
-    #logging.info('{} remain after filtering.'.format(len(read_counter)))
-    #
-    ## Write to file, using a buffer for speed
-    #if os.path.exists(args.outputfile_path):
-    #    os.remove(args.outputfile_path)
-    #outfile = open(args.outputfile_path, 'a')
-    #
-    #seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
-    #seqRec_buffer = []
-    #buf_count = 0
-    #write_count = 0
-    #read_count = 0
-    #for seqRec in seqGen:
-    #    read_count += 1
-    #    s = seqRec.seq.tostring()
-    #    if s in read_counter:
-    #        seqRec_buffer.append(seqRec)
-    #        buf_count += 1
-    #        if buf_count >= 1000:
-    #            # write batch to file
-    #            c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
-    #            write_count += c
-    #            # Reset buffer
-    #            seqRec_buffer = []
-    #            buf_count = 0
-    #    else:
-    #        continue
-    #
-    ## Flush remainder of buffer
-    #if seqRec_buffer:
-    #    # write batch to file
-    #    c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
-    #    write_count += c
-    #
-    #logging.info('Wrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
-    #                                write_count, read_count, read_count-write_count))
-
 
 # Standard boilerplate to call the main() function to begin
 # the program.
