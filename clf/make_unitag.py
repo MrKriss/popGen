@@ -80,7 +80,12 @@ def main(args, loglevel):
     retained_reads = total_reads - len(too_few) - len(too_many)
 
     # Log Stats
-    logging.info('\nTotal Reads:\t\t{0}'
+    logging.info('\n-----------------------------------------'
+                 '\nUnitag Constructed with:'
+                 '\nMIN = {min}'
+                 '\nMAX = {max}'
+                 '\n-----------------------------------------'
+                 '\nTotal Reads:\t\t{0}'
                  '\nTotal Unique Reads:\t{1}'
                  '\nReads Fewer Than MIN:\t{2}\t({3:.2%})'
                  '\nReads Greater than MAX\t{4}\t({5:.2%})'
@@ -89,7 +94,8 @@ def main(args, loglevel):
                         len(read_counter),
                         len(too_few), float(len(too_few))/ total_reads,
                         len(too_many), float(len(too_many))/ total_reads,
-                        retained_reads, float(retained_reads))/ total_reads)
+                        retained_reads, float(retained_reads)/ total_reads),
+                        min=args.min, max=args.max)
 
     for k in too_few:
         del read_counter[k]
