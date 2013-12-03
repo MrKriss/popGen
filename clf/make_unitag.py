@@ -19,48 +19,92 @@ from Bio import SeqIO
 
 from collections import Counter
 
-# Gather code in a main() function
-def main(args, loglevel):
-    # Setup Logging
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-
-    args_str = str([x for x in dir(args) if not x.startswith('_')])
-    logging.debug('Argumnets passed:\n{}'.format(args_str))
-
     # Goal #
     # Find unique sequences in the fastq file that have between x and y coverage
 
     # Method:
-        # Two pass: first to count occurances of reads, second to write to file
+        # Two pass: first to count occurances of reads, second to write to file and report statistics
 
     # INPUT: processed sample_AAATG.fq file
 
+    # OUTPUT: Unitag sample.fq file + logfile.log
+
+# Gather code in a main() function
+def main(args, loglevel):
+
+    # Defined Path Vars
+    out_path = os.path.split(args.outfile_path)[0]
+    in_path = os.path.split(args.infile_path)[0]
+
+    # Setup Logging
+    #--------------
+
+    # Log file to record everything
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename= os.path.join(out_path, 'logfile.log'),
+                    filemode='a')
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    # Using root now goes to both, using console just goes to console
+
+    # Log parameters passed
+    args_str = str([x for x in dir(args) if not x.startswith('_')])
+    logging.debug('Argumnets passed:\n{}'.format(args_str))
+
     # Populate counter
     read_counter = Counter()
-    seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
+    seqGen = SeqIO.parse(args.infile_path, 'fastq')
     for seqRec in seqGen:
         s = seqRec.seq.tostring()
         read_counter[s] += 1
 
     # Trim counter
-    to_delete = []
+    too_many = []
+    too_few = []
     for k, v in read_counter.iteritems():
-        if v < args.min or v > args.max:
-            to_delete.append(k)
+        if v < args.min:
+            too_few.append(k)
+        elif v > args.max:
+            too_many.append(k)
 
-    logging.info('Found {} unique reads.'.format(len(read_counter)))
+    total_reads = sum(read_counter.values())
+    retained_reads = total_reads - len(too_few) - len(too_many)
 
-    for k in to_delete:
+    # Log Stats
+    logging.info('\nTotal Reads:\t\t{0}'
+                 '\nTotal Unique Reads:\t{1}'
+                 '\nReads Fewer Than MIN:\t{2}\t({3:.2%})'
+                 '\nReads Greater than MAX\t{4}\t({5:.2%})'
+                 '\nRetained Reads:\t\t{6}\t{7:.2%}'.format(
+                        sum(read_counter.values()),
+                        len(read_counter),
+                        len(too_few), float(len(too_few))/ total_reads,
+                        len(too_many), float(len(too_many))/ total_reads,
+                        retained_reads, float(retained_reads))/ total_reads)
+
+    for k in too_few:
+        del read_counter[k]
+    for k in too_many:
         del read_counter[k]
 
-    logging.info('{} remain after filtering.'.format(len(read_counter)))
+    # Write to file, using a buffer for speedup
+    #---------------------------------------
 
-    # Write to file, using a buffer for speed
-    if os.path.exists(args.outputfile_path):
-        os.remove(args.outputfile_path)
-    outfile = open(args.outputfile_path, 'a')
+    # Check if it already exists
+    if os.path.exists(args.outfile_path):
+        os.remove(args.outfile_path)
+    outfile = open(args.outfile_path, 'a')
 
-    seqGen = SeqIO.parse(args.inputfile_path, 'fastq')
+    seqGen = SeqIO.parse(args.infile_path, 'fastq')
     seqRec_buffer = []
     buf_count = 0
     write_count = 0
@@ -87,7 +131,7 @@ def main(args, loglevel):
         c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
         write_count += c
 
-    logging.info('Wrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
+    logging.info('\nWrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
                                     write_count, read_count, read_count-write_count))
 
 
@@ -98,40 +142,14 @@ if __name__ == '__main__':
         description='Constructs a unitag reference from all unique sequences in a specified input file.')
 
     parser.add_argument(
-        "-i", "--inputfile_path",
+        "-i", dest="infile_path",
         required=True,
         help="Location and file name of fastq file to use to construct unitag reference.")
 
     parser.add_argument(
-        "-o", "--outputfile_path",
+        "-o", dest="outfile_path",
         required=True,
         help="Location and file name of output file to write unitag reference to.")
-
-    #parser.add_argument(
-    #    "-b", "--barcodes",
-    #    required=True,
-    #    help="Barcode file to use for mapping mid to filenames.")
-
-    #parser.add_argument(
-    #    "-s", "--subpops",
-    #    default=None,
-    #    nargs='+',
-    #    help="List of string patterns denoting files that make up separate Subpopulations. ")
-    #
-    #parser.add_argument(
-    #    "-u", "--sup_parent_path",
-    #    required=True,
-    #    help="Location to write superparent output")
-    #
-    #parser.add_argument(
-    #    "-t", "--stack_path",
-    #    required=True,
-    #    help="Location to write ustacks output")
-    #
-    #parser.add_argument(
-    #    "-p", "--processors",
-    #    help="Number of processors to run ustacks with.",
-    #    default=1)
 
     parser.add_argument(
         "-m", "--min",
@@ -147,7 +165,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         "-v", "--verbose",
-        help="increase output verbosity",
+        help="Increase output verbosity",
         action="store_true")
 
     args = parser.parse_args()
