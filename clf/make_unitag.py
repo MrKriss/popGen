@@ -104,6 +104,7 @@ def main(args, loglevel):
 
     # Write to file, using a buffer for speedup
     #---------------------------------------
+    # Each unique sequence is only written once.
 
     # Check if it already exists
     if os.path.exists(args.outfile_path):
@@ -115,10 +116,19 @@ def main(args, loglevel):
     buf_count = 0
     write_count = 0
     read_count = 0
+
+    # Full list of seqs to write, once each.
+    list_of_seqs = read_counter.keys()
+
     for seqRec in seqGen:
         read_count += 1
         s = seqRec.seq.tostring()
-        if s in read_counter:
+        if s in list_of_seqs:
+
+            # Remove seq from list
+            del list_of_seqs[list_of_seqs.index(s)]
+
+            # Add to buffer
             seqRec_buffer.append(seqRec)
             buf_count += 1
             if buf_count >= 1000:
