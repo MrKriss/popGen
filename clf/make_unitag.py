@@ -83,7 +83,7 @@ def main(args, loglevel):
     logging.info("""\n-----------------------------------------
                  \nUnitag Constructed with:
                  \nMIN = {min}
-                 \nMAX = {max]
+                 \nMAX = {max}
                  \n--------------------------------------------
                  \nTotal Reads:\t\t{0}
                  \nTotal Unique Reads:\t{1}
@@ -168,19 +168,19 @@ if __name__ == '__main__':
         help="Location and file name of output file to write unitag reference to.")
 
     parser.add_argument(
-        "-m", "--min",
+        "-m", dest="min",
         type=int,
         help="Minimum depth of coverage allowed for a unique sequence to be used in unitag reference.",
         default=None)
 
     parser.add_argument(
-        "-M", "--max",
+        "-M", dest="max",
         type=int,
         help="Maximum depth of coverage allowed for a unique sequence to be used in unitag reference",
         default=None)
 
     parser.add_argument(
-        "-v", "--verbose",
+        "-v", dest="verbose",
         help="Increase output verbosity",
         action="store_true")
 
