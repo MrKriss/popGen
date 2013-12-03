@@ -35,15 +35,17 @@ def plot_counters_hist(counters, bin_width=100, labels=None, log='xy', xlab="", 
     import matplotlib.pyplot as plt
 
     # Default plot options
-#     if 'ms' not in kwargs:
-#         kwargs['ms'] = 4.0
-#     if 'marker' not in kwargs:
-#         kwargs['marker'] = '.'
-#     if 'mew' not in kwargs:
-#         kwargs['mew'] = 0.0
+    if 'ms' not in kwargs:
+        kwargs['ms'] = 4.0
+    if 'marker' not in kwargs:
+        kwargs['marker'] = '.'
+    if 'mew' not in kwargs:
+        kwargs['mew'] = 0.0
 
     if type(counters) is not list and type(counters) is not tuple:
         counters = [counters]
+    if type(labels) is str:
+        labels = [labels]
 
     if labels is not None:
         assert len(labels) == len(counters), "Number of labels must match number of counters."
