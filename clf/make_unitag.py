@@ -85,17 +85,19 @@ def main(args, loglevel):
                  \nMIN = {min}
                  \nMAX = {max}
                  \n--------------------------------------------
-                 \nTotal Reads:\t\t{0}
-                 \nTotal Unique Reads:\t{1}
-                 \nReads Fewer Than MIN:\t{2}\t({3:.2%})
-                 \nReads Greater than MAX\t{4}\t({5:.2%})
-                 \nRetained Reads:\t\t{6}\t{7:.2%}""".format(
-                        sum(read_counter.values()),
-                        len(read_counter),
-                        len(too_few), float(len(too_few))/ total_reads,
-                        len(too_many), float(len(too_many))/ total_reads,
-                        retained_reads, float(retained_reads)/ total_reads),
-                        min=args.min, max=args.max)
+                 \nTotal Reads:\t\t{total}
+                 \nTotal Unique Reads:\t{total_u}
+                 \nReads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
+                 \nReads Greater than MAX\t{more}\t({more_p:.2%})
+                 \nRetained Reads:\t\t{retained}\t{retained_p:.2%}""".format(
+                        min=args.min, max=args.max,
+                        total=sum(read_counter.values()),
+                        total_u=len(read_counter),
+                        fewer=len(too_few), fewer_p=float(len(too_few))/ total_reads,
+                        more=len(too_many), more_p=float(len(too_many))/ total_reads,
+                        retained=retained_reads, retained_p=float(retained_reads)/ total_reads
+                                                                            )
+                )
 
     for k in too_few:
         del read_counter[k]
