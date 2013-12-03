@@ -80,16 +80,16 @@ def main(args, loglevel):
     retained_reads = total_reads - len(too_few) - len(too_many)
 
     # Log Stats
-    logging.info('\n-----------------------------------------'
-                 '\nUnitag Constructed with:'
-                 '\nMIN = {min}'
-                 '\nMAX = {max}'
-                 '\n-----------------------------------------'
-                 '\nTotal Reads:\t\t{0}'
-                 '\nTotal Unique Reads:\t{1}'
-                 '\nReads Fewer Than MIN:\t{2}\t({3:.2%})'
-                 '\nReads Greater than MAX\t{4}\t({5:.2%})'
-                 '\nRetained Reads:\t\t{6}\t{7:.2%}'.format(
+    logging.info("""\n-----------------------------------------
+                 \nUnitag Constructed with:
+                 \nMIN = {min}
+                 \nMAX = {max]
+                 \n--------------------------------------------
+                 \nTotal Reads:\t\t{0}
+                 \nTotal Unique Reads:\t{1}
+                 \nReads Fewer Than MIN:\t{2}\t({3:.2%})
+                 \nReads Greater than MAX\t{4}\t({5:.2%})
+                 \nRetained Reads:\t\t{6}\t{7:.2%}""".format(
                         sum(read_counter.values()),
                         len(read_counter),
                         len(too_few), float(len(too_few))/ total_reads,
