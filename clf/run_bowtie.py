@@ -22,17 +22,13 @@ from Bio import SeqIO
 # Gather code in a main() function
 def main(args, loglevel):
 
-    # Defined Path Vars
-    out_path = os.path.split(args.outfile_path)[0]
-    in_path = os.path.split(args.infile_path)[0]
-
     # Setup Logging
     #--------------
     # Log file to record everything
     logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename= os.path.join(out_path, 'unitageref-logfile.log'),
+                    filename= os.path.join(args.out_path, 'run_bowtie-logfile.log'),
                     filemode='a')
     # define a Handler which writes messages to the sys.stderr based on verbosity level
     console = logging.StreamHandler()
