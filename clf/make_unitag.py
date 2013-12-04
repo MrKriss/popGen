@@ -43,7 +43,7 @@ def main(args, loglevel):
     logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename= os.path.join(out_path, 'logfile.log'),
+                    filename= os.path.join(out_path, 'unitageref-logfile.log'),
                     filemode='a')
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
@@ -89,7 +89,7 @@ def main(args, loglevel):
                  \nTotal Unique Reads:\t{total_u}
                  \nUnique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
                  \nUnique Reads Greater than MAX\t{more}\t({more_p:.2%})
-                 \nRetained Reads:\t\t{retained}\t{retained_p:.2%}""".format(
+                 \nUnique Reads Retained:\t\t{retained}\t{retained_p:.2%}""".format(
                         min=args.min, max=args.max,
                         total=sum(read_counter.values()),
                         total_u=len(read_counter),
