@@ -67,6 +67,8 @@ def main(args, loglevel):
         s = seqRec.seq.tostring()
         read_counter[s] += 1
 
+    logging.debug('Finished populating counter, about to trim counter.')
+
     # Trim counter
     too_many = set()
     too_few = set()
@@ -76,9 +78,16 @@ def main(args, loglevel):
         elif v > args.max:
             too_many.add(k)
 
-    # count reads and calculate percentages
     total_reads = sum(read_counter.values())
 
+    for k in too_few:
+        del read_counter[k]
+    for k in too_many:
+        del read_counter[k]
+
+    logging.debug('Finished trimming counter.')
+
+    # count reads and calculate percentages
     all_unique_read_set = set(read_counter.keys())
     total_unique_reads = len(all_unique_read_set)
     retained_unique_reads = total_unique_reads - len(too_few) - len(too_many)
@@ -104,7 +113,7 @@ def main(args, loglevel):
                  Unique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
                  Unique Reads Greater than MAX\t{more}\t({more_p:.2%})
                  Unique Reads Retained:\t\t{retained}\t{retained_p:.2%}
-                 Total Reads in Retained Unique Reads:\t{retained_t}\t{retained_u_p}""".format(
+                 Total Reads in Retained Unique Reads:\t{retained_t}\t{retained_t_p}""".format(
                         min=args.min, max=args.max,
                         filepath=args.outfile_path,
                         total=total_reads,
@@ -113,15 +122,12 @@ def main(args, loglevel):
                         more=len(too_many), more_p=float(len(too_many))/ total_unique_reads,
                         retained=retained_unique_reads,
                         retained_p=float(retained_unique_reads)/ total_unique_reads,
-                        retained_u=total_reads_in_retained_unique_reads,
-                        retained_u_p=float(total_reads_in_retained_unique_reads)/ total_reads
+                        retained_t=total_reads_in_retained_unique_reads,
+                        retained_t_p=float(total_reads_in_retained_unique_reads)/ total_reads
                                                                             )
                 )
 
-    for k in too_few:
-        del read_counter[k]
-    for k in too_many:
-        del read_counter[k]
+    logging.debug('About to start writing to file...')
 
     # Write to file, using a buffer for speedup
     #---------------------------------------
