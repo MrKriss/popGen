@@ -40,14 +40,14 @@ def main(args, loglevel):
     #--------------
 
     # Log file to record everything
-    logging.basicConfig(level=loglevel,
+    logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename= os.path.join(out_path, 'unitageref-logfile.log'),
                     filemode='a')
-    # define a Handler which writes INFO messages or higher to the sys.stderr
+    # define a Handler which writes messages to the sys.stderr based on verbosity level
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(loglevel)
     # set a format which is simpler for console use
     formatter = logging.Formatter('%(asctime)s %(name)-12s: %(levelname)-8s %(message)s')
     # tell the handler to use this format
@@ -91,9 +91,14 @@ def main(args, loglevel):
     all_unique_read_set = set(read_counter.keys())
     total_unique_reads = len(all_unique_read_set)
     retained_unique_reads = total_unique_reads - len(too_few) - len(too_many)
-    retained_read_set = all_unique_read_set.difference(set(too_few), set(too_many))
+    retained_read_set = all_unique_read_set.difference(too_few, too_many)
+
+    print len(retained_read_set)
+    print retained_unique_reads
 
     assert len(retained_read_set) == retained_unique_reads
+
+
 
     # calculate sum of reads in retained portion
     total_reads_in_retained_unique_reads = 0
