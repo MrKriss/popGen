@@ -76,8 +76,8 @@ def main(args, loglevel):
         elif v > args.max:
             too_many.append(k)
 
-    total_reads = sum(read_counter.values())
-    retained_reads = total_reads - len(too_few) - len(too_many)
+    total_unique_reads = len(read_counter)
+    retained_reads = total_unique_reads - len(too_few) - len(too_many)
 
     # Log Stats
     logging.info("""\n-----------------------------------------
@@ -87,15 +87,15 @@ def main(args, loglevel):
                  \n--------------------------------------------
                  \nTotal Reads:\t\t{total}
                  \nTotal Unique Reads:\t{total_u}
-                 \nReads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
-                 \nReads Greater than MAX\t{more}\t({more_p:.2%})
+                 \nUnique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
+                 \nUnique Reads Greater than MAX\t{more}\t({more_p:.2%})
                  \nRetained Reads:\t\t{retained}\t{retained_p:.2%}""".format(
                         min=args.min, max=args.max,
                         total=sum(read_counter.values()),
                         total_u=len(read_counter),
-                        fewer=len(too_few), fewer_p=float(len(too_few))/ total_reads,
-                        more=len(too_many), more_p=float(len(too_many))/ total_reads,
-                        retained=retained_reads, retained_p=float(retained_reads)/ total_reads
+                        fewer=len(too_few), fewer_p=float(len(too_few))/ total_unique_reads,
+                        more=len(too_many), more_p=float(len(too_many))/ total_unique_reads,
+                        retained=retained_reads, retained_p=float(retained_reads)/ total_unique_reads
                                                                             )
                 )
 
@@ -149,8 +149,9 @@ def main(args, loglevel):
         c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
         write_count += c
 
-    logging.info('\nWrote {} reads out of {} to unitag reference.\n{} skipped due to thresholds.'.format(
-                                    write_count, read_count, read_count-write_count))
+    logging.info('\nWrote {} unique reads out of {} total reads to unitag reference.'
+                 '\n{} unique reads skipped due to thresholds.'.format(
+                                    write_count, read_count, total_unique_reads-write_count))
 
 
 # Standard boilerplate to call the main() function to begin
