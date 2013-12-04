@@ -21,12 +21,37 @@ from Bio import SeqIO
 
 # Gather code in a main() function
 def main(args, loglevel):
+
+    # Defined Path Vars
+    out_path = os.path.split(args.outfile_path)[0]
+    in_path = os.path.split(args.infile_path)[0]
+
     # Setup Logging
-    logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
+    #--------------
+    # Log file to record everything
+    logging.basicConfig(level=loglevel,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename= os.path.join(out_path, 'unitageref-logfile.log'),
+                    filemode='a')
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(asctime)s %(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    # Using root now goes to both, using console just goes to console
 
-    logging.debug('Argumnets passed:\n{}'.format(str(dir(args))))
+    # Log parameters passed
+    args_str = str([x for x in dir(args) if not x.startswith('_')])
+    logging.debug('Arguments passed:\n{}'.format(args_str))
 
 
+    # MAIN BODY
+    #-----------
     # Get generators for filepaths
     if 'all' in args.subpops:
 
