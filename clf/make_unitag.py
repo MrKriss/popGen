@@ -41,7 +41,7 @@ def main(args, loglevel):
 
     # Log file to record everything
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename= os.path.join(out_path, 'unitageref-logfile.log'),
                     filemode='a')
@@ -49,7 +49,7 @@ def main(args, loglevel):
     console = logging.StreamHandler()
     console.setLevel(loglevel)
     # set a format which is simpler for console use
-    formatter = logging.Formatter('%(asctime)s %(name)-12s: %(levelname)-8s %(message)s')
+    formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)-8s \n\t%(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
@@ -93,12 +93,7 @@ def main(args, loglevel):
     retained_unique_reads = total_unique_reads - len(too_few) - len(too_many)
     retained_read_set = all_unique_read_set.difference(too_few, too_many)
 
-    print len(retained_read_set)
-    print retained_unique_reads
-
     assert len(retained_read_set) == retained_unique_reads
-
-
 
     # calculate sum of reads in retained portion
     total_reads_in_retained_unique_reads = 0
@@ -107,18 +102,19 @@ def main(args, loglevel):
             total_reads_in_retained_unique_reads += value
 
     # Log Stats
-    logging.info("""\n-----------------------------------------
-                 Unitag Constructed with:
-                 MIN = {min}
-                 MAX = {max}
-                 Written to {filepath}
-                 --------------------------------------------
-                 Total Reads:\t\t{total}
-                 Total Unique Reads:\t{total_u}
-                 Unique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
-                 Unique Reads Greater than MAX\t{more}\t({more_p:.2%})
-                 Unique Reads Retained:\t\t{retained}\t{retained_p:.2%}
-                 Total Reads in Retained Unique Reads:\t{retained_t}\t{retained_t_p}""".format(
+    logging.info(
+"""\n-----------------------------------------
+Unitag Constructed with:
+MIN = {min}
+MAX = {max}
+Written to: {filepath}
+--------------------------------------------
+Total Reads:\t\t{total}
+Total Unique Reads:\t{total_u}
+Unique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
+Unique Reads Greater than MAX\t{more}\t({more_p:.2%})
+Unique Reads Retained:\t\t{retained}\t({retained_p:.2%})
+Total Reads in Retained Unique Reads:\t{retained_t}\t({retained_t_p:.2%})""".format(
                         min=args.min, max=args.max,
                         filepath=args.outfile_path,
                         total=total_reads,
@@ -150,20 +146,20 @@ def main(args, loglevel):
     read_count = 0
 
     # Full list of seqs to write, once each.
-    list_of_seqs = read_counter.keys()
+    all_seqs_to_write = retained_read_set.copy()
 
     for seqRec in seqGen:
         read_count += 1
         s = seqRec.seq.tostring()
-        if s in list_of_seqs:
+        if s in all_seqs_to_write:
 
             # Remove seq from list
-            del list_of_seqs[list_of_seqs.index(s)]
+            all_seqs_to_write.discard(s)
 
-            # Add to buffer
+            # Add to a buffer
             seqRec_buffer.append(seqRec)
             buf_count += 1
-            if buf_count >= 1000:
+            if buf_count >= 100:
                 # write batch to file
                 c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
                 write_count += c
@@ -179,9 +175,10 @@ def main(args, loglevel):
         c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
         write_count += c
 
-    logging.info("""\nWrote {} unique reads out of {} total reads to unitag reference.'
-                 '{} unique reads skipped due to thresholds.
-                 ----------------------------------------------------------------------""".format(
+    logging.info("""
+\nWrote {} unique reads out of {} total reads to unitag reference.
+{} unique reads skipped due to thresholds.
+----------------------------------------------------------------------""".format(
                                     write_count, read_count, total_unique_reads-write_count))
 
 
