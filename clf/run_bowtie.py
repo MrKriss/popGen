@@ -29,16 +29,16 @@ def main(args, loglevel):
     # Setup Logging
     #--------------
     # Log file to record everything
-    logging.basicConfig(level=loglevel,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
                     filename= os.path.join(out_path, 'unitageref-logfile.log'),
                     filemode='a')
-    # define a Handler which writes INFO messages or higher to the sys.stderr
+    # define a Handler which writes messages to the sys.stderr based on verbosity level
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(loglevel)
     # set a format which is simpler for console use
-    formatter = logging.Formatter('%(asctime)s %(name)-12s: %(levelname)-8s %(message)s')
+    formatter = logging.Formatter('\n%(asctime)s %(name)s: %(levelname)-8s \n%(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
@@ -84,7 +84,7 @@ def main(args, loglevel):
 
             logging.debug("Subpops passed {}".format(str(barcodes)))
 
-            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '.fq.bar_rm'))[0] for b in barcodes)
+            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '.fq'))[0] for b in barcodes)
             file_gen_list.append(file_gen)
 
     # Align file with bowtie to index, then run on pstacks
