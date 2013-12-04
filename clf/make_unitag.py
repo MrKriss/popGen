@@ -49,7 +49,7 @@ def main(args, loglevel):
     console = logging.StreamHandler()
     console.setLevel(loglevel)
     # set a format which is simpler for console use
-    formatter = logging.Formatter('%(asctime)s %(name)s: %(levelname)-8s \n\t%(message)s')
+    formatter = logging.Formatter('\n%(asctime)s %(name)s: %(levelname)-8s \n%(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
@@ -103,14 +103,14 @@ def main(args, loglevel):
 
     # Log Stats
     logging.info(
-"""\n-----------------------------------------
+"""----------------------------------------------------------------
 Unitag Constructed with:
 MIN = {min}
 MAX = {max}
 Written to: {filepath}
---------------------------------------------
-Total Reads:\t\t{total}
-Total Unique Reads:\t{total_u}
+-------------------------------------------------------------------
+Total Reads:\t\t\t{total}
+Total Unique Reads:\t\t{total_u}
 Unique Reads Fewer Than MIN:\t{fewer}\t({fewer_p:.2%})
 Unique Reads Greater than MAX\t{more}\t({more_p:.2%})
 Unique Reads Retained:\t\t{retained}\t({retained_p:.2%})
@@ -175,8 +175,7 @@ Total Reads in Retained Unique Reads:\t{retained_t}\t({retained_t_p:.2%})""".for
         c = SeqIO.write(seqRec_buffer, outfile, 'fasta')
         write_count += c
 
-    logging.info("""
-\nWrote {} unique reads out of {} total reads to unitag reference.
+    logging.info("""Wrote {} unique reads out of {} total reads to unitag reference.
 {} unique reads skipped due to thresholds.
 ----------------------------------------------------------------------""".format(
                                     write_count, read_count, total_unique_reads-write_count))
