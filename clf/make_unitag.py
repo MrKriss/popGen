@@ -58,7 +58,7 @@ def main(args, loglevel):
 
     # Log parameters passed
     args_str = str([x for x in dir(args) if not x.startswith('_')])
-    logging.debug('Argumnets passed:\n{}'.format(args_str))
+    logging.debug('Arguments passed:\n{}'.format(args_str))
 
     # Populate counter
     read_counter = Counter()
