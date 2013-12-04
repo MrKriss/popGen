@@ -79,6 +79,7 @@ def main(args, loglevel):
             too_many.add(k)
 
     total_reads = sum(read_counter.values())
+    all_unique_read_set = set(read_counter.keys())
 
     for k in too_few:
         del read_counter[k]
@@ -88,7 +89,6 @@ def main(args, loglevel):
     logging.debug('Finished trimming counter.')
 
     # count reads and calculate percentages
-    all_unique_read_set = set(read_counter.keys())
     total_unique_reads = len(all_unique_read_set)
     retained_unique_reads = total_unique_reads - len(too_few) - len(too_many)
     retained_read_set = all_unique_read_set.difference(too_few, too_many)
