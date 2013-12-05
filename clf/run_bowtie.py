@@ -52,7 +52,7 @@ def main(args, loglevel):
     if 'all' in args.subpops:
 
         # Generator to get all processed files.
-        file_gen = (x for x in glob.glob(os.path.join(args.infilepath, "sample_*")))
+        file_gen = (x for x in glob.glob(os.path.join(args.in_path, "sample_*")))
         file_gen_list = [file_gen]
     else:
         # Load in barcode dictionary
@@ -80,7 +80,7 @@ def main(args, loglevel):
 
             logging.debug("Subpops passed {}".format(str(barcodes)))
 
-            file_gen = (glob.glob(os.path.join(args.infilepath, 'sample_' + b + '.fq'))[0] for b in barcodes)
+            file_gen = (glob.glob(os.path.join(args.in_path, 'sample_' + b + '.fq'))[0] for b in barcodes)
             file_gen_list.append(file_gen)
 
     # Align file with bowtie to index, then run on pstacks
@@ -96,16 +96,18 @@ def main(args, loglevel):
             len_seq = len(sg.next().seq)
 
             bowtie_ouput_filename = os.path.splitext(os.path.basename(filepath))[0] + '.bowtie'
+            bowtie_ouput_filepath = os.path.join(args.alignment_path, bowtie_ouput_filename)
+
             bowtie_cmd = 'bowtie -n 3 -l {seqlen} -k {numhits} --best -q -p {threads} {moreargs} {index} {input} {output}'.format(
                 seqlen=len_seq, numhits=args.numhits, threads=args.processors, moreargs=args.bowtie_args,
-                index=args.index, input=filepath, output=bowtie_ouput_filename)
+                index=args.index, input=filepath, output=bowtie_ouput_filepath)
 
             logging.debug("About to run Bowtie with following comandline arguments:\n{}\n".format(str(bowtie_cmd.split())))
             subprocess.check_call(bowtie_cmd.split())
             logging.info("Finished Aligning {} with Bowtie".format(filepath))
 
             pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
-                threads=args.processors, input=bowtie_ouput_filename, output=args.out_path, sqlindex=sqlindex,
+                threads=args.processors, input=bowtie_ouput_filepath, output=args.out_path, sqlindex=sqlindex,
                 min_depth=args.min_depth)
             logging.debug("About to run pstacks with following comandline arguments:\n{}\n".format(str(pstacks_cmd.split())))
             subprocess.check_call(pstacks_cmd.split())
@@ -128,13 +130,27 @@ if __name__ == '__main__':
              "from all subpopulations. ")
 
     parser.add_argument(
-        "-i", dest="infilepath",
+        "-i", dest="in_path",
         help="Input file path for all processed files if not specifying a subpop.")
+
+    parser.add_argument(
+        "-a", dest="alignment_path",
+        required=True,
+        help="Location to write bowtie alignments output")
+
+    parser.add_argument(
+        "-o", dest="out_path",
+        required=True,
+        help="Location to write pstacks output")
 
     parser.add_argument(
         "-x", dest="index",
         required=True,
         help="File path to bowtie index file")
+
+    parser.add_argument(
+        "-b", dest="barcodes",
+        help="Barcode file to use for mapping mid to filenames.")
 
     parser.add_argument(
         "-q", dest="sqlindex_start",
@@ -149,15 +165,6 @@ if __name__ == '__main__':
         help="Minimum depth of coverage to be considered a stack in pstacks.")
 
     parser.add_argument(
-        "-b", dest="barcodes",
-        help="Barcode file to use for mapping mid to filenames.")
-
-    parser.add_argument(
-        "-o", dest="out_path",
-        required=True,
-        help="Location to write pstacks output")
-
-    parser.add_argument(
         "-p", dest="processors", default=1,
         help="Number of processors to run bowtie with.")
 
@@ -166,7 +173,7 @@ if __name__ == '__main__':
         help="Number of alignments to report for each read aligned with bowtie.")
 
     parser.add_argument(
-        "-a", dest="bowtie_args", default='',
+        "-A", dest="bowtie_args", default='',
         help="Further Arguments to pass to bowtie.")
 
     parser.add_argument(
