@@ -107,7 +107,7 @@ def main(args, loglevel):
             subprocess.check_call(bowtie_cmd.split())
             logging.info("Finished Aligning {} with Bowtie".format(filepath))
 
-            pstacks_cmd = 'pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
+            pstacks_cmd = '~/bin/stacks/bin/pstacks -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
                 threads=args.processors, input=bowtie_ouput_filepath, output=args.out_path, sqlindex=sqlindex,
                 min_depth=args.min_depth)
             logging.debug("About to run pstacks with following comandline arguments:\n{}\n".format(str(pstacks_cmd.split())))
