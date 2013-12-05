@@ -18,6 +18,7 @@ import glob
 
 from Bio import SeqIO
 
+import _addpaths
 
 # Gather code in a main() function
 def main(args, loglevel):
