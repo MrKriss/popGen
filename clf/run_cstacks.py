@@ -13,7 +13,6 @@ import _addpaths
 # Gather code in a main() function
 def main(args, loglevel):
     logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
-
     path = os.path.split(args.input[0])[0]
 
     # format cmd string
@@ -64,11 +63,11 @@ if __name__ == '__main__':
         required=True,
         help="ID used for MySQL for this batch.")
 
-    parser.add_argument(
-        "-s", dest="subpops",
-        default=None,
-        nargs='+',
-        help="List of string patterns denoting files that make up separate Subpopulations. ")
+    #parser.add_argument(
+    #    "-s", dest="subpops",
+    #    default=None,
+    #    nargs='+',
+    #    help="List of string patterns denoting files that make up separate Subpopulations. ")
 
     parser.add_argument(
         "-n", dest="num_mismatch",

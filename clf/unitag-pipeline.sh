@@ -7,19 +7,27 @@
 #     32 core Intel(R) Xeon(R) CPU E5-2470 0 @ 2.30GHz
 
 
+######################
+# PARAMETERS DEFINES #
+######################
+
+# Unitag Reference creation
+MIN_DEPTH=5
+MAX_DEPTH=500
+
+# Aligning stacks to reference and pstacks
+STACK_MIN_DEPTH=2
+CATALOGUE_MIN_DIST=0
+
+# Num processors to run on.
+NUM_THREADS=15
+
+
 # File names and path locations 
 RDFS_PATH="/home/musselle/salmon"     # home/musselle is my home on bens machine and the rdf storage is mounted with the name 'salmon'
 PROJECT_ROOT="$RDFS_PATH/chris"       # Root directory for project on RDFS Storage. 
-BIN_PATH="~/bin"                     # Where all binaries for stacks are located
-
-
-outpath="output"                                 # Root directory to write output to.  
-raw_data="testdata/testset_100k.fastq"           # Path after 'root' for raw data files. Can accept a glob to pass multiple files 
-barcodes="testdata/barcodes/lane3_newzebra.txt"  # Path after 'root' for barcodes associated with raw input files
-cdhit_path="lib/bin/"                            # Location of binaries for cd-hit-est clustering program. cd-hit-v4.6.1 is included in repository
-database="$outpath/test100k.db"                     # Output name for central database.
-fasta_filepath="$outpath/testset100k_precluster.fasta"  # Location to write extracted fasta data for input to cd-hit clustering program. 
-cluster_filepath="$outpath/testset100k_cluster"    # Location and file name to write CDHIT clustering output to. 
+BIN_PATH="~/bin"                      # Where all python runscripts are located
+STACKS_PATH="~bin/stacks/bin"         # Where all binaries for stacks are located. 
 
 
 ######################
@@ -60,21 +68,21 @@ echo "\nPreprocessing Steps Complete"
 #                               -o $PROJECT_ROOT/processed-data/unitag/unitagref-m{1}-M{2}.fq \
 #                               -m {1} -M {2}" ::: $MIN_DEPTHS ::: $MAX_DEPTHS
 # Statistics for all runs are logged in unitag-logfile.log, though may be appended unordered.
-#
+
 echo "\nAbout to Construct Unitag Reference Sequence"
 # -i input file to use as unitag ref 
 # -o output file 
 # -m min read depth threshold
 # -M max read depth threshold
 $BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/sample_GCAGGC.fq \
-            -o $PROJECT_ROOT/processed-data/unitag/unitagref-m5-M500.fq \
-            -m 5 -M 500     
+            -o $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
+            -m $MIN_DEPTH -M $MAX_DEPTH
 
 # Construct index using bowtie
 # bowtie-build reads_file index_file
-bowtie-build $PROJECT_ROOT/processed-data/unitag/unitagref-m5-M500 \
-		     $PROJECT_ROOT/processed-data/unitag/unitag_idx-m5-M500
-echo "\nBuilding Unitag Complete"		
+bowtie-build $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
+		     $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH
+echo "\nBuilding Unitag Complete"
 
 ###########################
 # Main Script: Unitag Ref #
@@ -93,12 +101,39 @@ echo "\nBuilding Unitag Complete"
 echo "\nAligning all samples to Unitag Reference and computing stacks"
 $BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/ \       
 						-s all \  
-						-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m5-M500 \
-						-q 1 -m 2 \
+						-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH \
+						-q 1 -m $STACK_MIN_DEPTH \
 						-b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
-						-o $PROJECT_ROOT/stacks/pstacks/ -p 10 -k 1 
+						-o $PROJECT_ROOT/stacks/pstacks/ -p $NUM_THREADS -k 1
+						--stackspath $STACKS_PATH
+echo "\nFinished computing stacks"
 
+
+echo "\nConstructing Global Catalogue"
 # Construct Catalogue from all pstacks output
+#   -i Input path to processed reads
+#   -p  enable parallel execution with num_threads threads.
+#   -b  MySQL ID of this batch.
+#   -o  output path to write results.
+#   -n  number of mismatches allowed between sample tags when generating the catalog.
+$BIN_PATH/run_cstacks.py -i $PROJECT_ROOT/stacks/pstacks/* \ 
+						 -o $PROJECT_ROOT/catalogues/unitag/ \
+						 -b 200 \
+						 -p $NUM_THREADS \
+						 -n 0 \
+						 --stackspath $STACKS_PATH 
+						 
+echo "\nMatching samples to Global Catalogue"
+
+
+
+
+
+
+
+
+
+
 
 
 
