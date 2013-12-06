@@ -80,7 +80,11 @@ def main(args, loglevel):
             #g — base matching on genomic location, not sequence identity.
             #x — don’t verify haplotype of matching locus.
 
-            cmd = "sstacks -b {batch_id} -c {catalog_file} -s {sample_file} -o {outpath} -p {num_threads}".format(
+            pgm_filepath = os.path.expanduser(args.stackspath)
+            pgm_filepath = os.path.join(pgm_filepath, 'sstacks')
+
+            cmd = "{sstacks} -b {batch_id} -c {catalog_file} -s {sample_file} -o {outpath} -p {num_threads}".format(
+                    sstacks=pgm_filepath,
                     batch_id=sqlidx, catalog_file=args.catalogue_filepath, sample_file=sample_filepath,
                     outpath=args.outpath, num_threads=args.processors)
 
@@ -141,6 +145,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "-p", dest="processors", default=1,
         help="Number of processors to run sstacks with.")
+
+    parser.add_argument(
+        "--stackspath", dest="stackspath", default='~/bin/',
+        help="Location of where stacks binaries are installed.")
 
     parser.add_argument(
         "-v", "--verbose",
