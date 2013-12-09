@@ -27,12 +27,13 @@ def main(args, loglevel):
     for i, name in enumerate(args.input):
 
         # extract mid tag
-        tag, ext = os.path.splitext(os.path.basename(name)).split('_')
+        tagpart = os.path.basename(name).split('_')[-1]
+        tag = tagpart.split('.')[0]
 
         short_filename = mid2file[tag].split('_')[2]
 
         # Look up what original filename is
-        new_name = short_filename + '_' + tag + '.' + ext
+        new_name = short_filename + '_' + tagpart
 
         new_filepath = os.path.join(os.path.dirname(name), new_name)
 
