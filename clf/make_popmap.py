@@ -28,7 +28,7 @@ def main(args, loglevel):
     D = dict(zip(unique_sub_pops, range(1, len(unique_sub_pops)+1)))
 
     # filter inputs to only unique entries
-    basenames = [os.basename(name).split('.')[0] for name in args.input]
+    basenames = [os.path.basename(name).split('.')[0] for name in args.input]
     # get unique baseneamse
     basenames = list(set(basenames))
 
