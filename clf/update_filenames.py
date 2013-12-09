@@ -37,7 +37,7 @@ def main(args, loglevel):
         new_filepath = os.path.join(os.path.dirname(name), new_name)
 
         os.rename(args.input[i], new_filepath)
-        logging.debug('Renames {} to\n{}'.format(args.input[i], new_filepath)
+        logging.debug('Renames {} to\n{}'.format(args.input[i], new_filepath))
 
 # Standard boilerplate to call the main() function to begin
 # the program.
