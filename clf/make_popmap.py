@@ -19,7 +19,7 @@ def main(args, loglevel):
     # Numerical values are assigned according to alphabetical order of sup populations
     df1 = pd.read_csv(args.barcodes, sep='\t', header=None, names=['bar', 'file'])
     df2 = df1.copy()
-    df2['file'] = [x[17:19] for x in df1['file']]
+    df2['file'] = [x[14:17] for x in df1['file']]
 
     unique_sub_pops = df2['file'].unique()
     unique_sub_pops = sorted(unique_sub_pops)
