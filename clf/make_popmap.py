@@ -35,7 +35,8 @@ def main(args, loglevel):
     f_out = open(args.out_filepath, 'w')
 
     for name in basenames:
-        subpop = name.split('_').strip('1234567890')
+        subpop = name.split('_')
+        subpop = subpop[0].strip('1234567890')
         f_out.write( name + '\t' + D[subpop]  + '\n')
         logging.debug('Wrote {} to file:\n{}'.format(name + '\t' + D[subpop]  + '\n', args.out_filepath))
 
