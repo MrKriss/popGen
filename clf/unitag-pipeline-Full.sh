@@ -30,28 +30,47 @@ NUM_THREADS=15
 # File names and path locations 
 RDFS_PATH="/home/musselle/salmon"     # home/musselle is my home on bens machine and the rdf storage is mounted with the name 'salmon'
 PROJECT_ROOT="$RDFS_PATH/chris"       # Root directory for project on RDFS Storage. 
-BIN_PATH="~/bin"                      # Where all python runscripts are located
-STACKS_PATH="~bin/stacks/bin"         # Where all binaries for stacks are located. 
+BIN_PATH="$HOME/bin"                      # Where all python runscripts are located
+STACKS_PATH="$HOME/bin/stacks/bin"         # Where all binaries for stacks are located. 
 STACKS_OUTPUT="$PROJECT_ROOT/stacks/$BATCH_NAME"   # Where all output stacks files are written to by default 
 
 DATABASE_NAME="$PROJECT_ROOT/salmon_database.db"
 
+mkdir -p $STACKS_OUTPUT
+
 ######################
 # Data Preprocessing #
 ######################
+
 # Assuming that stacks is installed and available on the system path. 
 # The raw-data files in $PROJECT_ROOT/raw-data have already had the dummy barcodes added, 
 # and are located under $PROJECT_ROOT/barcodes
 
+# Adding Dummy barcodes to Flourogenex Data
+#-------------------------------------------
+
+# Generate the barcode to use and store them in files:
+#     barcodes_only.txt  -->  List of barcode one per line (for input to stacks preprocessing)
+#     barcodes_filenames.txt  -->   List of barcode, file name pairs. One per line. 
+
+# uncomment to run (barcodes already generated, will override if reran and require all subsequent analysis to be rerun)
+# echo "\nAbout to Regenerate and re-append barcodes"
+# $BIN_PATH/makebarcodes.py -i $PROJECT_ROOT/raw-data \
+#                          -o $PROJECT_ROOT/barcodes/  \
+# Add the generated barcodes to the raw reads files. 
+#ls $PROJECT_ROOT/raw-data/* | parallel -j $NUM_THREADS "$BIN_PATH/add_bar2header.py -i {} \
+#                                                                                    -o {} \
+#                                                                                    -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt"
+
 echo "\nAbout to Run Preprocessing Steps"
 # -p path to inputs directory 
 # -b barcode file 
-# -o
+# -o Output path to save files to 
 # -e Specify enzyme for cut site
 # -q -c Filter based on phred quality (using sliding window) and discard reads with uncalled bases
 # -r Correct RAD tags 
 # --index_null Dummy barcode is in sequence header not in sequence itself. 
-$BIN_PATH/process_radtags -p $PROJECT_ROOT/raw-data \                      
+$STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \                      
 				-b $PROJECT_ROOT/barcodes/barcodes_only.txt  \
 				-o $PROJECT_ROOT/processed-data/ \
 				-e sbfI \     
@@ -118,6 +137,10 @@ $BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/ \
 						--stackspath $STACKS_PATH
 echo "\nFinished computing stacks"
 
+
+#####################################
+# CONSTRUCTING CATALOGUE & MATCHING #
+#####################################
 
 echo "\nConstructing Global Catalogue"
 # Construct Catalogue from all pstacks output
@@ -194,6 +217,7 @@ $BIN_PATH/run_sstacks.py -s all \
 
 echo "\nAbout to Calculate Population Statistics" 
 $STACKS_PATH/populations -b $BATCH_ID \
+                         -P $STACKS_OUTPUT \ 
                          -M $PROJECT_ROOT/barcodes/population_map.tsv \
                          --vcf \
                          -t $NUM_THREADS
@@ -222,16 +246,4 @@ $STACKS_PATH/load_radtags.pl -D $DATABASE_NAME \
 							 -M $PROJECT_ROOT/barcodes/population_map.tsv \
 							 -c -B -e $BATCH_NAME
 							 -d -t population
-
-
-
-
-						 
-
-
-
-
-
-
-
 
