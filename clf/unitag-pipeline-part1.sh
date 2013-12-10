@@ -72,17 +72,17 @@ echo "\nAbout to Run Preprocessing Steps"
 # -q -c Filter based on phred quality (using sliding window) and discard reads with uncalled bases
 # -r Correct RAD tags 
 # --index_null Dummy barcode is in sequence header not in sequence itself. 
-$STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \                      
-				-b $PROJECT_ROOT/barcodes/barcodes_only.txt  \
-				-o $PROJECT_ROOT/processed-data/ \
-				-e sbfI \     
-				-q -c \      
-				-r \          
-				--index_null 
-				
+
+# -s The value for the sliding window average quality thresholding (default 10) 
+
+$STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \
+-b $PROJECT_ROOT/barcodes/barcodes_only.txt \
+-o $PROJECT_ROOT/processed-data/ \
+-e sbfI -q -c -s 15 -r --index_null 
+			
 # rename stacks output files to contain original filename id 
 $BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/sample_* \
-							  -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
+-b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
 
 echo "\nPreprocessing Steps Complete"				 
 
