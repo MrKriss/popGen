@@ -32,14 +32,10 @@ def main(args, loglevel):
 
     for rec in seqgen:
 
-        seq_str = rec.seq.tostring()
-
-        # Letter annotations must be removed before editing rec.seq
-        temp_var = rec.letter_annotations
-        rec.letter_annotations['phred_quality'] = [40]*len(barcode_dict[args.input]) \
-                                                  + rec.letter_annotations['phred_quality']
-
-        rec.seq = Seq.Seq(barcode_dict[args.input] + seq_str)
+        # Append new barcode to the header line
+        desc = rec.description.split(':')
+        desc[-1] = barcode_dict[args.input]
+        rec.description = ':'.join(desc)
 
         writebuffer.append(rec)
         buffer_count += 1

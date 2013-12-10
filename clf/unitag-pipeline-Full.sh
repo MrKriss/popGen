@@ -20,9 +20,9 @@ BOWTIE_MISMATCHES=3
 STACK_MIN_DEPTH=2
 CATALOGUE_MIN_DIST=0
 
-# Batch Number
-BATCH=200
-BATCH2=400
+# Unique Batch Number for this run 
+BATCH_ID=200
+BATCH_NAME="unitag"
 
 # Num processors to run on.
 NUM_THREADS=15
@@ -32,7 +32,9 @@ RDFS_PATH="/home/musselle/salmon"     # home/musselle is my home on bens machine
 PROJECT_ROOT="$RDFS_PATH/chris"       # Root directory for project on RDFS Storage. 
 BIN_PATH="~/bin"                      # Where all python runscripts are located
 STACKS_PATH="~bin/stacks/bin"         # Where all binaries for stacks are located. 
-STACKS_OUTPUT="$PROJECT_ROOT/stacks/unitag"   # Where all output stacks files are written to by default 
+STACKS_OUTPUT="$PROJECT_ROOT/stacks/$BATCH_NAME"   # Where all output stacks files are written to by default 
+
+DATABASE_NAME="$PROJECT_ROOT/salmon_database.db"
 
 ######################
 # Data Preprocessing #
@@ -57,6 +59,10 @@ $BIN_PATH/process_radtags -p $PROJECT_ROOT/raw-data \
 				-r \          
 				--index_null 
 				
+# rename stacks output files to contain original filename id 
+$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/* \
+							  -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
+
 echo "\nPreprocessing Steps Complete"				 
 
 #################################
@@ -120,9 +126,9 @@ echo "\nConstructing Global Catalogue"
 #   -b  MySQL ID of this batch.
 #   -o  output path to write results.
 #   -n  number of mismatches allowed between sample tags when generating the catalog.
-$BIN_PATH/run_cstacks.py -i $PROJECT_ROOT/stacks/unitag/sample_* \ 
+$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/sample_* \ 
 						 -o $STACKS_OUTPUT \
-						 -b $BATCH \
+						 -b $BATCH_ID \
 						 -p $NUM_THREADS \
 						 -n 0 \
 						 --stackspath $STACKS_PATH 
@@ -139,7 +145,7 @@ echo "\nMatching samples to Global Catalogue"
 
 $BIN_PATH/run_sstacks.py -s all \
 						 -P $STACKS_OUTPUT \
-						 -c $STACKS_OUTPUT/batch_$BATCH \
+						 -c $STACKS_OUTPUT/batch_$BATCH_ID \
 						 -o $STACKS_OUTPUT \
 						 -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
 						 -x 400 
@@ -170,8 +176,7 @@ $BIN_PATH/run_sstacks.py -s all \
 # -b Batch number of catalogue to use for calculations 
 # -M File path to where population map is
 
-
-# Filtering parameters
+# Optional Filtering parameters
 #  -r    minimum percentage of individuals in a population required to process a locus for that population.
 #  -p    minimum number of populations a locus must be present in to process a locus.
 #  -m    specify a minimum stack depth required for individuals at a locus.
@@ -180,23 +185,43 @@ $BIN_PATH/run_sstacks.py -s all \
 #  --p_value_cutoff [num] — required p-value to keep an Fst measurement (0.05 by default). Also used as base for Bonferroni correction.
 
 #  --vcf  Output results in a vcf file.
- 
-$STACKS_PATH/populations -b $BATCH \
-						 -M $PROJECT_ROOT/barcodes/population_map.tsv \
-						 --vcf
 
+
+# To make population map file again, uncomment the following
+#$BIN_PATH/make_popmap.py -i $PROJECT_ROOT/processed-data/*.fq \
+#						 -o $PROJECT_ROOT/barcodes/population_map.tsv \
+#						 -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt
+
+echo "\nAbout to Calculate Population Statistics" 
+$STACKS_PATH/populations -b $BATCH_ID \
+                         -M $PROJECT_ROOT/barcodes/population_map.tsv \
+                         --vcf \
+                         -t $NUM_THREADS
 
 #############################
 # Load data into a database #
 #############################
 
 # Load in data from this pipeline into a MySQL database 
+#  -D  Database to load data into.
+#  -p  Path to input files.
+#  -b  Batch ID.
+#  -M  if you have analyzed several populations, specify a population map.
+#  -c  Load the catalog into the database.
+#  -B  Load information into batch table.
+#  -e  batch dEscription.
+#  -d  perform a dry run. Do not actually load any data, just print what would be executed.
+#  -W  only load file found on this white list.
+#  -U  do not load stacks to unique_tags table to save database space.
+#  -t  pipeline type (either 'map' or 'population'), load_radtags.pl will guess based on the presence/absence of progeny file types.
 
-$STACKS_PATH/load_radtags.pl 
-
-
-
-
+echo "\nLoading all data into database: $DATABASE_NAME"
+$STACKS_PATH/load_radtags.pl -D $DATABASE_NAME \
+							 -p $STACKS_OUTPUT \
+							 -b $BATCH_ID \
+							 -M $PROJECT_ROOT/barcodes/population_map.tsv \
+							 -c -B -e $BATCH_NAME
+							 -d -t population
 
 
 
