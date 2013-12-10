@@ -21,7 +21,7 @@ MAX_DEPTH=500
 
 # Aligning stacks to reference and pstacks
 BOWTIE_MISMATCHES=3
-STACK_MIN_DEPTH=2
+STACK_MIN_DEPTH=5
 
 # Unique Batch Number for this run 
 BATCH_NAME="unitag"
