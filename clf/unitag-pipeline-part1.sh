@@ -81,7 +81,7 @@ $STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \
 				--index_null 
 				
 # rename stacks output files to contain original filename id 
-$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/* \
+$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/sample_* \
 							  -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
 
 echo "\nPreprocessing Steps Complete"				 
