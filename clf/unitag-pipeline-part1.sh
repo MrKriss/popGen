@@ -18,6 +18,7 @@
 # Unitag Reference creation
 MIN_DEPTH=5
 MAX_DEPTH=500
+UNITAG_REF="LoD06_"
 
 # Aligning stacks to reference and pstacks
 BOWTIE_MISMATCHES=3
@@ -74,14 +75,15 @@ echo "\nAbout to Run Preprocessing Steps"
 # --index_null Dummy barcode is in sequence header not in sequence itself. 
 
 # -s The value for the sliding window average quality thresholding (default 10) 
+# -w Set the size of the sliding window as a fraction of the read length, between 0 and 1 (default 0.15).
 
 $STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \
 -b $PROJECT_ROOT/barcodes/barcodes_only.txt \
 -o $PROJECT_ROOT/processed-data/ \
--e sbfI -q -c -s 15 -r --index_null 
+-e sbfI -q -c -s 15 -r --index_null -w 0.01 
 			
 # rename stacks output files to contain original filename id 
-$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/sample_* \
+$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/*.fq \
 -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
 
 echo "\nPreprocessing Steps Complete"				 
@@ -105,14 +107,14 @@ echo "\nAbout to Construct Unitag Reference Sequence"
 # -o output file 
 # -m min read depth threshold
 # -M max read depth threshold
-$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/sample_GCAGGC.fq \
-            -o $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
-            -m $MIN_DEPTH -M $MAX_DEPTH
+$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/$UNITAG_REF*.fq \
+-o $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
+-m $MIN_DEPTH -M $MAX_DEPTH
 
 # Construct index using bowtie
 # bowtie-build reads_file index_file
 bowtie-build $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
-		     $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH
+$PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH
 echo "\nBuilding Unitag Complete"
 
 ###################
@@ -130,11 +132,9 @@ echo "\nBuilding Unitag Complete"
 # -p No. of threads to run with
 # -k number of matches for bowtie to report per read. 
 echo "\nAligning all samples to Unitag Reference and computing stacks"
-$BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/ \       
-						-s all \  
+$BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/*.fq \       
 						-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH \
 						-q 1 -m $STACK_MIN_DEPTH \
-						-b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
 						-o $STACKS_OUTPUT -p $NUM_THREADS -k 1
 						--stackspath $STACKS_PATH
 echo "\nFinished computing stacks"

@@ -14,10 +14,12 @@
 # Unitag Reference creation
 MIN_DEPTH=5
 MAX_DEPTH=500
+UNITAG_REF="LoD06_"
+
 
 # Aligning stacks to reference and pstacks
 BOWTIE_MISMATCHES=3
-STACK_MIN_DEPTH=2
+STACK_MIN_DEPTH=5
 CATALOGUE_MIN_DIST=0
 
 # Unique Batch Number for this run 
@@ -70,16 +72,19 @@ echo "\nAbout to Run Preprocessing Steps"
 # -q -c Filter based on phred quality (using sliding window) and discard reads with uncalled bases
 # -r Correct RAD tags 
 # --index_null Dummy barcode is in sequence header not in sequence itself. 
+
+# -s The value for the sliding window average quality thresholding (default 10) 
+
 $STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \                      
 				-b $PROJECT_ROOT/barcodes/barcodes_only.txt  \
 				-o $PROJECT_ROOT/processed-data/ \
 				-e sbfI \     
-				-q -c \      
+				-q -c -s 15 -w 0.01 \      
 				-r \          
 				--index_null 
 				
 # rename stacks output files to contain original filename id 
-$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/sample_* \
+$BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/*.fq \
 							  -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt 
 
 echo "\nPreprocessing Steps Complete"				 
@@ -93,7 +98,7 @@ echo "\nPreprocessing Steps Complete"
 # Uses GNU parallel to execute all combinations
 #MIN_DEPTHS=2 5 10 15 20
 #MAX_DEPTHS=500 
-#parallel "$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/sample_GCAGGC.fq \
+#parallel "$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/$UNITAG_REF*.fq \
 #                               -o $PROJECT_ROOT/processed-data/unitag/unitagref-m{1}-M{2}.fq \
 #                               -m {1} -M {2}" ::: $MIN_DEPTHS ::: $MAX_DEPTHS
 # Statistics for all runs are logged in unitag-logfile.log, though may be appended unordered.
@@ -103,7 +108,7 @@ echo "\nAbout to Construct Unitag Reference Sequence"
 # -o output file 
 # -m min read depth threshold
 # -M max read depth threshold
-$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/sample_GCAGGC.fq \
+$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/$UNITAG_REF*.fq \
             -o $PROJECT_ROOT/processed-data/unitag/unitagref-m$MIN_DEPTH-M$MAX_DEPTH.fq \
             -m $MIN_DEPTH -M $MAX_DEPTH
 
@@ -129,10 +134,8 @@ echo "\nBuilding Unitag Complete"
 # -k number of matches for bowtie to report per read. 
 echo "\nAligning all samples to Unitag Reference and computing stacks"
 $BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/ \       
-						-s all \  
 						-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH \
 						-q 1 -m $STACK_MIN_DEPTH \
-						-b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
 						-o $STACKS_OUTPUT -p $NUM_THREADS -k 1
 						--stackspath $STACKS_PATH
 echo "\nFinished computing stacks"
@@ -149,7 +152,7 @@ echo "\nConstructing Global Catalogue"
 #   -b  MySQL ID of this batch.
 #   -o  output path to write results.
 #   -n  number of mismatches allowed between sample tags when generating the catalog.
-$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/sample_* \ 
+$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/*.fq \ 
 						 -o $STACKS_OUTPUT \
 						 -b $BATCH_ID \
 						 -p $NUM_THREADS \
