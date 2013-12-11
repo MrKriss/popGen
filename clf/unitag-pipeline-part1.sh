@@ -132,9 +132,10 @@ echo "\nBuilding Unitag Complete"
 # -p No. of threads to run with
 # -k number of matches for bowtie to report per read. 
 echo "\nAligning all samples to Unitag Reference and computing stacks"
-$BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/*.fq \       
-						-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH \
-						-q 1 -m $STACK_MIN_DEPTH \
-						-o $STACKS_OUTPUT -p $NUM_THREADS -k 1
-						--stackspath $STACKS_PATH
+$BIN_PATH/run_bowtie.py -i $PROJECT_ROOT/processed-data/*.fq \
+-x $PROJECT_ROOT/processed-data/unitag/unitag_idx-m$MIN_DEPTH-M$MAX_DEPTH \
+-a $PROJECT_ROOT/alignments/ \
+-q 1 -m $STACK_MIN_DEPTH \
+-o $STACKS_OUTPUT -p $NUM_THREADS -k 1 \
+--stackspath $STACKS_PATH
 echo "\nFinished computing stacks"

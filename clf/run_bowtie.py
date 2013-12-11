@@ -98,7 +98,7 @@ if __name__ == '__main__':
                     'sample_file to that reference sequence.')
 
     parser.add_argument(
-        "-i", dest="in_piles", nargs='+',
+        "-i", dest="in_files", nargs='+',
         help="Input file set (via a glob) for all processed files to be aligned.")
 
     parser.add_argument(
