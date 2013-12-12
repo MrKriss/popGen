@@ -78,7 +78,7 @@ def main(args, loglevel):
         subprocess.check_call(bowtie_cmd.split())
         logging.info("Finished Aligning {} with Bowtie".format(filepath))
 
-        pstacks_pgm = os.path.expanduser(pstacks_pgm)
+        pstacks_pgm = os.path.expanduser(args.stackspath)
         pstacks_pgm = os.path.join(pstacks_pgm ,'pstacks')
 
         pstacks_cmd = '{pstacks} -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
