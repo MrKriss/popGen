@@ -84,6 +84,15 @@ def main(args, loglevel):
         pstacks_cmd = '{pstacks} -p {threads} -t bowtie -f {input} -o {output} -i {sqlindex} -m {min_depth}'.format(
             pstacks=pstacks_pgm, threads=args.processors, input=bowtie_ouput_filepath, output=args.out_path, sqlindex=sqlindex,
             min_depth=args.min_depth)
+
+        if args.model_type:
+            pstacks_cmd += ' --model_type {}'.format(args.model_type)
+        if args.bound_low:
+            pstacks_cmd += ' --bound_low {}'.format(args.bound_low)
+        if args.bound_high:
+            pstacks_cmd += ' --bound_high {}'.format(args.bound_high)
+
+
         logging.debug("About to run pstacks with following comandline arguments:\n{}\n".format(str(pstacks_cmd.split())))
         subprocess.check_call(pstacks_cmd.split())
         sqlindex += 1
@@ -143,6 +152,20 @@ if __name__ == '__main__':
     parser.add_argument(
         "--stackspath", dest="stackspath", default='~/bin/',
         help="Location of where stacks binaries are installed.")
+
+    parser.add_argument(
+        "--model_type", dest="model_type", default='',
+        help="Model type to use for snp calls. 'snp', 'bounded' or 'fixed'. ")
+
+    parser.add_argument(
+        "--bound_high", dest="bound_high", default='',
+        help="upper bound for epsilon, the error rate, between 0 and 1.0 (default 1).")
+
+    parser.add_argument(
+        "--bound_low", dest="bound_low", default='',
+        help="lower bound for epsilon, the error rate, between 0 and 1.0 (default 0).")
+
+
 
     parser.add_argument(
         "-v", "--verbose",
