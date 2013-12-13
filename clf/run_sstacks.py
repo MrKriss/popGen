@@ -29,7 +29,7 @@ def main(args, loglevel):
     # Get generators for filepaths
     if 'all' in args.subpops:
 
-        all_files = glob.glob(os.path.join(args.inpath, "sample_*"))
+        all_files = glob.glob(os.path.join(args.inpath, "*snps.tsv"))
         basenames = [(os.path.split(name)[1]).split('.')[0] for name in all_files]
 
         # get unique baseneamse

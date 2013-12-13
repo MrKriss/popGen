@@ -55,7 +55,7 @@ echo "\nConstructing Global Catalogue"
 #   -b  MySQL ID of this batch.
 #   -o  output path to write results.
 #   -n  number of mismatches allowed between sample tags when generating the catalog.
-$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/*.fq \
+$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/*snps.tsv \
 -o $STACKS_OUTPUT \
 -b $BATCH_ID \
 -p $NUM_THREADS \
