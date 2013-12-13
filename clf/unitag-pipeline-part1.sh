@@ -80,7 +80,7 @@ echo "\nAbout to Run Preprocessing Steps"
 $STACKS_PATH/process_radtags -p $PROJECT_ROOT/raw-data \
 -b $PROJECT_ROOT/barcodes/barcodes_only.txt \
 -o $PROJECT_ROOT/processed-data/ \
--e sbfI -q -c -s 15 -r --index_null -w 0.01 
+-e sbfI -q -c -s 15 -r --index_null
 			
 # rename stacks output files to contain original filename id 
 $BIN_PATH/update_filenames.py -i $PROJECT_ROOT/processed-data/*.fq \

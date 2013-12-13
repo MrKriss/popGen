@@ -55,12 +55,12 @@ echo "\nConstructing Global Catalogue"
 #   -b  MySQL ID of this batch.
 #   -o  output path to write results.
 #   -n  number of mismatches allowed between sample tags when generating the catalog.
-$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/sample_* \ 
-						 -o $STACKS_OUTPUT \
-						 -b $BATCH_ID \
-						 -p $NUM_THREADS \
-						 -n 0 \
-						 --stackspath $STACKS_PATH 
+$BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/*.fq \
+-o $STACKS_OUTPUT \
+-b $BATCH_ID \
+-p $NUM_THREADS \
+-n 0 \
+--stackspath $STACKS_PATH 
 						 
 echo "\nMatching samples to Global Catalogue"
 # Match all samples against the catalogue 
@@ -73,13 +73,13 @@ echo "\nMatching samples to Global Catalogue"
 #  --stackspath  path to stacks binaries
 
 $BIN_PATH/run_sstacks.py -s all \
-						 -P $STACKS_OUTPUT \
-						 -c $STACKS_OUTPUT/batch_$BATCH_ID \
-						 -o $STACKS_OUTPUT \
-						 -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
-						 -x 400 
-						 -p 15 \
-						 --stackspath $STACKS_PATH 
+-P $STACKS_OUTPUT \
+-c $STACKS_OUTPUT/batch_$BATCH_ID \
+-o $STACKS_OUTPUT \
+-b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
+-x 1 
+-p 15 \
+--stackspath $STACKS_PATH 
 
 
 ###################################
@@ -123,13 +123,13 @@ $BIN_PATH/run_sstacks.py -s all \
 
 echo "\nAbout to Calculate Population Statistics" 
 $STACKS_PATH/populations -b $BATCH_ID \
-                         -P $STACKS_OUTPUT \ 
-                         -M $PROJECT_ROOT/barcodes/population_map.tsv \
-                         --vcf \
-                         -t $NUM_THREADS \
-                         -m $MIN_DEPTH \
-                         -a $MIN_AF \
-                         -r $MIN_PERC
+-P $STACKS_OUTPUT \
+-M $PROJECT_ROOT/barcodes/population_map.tsv \
+--vcf \
+-t $NUM_THREADS \
+-m $MIN_DEPTH \
+-a $MIN_AF \
+-r $MIN_PERC
 
 #############################
 # Load data into a database #
