@@ -60,11 +60,6 @@ if __name__ == '__main__':
         help="Location of input files. Accepts a glob of multiple files.")
 
     parser.add_argument(
-        "-b", dest="batch_id",
-        required=True,
-        help="ID used for MySQL for this batch.")
-
-    parser.add_argument(
         "-q", dest="sqlindex_start",
         default=1,
         type=int,
