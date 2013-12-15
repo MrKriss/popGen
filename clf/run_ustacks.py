@@ -36,7 +36,7 @@ def main(args, loglevel):
         # Run ustacks
         cmd = '{pgm_filepath} -t fastq -f {samplefiles} -i {sqlindex} -o {outpath} -m {min_depth} ' \
               '-M {num_mismatch} -p {num_threads} -r -d --max_locus_stacks {max_locus_stacks} ' \
-              '--model_type "bounded" --bound_high 0.1'.format(
+              '--model_type bounded --bound_high 0.1'.format(
             pgm_filepath=pgm_filepath, samplefiles=sample_file, sqlindex=sqlindex, outpath=args.outputpath,
             num_mismatch=args.num_mismatch, min_depth=args.min_depth, num_threads=args.processors,
             max_locus_stacks=args.max_locus_stacks)
