@@ -43,7 +43,7 @@ def main(args, loglevel):
 
         logging.debug("About to run Ustacks with following comandline arguments:\n{}\n".format(str(cmd.split())))
         subprocess.check_call(cmd.split())
-        logging.info('Stacks created for {} and written to\n{}\n'.format(str(basenames), args.outputpath))
+        logging.info('Stacks created for {} and written to\n{}\n'.format(str(name), args.outputpath))
         sqlindex += 1
 
 # Standard boilerplate to call the main() function to begin
