@@ -22,6 +22,8 @@ def main(args, loglevel):
     # get unique baseneamse
     basenames = list(set(basenames))
 
+    basenames = sorted(basenames)
+
     sqlindex = args.sqlindex_start
 
     for name in basenames:
@@ -42,7 +44,7 @@ def main(args, loglevel):
         logging.debug("About to run Ustacks with following comandline arguments:\n{}\n".format(str(cmd.split())))
         subprocess.check_call(cmd.split())
         logging.info('Stacks created for {} and written to\n{}\n'.format(str(basenames), args.outputpath))
-
+        sqlindex += 1
 
 # Standard boilerplate to call the main() function to begin
 # the program.
