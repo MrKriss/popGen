@@ -15,11 +15,6 @@
 # PARAMETERS DEFINED #
 ######################
 
-# Unitag Reference creation
-MIN_DEPTH=5
-MAX_DEPTH=500
-UNITAG_REF="LoD06_"
-
 # Aligning stacks to reference and pstacks
 BOWTIE_MISMATCHES=3
 STACK_MIN_DEPTH=5

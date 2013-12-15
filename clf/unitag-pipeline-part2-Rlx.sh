@@ -21,7 +21,7 @@
 #  MIN_AF       specify a minimum minor allele frequency required before calculating Fst at a locus (0 < a < 0.5).
 MIN_DEPTH=6
 MIN_AF=0.1
-MIN_PERC=60
+MIN_PERC=0.60
 
 # Aligning stacks to reference and pstacks
 CATALOGUE_MIN_DIST=0
@@ -77,7 +77,7 @@ $BIN_PATH/run_sstacks.py -s all \
 -c $STACKS_OUTPUT/batch_$BATCH_ID \
 -o $STACKS_OUTPUT \
 -b $PROJECT_ROOT/barcodes/barcodes_filenames.txt \
--x 1 
+-x 1 \
 -p 15 \
 --stackspath $STACKS_PATH 
 
