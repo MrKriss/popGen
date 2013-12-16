@@ -78,6 +78,8 @@ def main(args, loglevel):
         elif v > args.max:
             too_many.add(k)
 
+    global_counter = read_counter.copy()
+
     total_reads = sum(read_counter.values())
     all_unique_read_set = set(read_counter.keys())
 
@@ -180,6 +182,8 @@ Total Reads in Retained Unique Reads:\t{retained_t}\t({retained_t_p:.2%})""".for
 ----------------------------------------------------------------------""".format(
                                     write_count, read_count, total_unique_reads-write_count))
 
+    if loglevel == logging.DEBUG:
+        return (global_counter, read_counter, all_unique_read_set, retained_read_set, too_few, too_many)
 
 # Standard boilerplate to call the main() function to begin
 # the program.
@@ -222,4 +226,4 @@ if __name__ == '__main__':
     else:
         loglevel = logging.INFO
 
-    main(args, loglevel)
+    outs = main(args, loglevel)
