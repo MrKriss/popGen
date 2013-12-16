@@ -69,6 +69,7 @@ mkdir -p $STACKS_OUTPUT
 mkdir -p "$STACKS_OUTPUT/rlx"
 mkdir -p "$STACKS_OUTPUT/std"
 mkdir -p "$STACKS_OUTPUT/str"
+mkdir -p "$STACKS_OUTPUT/default"
 
 ######################
 # Data Preprocessing #
@@ -285,6 +286,18 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -r $MIN_PERC_STR
 
 mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
+
+echo "\nAbout to Calculate Population Statistics for Default Settings" 
+$STACKS_PATH/populations -b $BATCH_ID \
+-P $STACKS_OUTPUT \
+-M $PROJECT_ROOT/barcodes/population_map.tsv \
+--vcf \
+-t $NUM_THREADS \
+-m $MIN_DEPTH_STR \
+-a $MIN_AF_STR \
+-r $MIN_PERC_STR
+
+mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/default/
 
 
 #############################

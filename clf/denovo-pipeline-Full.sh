@@ -65,6 +65,7 @@ mkdir -p $STACKS_OUTPUT
 mkdir -p "$STACKS_OUTPUT/rlx"
 mkdir -p "$STACKS_OUTPUT/std"
 mkdir -p "$STACKS_OUTPUT/str"
+mkdir -p "$STACKS_OUTPUT/default"
 
 ######################
 # Data Preprocessing #
@@ -246,7 +247,7 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_RLX \
 -r $MIN_PERC_RLX
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/rlx/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/rlx/
 
 echo "\nAbout to Calculate Population Statistics for Standard Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
@@ -258,7 +259,7 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_STD \
 -r $MIN_PERC_STD
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/std/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/std/
 
 echo "\nAbout to Calculate Population Statistics for Stringent Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
@@ -270,7 +271,19 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_STR \
 -r $MIN_PERC_STR
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
+
+echo "\nAbout to Calculate Population Statistics for Stringent Settings" 
+$STACKS_PATH/populations -b $BATCH_ID \
+-P $STACKS_OUTPUT \
+-M $PROJECT_ROOT/barcodes/population_map.tsv \
+--vcf \
+-t $NUM_THREADS \
+-m $MIN_DEPTH_STR \
+-a $MIN_AF_STR \
+-r $MIN_PERC_STR
+
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/default/
 
 
 #############################
