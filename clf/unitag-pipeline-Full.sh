@@ -49,7 +49,7 @@ MIN_AF_RLX=0.1
 MIN_PERC_RLX=0.60
 
 MIN_DEPTH_STD=10
-MIN_A_STDF=0.1
+MIN_AF_STD=0.1
 MIN_PERC_STD=0.80
 
 MIN_DEPTH_STR=15
@@ -127,7 +127,7 @@ echo "\nPreprocessing Steps Complete"
 # Uses GNU parallel to execute all combinations
 #MIN_DEPTHS=2 5 10 15 20
 #MAX_DEPTHS=500 
-#parallel "$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/sample_GCAGGC.fq \
+#parallel "$BIN_PATH/make_unitag.py -i $PROJECT_ROOT/processed-data/$UNITAG_REF*.fq \
 #                               -o $PROJECT_ROOT/processed-data/unitag/unitagref-m{1}-M{2}.fq \
 #                               -m {1} -M {2}" ::: $MIN_DEPTHS ::: $MAX_DEPTHS
 # Statistics for all runs are logged in unitag-logfile.log, though may be appended unordered.
@@ -182,11 +182,12 @@ echo "\nConstructing Global Catalogue"
 #   -b  MySQL ID of this batch.
 #   -o  output path to write results.
 #   -n  number of mismatches allowed between sample tags when generating the catalog.
+
 $BIN_PATH/run_cstacks.py -i $STACKS_OUTPUT/*snps.tsv \
 -o $STACKS_OUTPUT \
 -b $BATCH_ID \
 -p $NUM_THREADS \
--n 0 \
+-n $CATALOGUE_MIN_DIST \
 --stackspath $STACKS_PATH 
 						 
 echo "\nMatching samples to Global Catalogue"
@@ -261,7 +262,7 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_RLX \
 -r $MIN_PERC_RLX
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/rlx/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/rlx/
 
 echo "\nAbout to Calculate Population Statistics for Standard Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
@@ -273,7 +274,7 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_STD \
 -r $MIN_PERC_STD
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/std/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/std/
 
 echo "\nAbout to Calculate Population Statistics for Stringent Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
@@ -285,7 +286,7 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -a $MIN_AF_STR \
 -r $MIN_PERC_STR
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
 
 echo "\nAbout to Calculate Population Statistics for Default Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
@@ -293,11 +294,8 @@ $STACKS_PATH/populations -b $BATCH_ID \
 -M $PROJECT_ROOT/barcodes/population_map.tsv \
 --vcf \
 -t $NUM_THREADS \
--m $MIN_DEPTH_STR \
--a $MIN_AF_STR \
--r $MIN_PERC_STR
 
-mv $STACKS_OUTPUT/batch_1.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/default/
+mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/default/
 
 
 #############################

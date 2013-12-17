@@ -45,7 +45,7 @@ MIN_AF_RLX=0.1
 MIN_PERC_RLX=0.60
 
 MIN_DEPTH_STD=10
-MIN_A_STDF=0.1
+MIN_AF_STD=0.1
 MIN_PERC_STD=0.80
 
 MIN_DEPTH_STR=15
@@ -273,15 +273,12 @@ $STACKS_PATH/populations -b $BATCH_ID \
 
 mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/str/
 
-echo "\nAbout to Calculate Population Statistics for Stringent Settings" 
+echo "\nAbout to Calculate Population Statistics for Default Settings" 
 $STACKS_PATH/populations -b $BATCH_ID \
 -P $STACKS_OUTPUT \
 -M $PROJECT_ROOT/barcodes/population_map.tsv \
 --vcf \
 -t $NUM_THREADS \
--m $MIN_DEPTH_STR \
--a $MIN_AF_STR \
--r $MIN_PERC_STR
 
 mv $STACKS_OUTPUT/batch_$BATCH_ID.{fst*,hap*,pop*,sum*,vcf} $STACKS_OUTPUT/default/
 
